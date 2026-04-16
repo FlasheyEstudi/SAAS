@@ -1,10 +1,14 @@
-// Centralized API Endpoints Catalog
+// Centralized API Endpoints Catalog - Matched with Backend APIs
 export const AUTH = {
   login: '/users/login',
-  register: '/users',
-  me: '/users/me',
-  logout: '/users/logout',
-  refreshToken: '/users/refresh',
+  users: '/users',
+  getUser: (id: string) => `/users/${id}`,
+  updateUser: (id: string) => `/users/${id}`,
+  deleteUser: (id: string) => `/users/${id}`,
+  changePassword: (id: string) => `/users/${id}/change-password`,
+  resetPassword: (id: string) => `/users/${id}/reset-password`,
+  activity: (id: string) => `/users/${id}/activity`,
+  stats: '/users/stats',
 } as const;
 
 export const COMPANIES = {
@@ -22,8 +26,7 @@ export const PERIODS = {
   update: (id: string) => `/periods/${id}`,
   delete: (id: string) => `/periods/${id}`,
   close: (id: string) => `/periods/${id}/close`,
-  reopen: (id: string) => `/periods/${id}/reopen`,
-  current: '/periods/current',
+  batch: '/periods/batch',
 } as const;
 
 export const ACCOUNTS = {
@@ -34,7 +37,6 @@ export const ACCOUNTS = {
   delete: (id: string) => `/accounts/${id}`,
   tree: '/accounts/tree',
   search: '/accounts/search',
-  balances: '/accounts/balances',
 } as const;
 
 export const COST_CENTERS = {
@@ -53,15 +55,14 @@ export const JOURNAL = {
   update: (id: string) => `/journal-entries/${id}`,
   delete: (id: string) => `/journal-entries/${id}`,
   post: (id: string) => `/journal-entries/${id}/post`,
-  unpost: (id: string) => `/journal-entries/${id}/unpost`,
   validate: '/journal-entries/validate',
   lines: {
     list: (entryId: string) => `/journal-entries/${entryId}/lines`,
     create: (entryId: string) => `/journal-entries/${entryId}/lines`,
+    get: (entryId: string, lineId: string) => `/journal-entries/${entryId}/lines/${lineId}`,
     update: (entryId: string, lineId: string) => `/journal-entries/${entryId}/lines/${lineId}`,
     delete: (entryId: string, lineId: string) => `/journal-entries/${entryId}/lines/${lineId}`,
   },
-  number: '/journal-entries/next-number',
 } as const;
 
 export const THIRD_PARTIES = {
@@ -70,6 +71,7 @@ export const THIRD_PARTIES = {
   get: (id: string) => `/third-parties/${id}`,
   update: (id: string) => `/third-parties/${id}`,
   delete: (id: string) => `/third-parties/${id}`,
+  search: '/third-parties/search',
 } as const;
 
 export const INVOICES = {
@@ -79,26 +81,25 @@ export const INVOICES = {
   update: (id: string) => `/invoices/${id}`,
   delete: (id: string) => `/invoices/${id}`,
   pay: (id: string) => `/invoices/${id}/pay`,
-  cancel: (id: string) => `/invoices/${id}/cancel`,
-  aging: '/invoices/aging',
-  summary: '/invoices/summary',
   recalculate: (id: string) => `/invoices/${id}/recalculate`,
+  summary: '/invoices/summary',
+  aging: '/invoices/aging',
   lines: {
     list: (id: string) => `/invoices/${id}/lines`,
     create: (id: string) => `/invoices/${id}/lines`,
+    get: (id: string, lineId: string) => `/invoices/${id}/lines/${lineId}`,
     update: (id: string, lineId: string) => `/invoices/${id}/lines/${lineId}`,
     delete: (id: string, lineId: string) => `/invoices/${id}/lines/${lineId}`,
   },
   taxEntries: {
     list: (id: string) => `/invoices/${id}/tax-entries`,
-    create: (id: string) => `/invoices/${id}/tax-entries`,
   },
   paymentSchedule: {
     list: (id: string) => `/invoices/${id}/payment-schedule`,
     create: (id: string) => `/invoices/${id}/payment-schedule`,
+    get: (id: string, scheduleId: string) => `/invoices/${id}/payment-schedule/${scheduleId}`,
     pay: (id: string, scheduleId: string) => `/invoices/${id}/payment-schedule/${scheduleId}/pay`,
   },
-  number: '/invoices/next-number',
 } as const;
 
 export const BANKS = {
@@ -108,11 +109,19 @@ export const BANKS = {
   update: (id: string) => `/bank-accounts/${id}`,
   delete: (id: string) => `/bank-accounts/${id}`,
   movements: {
-    list: (accountId: string) => `/bank-accounts/${accountId}/movements`,
-    create: (accountId: string) => `/bank-accounts/${accountId}/movements`,
-    reconcile: (accountId: string, movementId: string) => `/bank-accounts/${accountId}/movements/${movementId}/reconcile`,
+    list: '/bank-movements',
+    create: '/bank-movements',
+    get: (id: string) => `/bank-movements/${id}`,
+    update: (id: string) => `/bank-movements/${id}`,
+    delete: (id: string) => `/bank-movements/${id}`,
+    reconcile: '/bank-movements/reconcile',
   },
-  balance: (id: string) => `/bank-accounts/${id}/balance`,
+} as const;
+
+export const RECONCILIATION = {
+  autoMatch: '/reconciliation/auto-match',
+  advanced: '/reconciliation/advanced',
+  status: (bankAccountId: string) => `/reconciliation/status/${bankAccountId}`,
 } as const;
 
 export const REPORTS = {
@@ -121,9 +130,10 @@ export const REPORTS = {
   incomeStatement: '/reports/income-statement',
   cashFlow: '/reports/cash-flow',
   generalLedger: '/reports/general-ledger',
-  agingReceivable: '/reports/aging-receivable',
-  agingPayable: '/reports/aging-payable',
-  export: (type: string) => `/reports/${type}/export`,
+  subsidiaryLedger: '/reports/subsidiary-ledger',
+  accountMovements: '/reports/account-movements',
+  changesEquity: '/reports/changes-equity',
+  comparative: '/reports/comparative',
 } as const;
 
 export const ASSETS = {
@@ -134,6 +144,8 @@ export const ASSETS = {
   delete: (id: string) => `/fixed-assets/${id}`,
   depreciate: (id: string) => `/fixed-assets/${id}/depreciate`,
   history: (id: string) => `/fixed-assets/${id}/history`,
+  summary: '/fixed-assets/summary',
+  bulkDepreciate: '/fixed-assets/bulk-depreciate',
 } as const;
 
 export const BUDGETS = {
@@ -142,8 +154,9 @@ export const BUDGETS = {
   get: (id: string) => `/budgets/${id}`,
   update: (id: string) => `/budgets/${id}`,
   delete: (id: string) => `/budgets/${id}`,
-  compare: (id: string) => `/budgets/${id}/compare`,
-  approve: (id: string) => `/budgets/${id}/approve`,
+  bulk: '/budgets/bulk',
+  variance: '/budgets/variance',
+  report: '/budgets/report',
 } as const;
 
 export const EXCHANGE_RATES = {
@@ -156,56 +169,122 @@ export const EXCHANGE_RATES = {
   convert: '/exchange-rates/convert',
 } as const;
 
-export const USERS_MGMT = {
-  list: '/users',
-  create: '/users',
-  get: (id: string) => `/users/${id}`,
-  update: (id: string) => `/users/${id}`,
-  delete: (id: string) => `/users/${id}`,
+export const FINANCIAL_CONCEPTS = {
+  list: '/financial-concepts',
+  create: '/financial-concepts',
+  get: (id: string) => `/financial-concepts/${id}`,
+  update: (id: string) => `/financial-concepts/${id}`,
+  delete: (id: string) => `/financial-concepts/${id}`,
+  search: '/financial-concepts/search',
+  byCategory: (category: string) => `/financial-concepts/by-category/${category}`,
+} as const;
+
+export const PAYMENT_TERMS = {
+  list: '/payment-terms',
+  create: '/payment-terms',
+  get: (id: string) => `/payment-terms/${id}`,
+  update: (id: string) => `/payment-terms/${id}`,
+  delete: (id: string) => `/payment-terms/${id}`,
+  default: '/payment-terms/default',
+} as const;
+
+export const TAX = {
+  rates: {
+    list: '/tax/rates',
+    create: '/tax/rates',
+    get: (id: string) => `/tax/rates/${id}`,
+    update: (id: string) => `/tax/rates/${id}`,
+    delete: (id: string) => `/tax/rates/${id}`,
+  },
+  entries: {
+    list: '/tax/entries',
+    create: '/tax/entries',
+    get: (id: string) => `/tax/entries/${id}`,
+    update: (id: string) => `/tax/entries/${id}`,
+    delete: (id: string) => `/tax/entries/${id}`,
+    byInvoice: (invoiceId: string) => `/tax/entries/by-invoice/${invoiceId}`,
+  },
+  reports: {
+    ivaSummary: '/tax/reports/iva-summary',
+    monthlyDeclaration: '/tax/reports/monthly-declaration',
+    withholding: '/tax/reports/withholding',
+    diot: '/tax/reports/diot',
+  },
+} as const;
+
+export const CLOSING_ENTRIES = {
+  list: '/closing-entries',
+  create: '/closing-entries',
+  get: (id: string) => `/closing-entries/${id}`,
+  update: (id: string) => `/closing-entries/${id}`,
+  delete: (id: string) => `/closing-entries/${id}`,
+  preview: '/closing-entries/preview',
+  generate: '/closing-entries/generate',
+  history: (companyId: string) => `/closing-entries/history/${companyId}`,
+} as const;
+
+export const DASHBOARD = {
+  kpis: '/dashboard/kpis',
+  periodOverview: '/dashboard/period-overview',
+  recentMovements: '/dashboard/recent-movements',
+  expenseTrends: '/dashboard/expense-trends',
+  cashPositions: '/dashboard/cash-positions',
+  receivablesSummary: '/dashboard/receivables-summary',
+  payablesSummary: '/dashboard/payables-summary',
+  taxSummary: '/dashboard/tax-summary',
+  topCustomers: '/dashboard/top-customers',
+  topSuppliers: '/dashboard/top-suppliers',
 } as const;
 
 export const AUDIT = {
-  list: '/audit-logs',
-  get: (id: string) => `/audit-logs/${id}`,
-  export: '/audit-logs/export',
+  list: '/audit',
+  get: (id: string) => `/audit/${id}`,
+  export: '/audit/export',
+  stats: '/audit/stats',
 } as const;
 
 export const NOTIFICATIONS = {
   list: '/notifications',
   get: (id: string) => `/notifications/${id}`,
   markRead: (id: string) => `/notifications/${id}/read`,
-  markAllRead: '/notifications/read-all',
+  markAllRead: '/notifications/mark-all-read',
   unreadCount: '/notifications/unread-count',
 } as const;
 
 export const ATTACHMENTS = {
-  list: (entity: string, entityId: string) => `/attachments/${entity}/${entityId}`,
-  upload: (entity: string, entityId: string) => `/attachments/${entity}/${entityId}`,
-  delete: (entity: string, entityId: string, attachmentId: string) => `/attachments/${entity}/${entityId}/${attachmentId}`,
+  list: '/attachments',
+  create: '/attachments',
+  get: (id: string) => `/attachments/${id}`,
+  update: (id: string) => `/attachments/${id}`,
+  delete: (id: string) => `/attachments/${id}`,
+  byEntity: '/attachments/by-entity',
 } as const;
 
 export const SEARCH = {
-  global: '/search',
+  global: '/search/global',
+  advanced: '/search/advanced',
 } as const;
 
 export const DATA_MGMT = {
-  importAccounts: '/data/import/accounts',
-  importThirdParties: '/data/import/third-parties',
-  importJournalEntries: '/data/import/journal-entries',
-  exportAccounts: '/data/export/accounts',
-  exportThirdParties: '/data/export/third-parties',
-  exportJournalEntries: '/data/export/journal-entries',
-  sampleTemplate: (type: string) => `/data/templates/${type}`,
+  import: '/data/import',
+  export: '/data/export',
+  exportCsv: '/data/export-csv',
 } as const;
 
 export const SYSTEM = {
-  healthCheck: '/system/health',
-  integrity: '/system/integrity',
+  health: '/system/health',
   stats: '/system/stats',
+  cleanup: '/system/cleanup',
+  validateIntegrity: '/system/validate-integrity',
 } as const;
 
 export const AI = {
   chat: '/ai/chat',
-  suggest: '/ai/suggest',
-  categorize: '/ai/categorize',
+  models: '/ai/models',
+  status: '/ai/status',
+  tools: '/ai/tools',
+} as const;
+
+export const SEED = {
+  run: '/seed',
 } as const;

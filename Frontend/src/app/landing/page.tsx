@@ -107,7 +107,7 @@ export default function LandingPage() {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-vintage-600 to-vintage-800 flex items-center justify-center">
                 <BarChart3 className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-playfair font-bold text-vintage-800">ContaERP</span>
+              <span className="text-xl font-playfair font-bold text-vintage-800">GANESHA</span>
             </div>
 
             <div className="hidden md:flex items-center gap-8">
@@ -292,7 +292,7 @@ export default function LandingPage() {
               viewport={{ once: true }}
             >
               <h2 className="text-3xl sm:text-4xl font-playfair font-bold text-vintage-900 mb-6">
-                ¿Por qué elegir ContaERP?
+                ¿Por qué elegir GANESHA?
               </h2>
               <p className="text-lg text-vintage-600 mb-8">
                 Nuestro sistema está diseñado pensando en las necesidades reales de las empresas mexicanas, 
@@ -459,7 +459,7 @@ export default function LandingPage() {
               ¿Listo para transformar tu contabilidad?
             </h2>
             <p className="text-lg text-vintage-200 mb-8 max-w-2xl mx-auto">
-              Agenda una demostración gratuita y descubre cómo ContaERP puede optimizar 
+              Agenda una demostración gratuita y descubre cómo GANESHA puede optimizar 
               la gestión financiera de tu empresa.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
@@ -483,7 +483,7 @@ export default function LandingPage() {
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-vintage-500 to-vintage-700 flex items-center justify-center">
                   <BarChart3 className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-lg font-playfair font-bold text-white">ContaERP</span>
+                <span className="text-lg font-playfair font-bold text-white">GANESHA</span>
               </div>
               <p className="text-sm">Sistema ERP contable empresarial para la gestión integral de tu negocio.</p>
             </div>
@@ -513,7 +513,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="pt-8 border-t border-vintage-800 text-center text-sm">
-            <p>&copy; 2025 ContaERP. Todos los derechos reservados.</p>
+            <p>&copy; 2025 GANESHA. Todos los derechos reservados.</p>
           </div>
         </div>
       </footer>

@@ -41,9 +41,9 @@ export async function exportToExcelTemplate(options: ExcelExportOptions): Promis
   try {
     // Create workbook with theme colors
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'ContaERP';
+    workbook.creator = 'GANESHA';
     workbook.created = generatedDate;
-    workbook.lastModifiedBy = 'ContaERP System';
+    workbook.lastModifiedBy = 'GANESHA System';
 
     const worksheet = workbook.addWorksheet(sheetName, {
       properties: { tabColor: { argb: 'FF6B5B95' } },
@@ -168,7 +168,7 @@ export async function exportToExcelTemplate(options: ExcelExportOptions): Promis
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    })} por ContaERP`;
+    })} por GANESHA`;
     footerCell.style = {
       font: { name: 'Arial', size: 9, italic: true, color: { argb: 'FF999999' } },
       alignment: { horizontal: 'right', vertical: 'middle' },

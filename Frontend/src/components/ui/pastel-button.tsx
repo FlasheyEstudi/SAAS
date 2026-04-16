@@ -5,9 +5,10 @@ import { Button, type ButtonProps } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { forwardRef } from 'react';
 
-export interface PastelButtonProps extends ButtonProps {
+export interface PastelButtonProps extends Omit<ButtonProps, 'variant'> {
   loading?: boolean;
   variant?: 'default' | 'outline' | 'ghost' | 'destructive' | 'link' | 'secondary' | 'success' | 'warning';
+  children?: React.ReactNode;
 }
 
 export const PastelButton = forwardRef<HTMLButtonElement, PastelButtonProps>(

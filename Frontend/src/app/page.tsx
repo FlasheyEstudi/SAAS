@@ -84,11 +84,11 @@ function ViewRouter() {
     }
   };
 
-  if (currentView === 'login') {
+  if (currentView === 'login' || currentView === 'register') {
     return (
       <AnimatePresence mode="wait">
-        <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-          <LoginPage />
+        <motion.div key={currentView} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+          {currentView === 'login' ? <LoginPage /> : <RegisterPage />}
         </motion.div>
       </AnimatePresence>
     );

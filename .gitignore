@@ -45,3 +45,8 @@ Thumbs.db
 coverage/
 .nyc_output/
 ```
+# Prisma DBs
+*.db
+*.db-journal
+/Backend/prisma/db/
+/Frontend/prisma/db/

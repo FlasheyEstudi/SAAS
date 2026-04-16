@@ -12,6 +12,7 @@ import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
 import { FloatingInput } from '@/components/ui/floating-input';
 import { useAppStore } from '@/lib/stores/useAppStore';
+import { useAuth } from '@/modules/auth/hooks/useAuth';
 
 // ─── Validation schema ───────────────────────────────────────
 const loginSchema = z.object({
@@ -39,16 +40,16 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
+const itemVariants: any = {
   hidden: { opacity: 0, y: 24 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.5, ease: 'easeOut' },
   },
 };
 
-const blobVariants = {
+const blobVariants: any = {
   animate: (i: number) => ({
     y: [0, -15, 0, 10, 0],
     x: [0, 8, -5, 0, 0],
@@ -64,7 +65,8 @@ const blobVariants = {
 
 // ─── Component ───────────────────────────────────────────────
 export function LoginPage() {
-  const { login, isLoading, error, clearError, navigate } = useAppStore();
+  const { login, isLoading, error, clearError } = useAuth();
+  const { navigate } = useAppStore();
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -77,13 +79,13 @@ export function LoginPage() {
   });
 
   const onSubmit = (data: LoginFormData) => {
-    clearError();
-    login(data);
+    if (clearError) clearError();
+    login({ ...data, companyId: '' });
   };
 
   const handleQuickLogin = () => {
-    clearError();
-    login({ email: 'admin@contable.com', password: 'admin123' });
+    if (clearError) clearError();
+    login({ email: 'admin@gea.com.mx', password: 'Admin123!', companyId: '' });
   };
 
   const goToRegister = () => {
@@ -131,7 +133,7 @@ export function LoginPage() {
       {/* ── Main card ── */}
       <motion.div
         className="relative z-10 w-full max-w-md mx-4 px-4"
-        variants={containerVariants}
+        variants={containerVariants as any}
         initial="hidden"
         animate="visible"
       >

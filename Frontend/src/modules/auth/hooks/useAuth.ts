@@ -34,9 +34,11 @@ export function useAuth() {
       setError(null);
 
       try {
-        const response = await loginMutation.mutateAsync(credentials);
-        loginAction(response.user, response.token, response.companyId || credentials.companyId);
-        toast.success(`¡Bienvenida, ${response.user.name}!`);
+        const payload = (await loginMutation.mutateAsync(credentials)) as any;
+        const responseData = payload.data || payload; 
+        
+        loginAction(responseData.user, responseData.token, responseData.companyId || credentials.companyId);
+        toast.success(`¡Bienvenida, ${responseData.user?.name || 'Admin'}!`);
       } catch (err: any) {
         const msg = err?.error || err?.message || 'Error al iniciar sesión';
         setError(msg);

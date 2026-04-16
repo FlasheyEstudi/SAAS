@@ -133,27 +133,33 @@ export function RegisterPage() {
     setIsSubmitting(true);
     
     try {
-      // Simular registro (reemplazar con llamada API real)
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Hacer el request usando fetch hacia nuestro backend en el puerto 3001
+      // Asumimos que NEXT_PUBLIC_API_URL es 'http://localhost:3001/api' (como en .env) o usamos la ruta absoluta para probar
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
       
-      // Aquí iría la llamada a tu API de registro
-      // const response = await fetch('/api/auth/register', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(data),
-      // });
-      
-      console.log('Datos de registro:', {
-        ...data,
-        password: '[REDACTED]',
-        confirmPassword: '[REDACTED]',
+      const response = await fetch(`${apiUrl}/users/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          company: data.company,
+          phone: data.phone,
+          password: data.password
+        }),
       });
       
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al registrar.');
+      }
+      
       setRegistrationSuccess(true);
-      toast.success('¡Registro exitoso! Te hemos enviado un correo de verificación.');
+      toast.success('¡Registro exitoso! Ya puedes iniciar sesión con tu nueva cuenta.');
     } catch (error) {
       console.error('Error en registro:', error);
-      toast.error('Error al registrar. Por favor intenta más tarde.');
+      toast.error(error instanceof Error ? error.message : 'Error al registrar. Por favor intenta más tarde.');
     } finally {
       setIsSubmitting(false);
     }

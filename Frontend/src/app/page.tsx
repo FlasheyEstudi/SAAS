@@ -1,0 +1,115 @@
+'use client';
+
+import { useAppStore } from '@/lib/stores/useAppStore';
+import { LoginPage } from '@/modules/auth/components/LoginPage';
+import { DashboardView } from '@/modules/dashboard/components/DashboardView';
+import { JournalListView } from '@/modules/journal/components/JournalListView';
+import { JournalEntryForm } from '@/modules/journal/components/JournalEntryForm';
+import { JournalEntryDetail } from '@/modules/journal/components/JournalEntryDetail';
+import { InvoiceListView } from '@/modules/invoices/components/InvoiceListView';
+import { InvoiceForm } from '@/modules/invoices/components/InvoiceForm';
+import { InvoiceDetail } from '@/modules/invoices/components/InvoiceDetail';
+import { BanksView } from '@/modules/banks/components/BanksView';
+import { ReportsView } from '@/modules/reports/components/ReportsView';
+import { CompaniesView } from '@/modules/companies/components/CompaniesView';
+import { PeriodsView } from '@/modules/periods/components/PeriodsView';
+import { AccountsView } from '@/modules/accounts/components/AccountsView';
+import { CostCentersView } from '@/modules/cost-centers/components/CostCentersView';
+import { ThirdPartiesView } from '@/modules/third-parties/components/ThirdPartiesView';
+import { AssetsView } from '@/modules/assets/components/AssetsView';
+import { BudgetsView } from '@/modules/budgets/components/BudgetsView';
+import { ExchangeView } from '@/modules/exchange/components/ExchangeView';
+import { UsersView } from '@/modules/users-mgmt/components/UsersView';
+import { AuditView } from '@/modules/audit/components/AuditView';
+import { NotificationsView } from '@/modules/notifications/components/NotificationsView';
+import { SearchView } from '@/modules/search/components/SearchView';
+import { DataMgmtView } from '@/modules/data-mgmt/components/DataMgmtView';
+import { SystemView } from '@/modules/system/components/SystemView';
+import { AIChatView } from '@/modules/ai/components/AIChatView';
+import { Sidebar } from '@/components/layout/sidebar';
+import { Header } from '@/components/layout/header';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+
+function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
+  const sidebarCollapsed = useAppStore((s) => s.sidebarCollapsed);
+
+  return (
+    <div className="min-h-screen bg-vintage-50">
+      <Sidebar />
+      <Header />
+      <main className={cn(
+        'transition-all duration-300 pt-[65px]',
+        sidebarCollapsed ? 'lg:ml-[70px]' : 'lg:ml-[260px]'
+      )}>
+        {children}
+      </main>
+    </div>
+  );
+}
+
+function ViewRouter() {
+  const currentView = useAppStore((s) => s.currentView);
+
+  const renderView = () => {
+    switch (currentView) {
+      case 'login': return <LoginPage />;
+      case 'dashboard': return <DashboardView />;
+      case 'companies': return <CompaniesView />;
+      case 'periods': return <PeriodsView />;
+      case 'accounts': return <AccountsView />;
+      case 'cost-centers': return <CostCentersView />;
+      case 'journal': return <JournalListView />;
+      case 'journal-create': return <JournalEntryForm />;
+      case 'journal-detail': return <JournalEntryDetail />;
+      case 'third-parties': return <ThirdPartiesView />;
+      case 'invoices': return <InvoiceListView />;
+      case 'invoice-create': return <InvoiceForm />;
+      case 'invoice-detail': return <InvoiceDetail />;
+      case 'banks': return <BanksView />;
+      case 'reports': return <ReportsView />;
+      case 'assets': return <AssetsView />;
+      case 'budgets': return <BudgetsView />;
+      case 'exchange': return <ExchangeView />;
+      case 'users': return <UsersView />;
+      case 'audit': return <AuditView />;
+      case 'notifications': return <NotificationsView />;
+      case 'search': return <SearchView />;
+      case 'data-mgmt': return <DataMgmtView />;
+      case 'system': return <SystemView />;
+      case 'ai-chat': return <AIChatView />;
+      default: return <DashboardView />;
+    }
+  };
+
+  if (currentView === 'login') {
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+          <LoginPage />
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
+
+  return (
+    <AuthenticatedLayout>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentView}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.25 }}
+          className="px-4 sm:px-6 lg:px-8 py-6"
+        >
+          {renderView()}
+        </motion.div>
+      </AnimatePresence>
+    </AuthenticatedLayout>
+  );
+}
+
+export default function Home() {
+  return <ViewRouter />;
+}

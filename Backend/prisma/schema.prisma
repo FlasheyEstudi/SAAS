@@ -1,0 +1,758 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENTIDAD 1: Company (Empresa / Tenant Multi-compañía)
+// Una empresa puede tener múltiples períodos contables, cuentas,
+// pólizas, terceros, facturas y cuentas bancarias.
+// ============================================================
+model Company {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  taxId     String              // RFC, NIT, RUT según país
+  logoUrl   String?
+  address   String?
+  phone     String?
+  email     String?
+  currency  String   @default("MXN") // Moneda base de la empresa
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relaciones
+  accountingPeriods AccountingPeriod[]
+  accounts          Account[]
+  journalEntries    JournalEntry[]
+  thirdParties      ThirdParty[]
+  invoices          Invoice[]
+  bankAccounts      BankAccount[]
+  costCenters       CostCenter[]
+  users             User[]
+  auditLogs         AuditLog[]
+  exchangeRates     ExchangeRate[]
+  fixedAssets       FixedAsset[]
+  budgets             Budget[]
+  notifications       Notification[]
+  fileAttachments     FileAttachment[]
+  depreciationEntries DepreciationEntry[]
+  paymentTerms        PaymentTerm[]
+  taxRates            TaxRate[]
+  taxEntries          TaxEntry[]
+  closingEntries      ClosingEntry[]
+  paymentSchedules    PaymentSchedule[]
+  financialConcepts   FinancialConcept[]
+}
+
+// ============================================================
+// ENTIDAD 2: AccountingPeriod (Períodos Contables)
+// CRÍTICO: Un período en CLOSED/LOCKED no permite nuevas pólizas.
+// El campo status controla el flujo contable.
+// ============================================================
+model AccountingPeriod {
+  id        String   @id @default(cuid())
+  companyId String
+  year      Int
+  month     Int                 // 1-12
+  status    String   @default("OPEN") // OPEN, CLOSED, LOCKED
+  closedAt  DateTime?           // Fecha en que se cerró el período
+  closedBy  String?             // ID del usuario que cerró
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company             Company             @relation(fields: [companyId], references: [id])
+  journalEntries      JournalEntry[]
+  depreciationEntries DepreciationEntry[]
+  closingEntries      ClosingEntry[]
+
+  @@unique([companyId, year, month]) // No puede haber dos períodos iguales para la misma empresa
+  @@index([companyId])
+  @@index([status])
+}
+
+// ============================================================
+// ENTIDAD 3: Account (Plan de Cuentas - Estructura de Árbol)
+// Estructura jerárquica auto-referenciante mediante parent_id.
+// is_group=true indica cuenta título (padre), false = cuenta hoja (movimiento).
+// account_type define el tipo contable para los estados financieros.
+// nature define si la cuenta es deudora o acreedora.
+// ============================================================
+model Account {
+  id          String   @id @default(cuid())
+  companyId   String
+  code        String              // Ej: "1.1.01" - Permite ordenamiento jerárquico
+  name        String              // Ej: "Bancos"
+  parentId    String?             // FK auto-referenciante para árbol
+  accountType String              // ASSET, LIABILITY, EQUITY, INCOME, EXPENSE
+  nature      String              // DEBITOR, ACREEDOR
+  level       Int      @default(1) // Calculado por profundidad del árbol
+  isGroup     Boolean  @default(true) // True = título/padre, False = hoja/movimiento
+  isActive    Boolean  @default(true) // Permite desactivar sin eliminar
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company       Company            @relation(fields: [companyId], references: [id])
+  parent        Account?           @relation("AccountTree", fields: [parentId], references: [id])
+  children      Account[]          @relation("AccountTree")
+  journalLines  JournalEntryLine[] // Partidas que usan esta cuenta
+  fixedAssets   FixedAsset[]
+  budgets       Budget[]
+  invoiceLines  InvoiceLine[]
+  financialConcepts FinancialConcept[] @relation("ConceptAccount")
+
+  @@unique([companyId, code]) // Código único por empresa
+  @@index([companyId])
+  @@index([parentId])
+  @@index([accountType])
+}
+
+// ============================================================
+// ENTIDAD 4: CostCenter (Centros de Costo)
+// También es un árbol auto-referenciante. Permite categorizar
+// los gastos por departamento, proyecto, sucursal, etc.
+// ============================================================
+model CostCenter {
+  id        String   @id @default(cuid())
+  companyId String
+  code      String
+  name      String
+  parentId  String?             // FK auto-referenciante para árbol
+  level     Int      @default(1)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company      Company             @relation(fields: [companyId], references: [id])
+  parent       CostCenter?         @relation("CostCenterTree", fields: [parentId], references: [id])
+  children     CostCenter[]        @relation("CostCenterTree")
+  journalLines JournalEntryLine[]  // Partidas que usan este centro de costo
+  budgets      Budget[]
+  invoiceLines  InvoiceLine[]
+  financialConcepts FinancialConcept[] @relation("ConceptCostCenter")
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([parentId])
+}
+
+// ============================================================
+// ENTIDAD 5: JournalEntry (Póliza / Cabecera del Asiento)
+// Cabecera de cada póliza contable. El entry_number se genera
+// automáticamente de forma secuencial por período.
+// DRAFT: no afecta saldos. POSTED: afecta saldos.
+// ============================================================
+model JournalEntry {
+  id            String   @id @default(cuid())
+  companyId     String
+  periodId      String             // Valida que el período esté OPEN
+  entryNumber   String             // Auto-generado secuencia por período
+  description   String             // Concepto general de la póliza
+  entryDate     DateTime           // Fecha contable de la póliza
+  entryType     String   @default("DIARIO") // DIARIO, EGRESO, INGRESO, TRASPASO
+  status        String   @default("DRAFT") // DRAFT, POSTED
+  postedAt      DateTime?          // Fecha en que se publicó
+  postedBy      String?            // ID del usuario que publicó
+  totalDebit    Float    @default(0) // Suma total de débitos (cache)
+  totalCredit   Float    @default(0) // Suma total de créditos (cache)
+  difference    Float    @default(0) // Diferencia (debe ser 0 para cuadrar)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  company             Company             @relation(fields: [companyId], references: [id])
+  period              AccountingPeriod    @relation(fields: [periodId], references: [id])
+  lines               JournalEntryLine[]
+  invoices            Invoice[]          // Facturas ligadas a esta póliza
+  depreciationEntries DepreciationEntry[]
+  closingEntries      ClosingEntry[]
+  paymentSchedules    PaymentSchedule[]
+
+  @@unique([companyId, periodId, entryNumber])
+  @@index([companyId])
+  @@index([periodId])
+  @@index([status])
+  @@index([entryDate])
+}
+
+// ============================================================
+// ENTIDAD 6: JournalEntryLine (Partidas / Detalle de la Póliza)
+// Cada partida individual de un asiento contable.
+// IMPORTANTE: account_id DEBE apuntar a una cuenta hoja (is_group=false).
+// La suma de debit DEBE ser igual a la suma de credit (partida doble).
+// Los montos se almacenan como Float en SQLite (nota: en producción
+// con PostgreSQL usar Decimal(18,2)).
+// ============================================================
+model JournalEntryLine {
+  id               String   @id @default(cuid())
+  journalEntryId   String
+  accountId        String             // DEBE ser cuenta hoja (is_group=false)
+  costCenterId     String?            // Centro de costo opcional
+  description      String             // Descripción de la partida
+  debit            Float    @default(0) // Cargo (debe)
+  credit           Float    @default(0) // Abono (haber)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  journalEntry JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account       Account      @relation(fields: [accountId], references: [id])
+  costCenter    CostCenter?  @relation(fields: [costCenterId], references: [id])
+
+  @@index([journalEntryId])
+  @@index([accountId])
+  @@index([costCenterId])
+}
+
+// ============================================================
+// ENTIDAD 7: ThirdParty (Terceros - Clientes/Proveedores unificados)
+// Modelo unificado que maneja tanto clientes como proveedores.
+// El campo type permite que un tercero sea CUSTOMER, SUPPLIER o BOTH.
+// ============================================================
+model ThirdParty {
+  id        String   @id @default(cuid())
+  companyId String
+  type      String   @default("CUSTOMER") // CUSTOMER, SUPPLIER, BOTH
+  taxId     String?            // RFC/NIT del tercero
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  city      String?
+  state     String?
+  country   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company  Company   @relation(fields: [companyId], references: [id])
+  invoices Invoice[]
+  paymentTerms PaymentTerm[]
+
+  @@index([companyId])
+  @@index([type])
+  @@index([taxId])
+}
+
+// ============================================================
+// ENTIDAD 19: PaymentTerm (Términos de Pago)
+// Configuración de condiciones de pago (NET-30, NET-60, etc.)
+// Se vinculan a terceros y facturas.
+// ============================================================
+model PaymentTerm {
+  id          String   @id @default(cuid())
+  companyId   String
+  code        String              // NET-15, NET-30, NET-60, NET-90, COD, IMMEDIATE
+  name        String              // "15 Días", "30 Días", "Contra Entrega"
+  days        Int                 // Días de crédito (0 = contra entrega)
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company   Company          @relation(fields: [companyId], references: [id])
+  thirdParties ThirdParty[]
+  invoices     Invoice[]
+  paymentSchedules PaymentSchedule[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+}
+
+// ============================================================
+// ENTIDAD 20: TaxRate (Tasas de Impuesto)
+// Configuración de tasas de IVA, ISR, retenciones.
+// Para contabilidad mexicana: IVA 16%, IVA fronterizo 8%, Retención ISR 1.25%
+// ============================================================
+model TaxRate {
+  id          String   @id @default(cuid())
+  companyId   String
+  taxType     String              // IVA, ISR, RET_IVA, RET_ISR, IEPS, CEDULAR
+  rate        Float               // 0.16, 0.08, 0.0125, etc.
+  name        String              // "IVA 16%", "IVA Fronterizo 8%", "Retención ISR 1.25%"
+  description String?
+  isRetention Boolean  @default(false) // true = es retención
+  isActive    Boolean  @default(true)
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  taxEntries TaxEntry[]
+
+  @@index([companyId])
+  @@index([taxType])
+  @@index([isActive])
+}
+
+// ============================================================
+// ENTIDAD 8: Invoice (Facturas - CxC y CxP)
+// Maneja tanto facturas de venta (SALE) como de compra (PURCHASE).
+// balance_due tracking: PENDIENTE -> PARCIAL -> PAGADO.
+// journal_entry_id liga la factura a la póliza que la registró.
+// ============================================================
+model Invoice {
+  id              String   @id @default(cuid())
+  companyId       String
+  thirdPartyId    String
+  invoiceType     String             // SALE, PURCHASE
+  number          String             // Número de factura
+  issueDate       DateTime           // Fecha de emisión
+  dueDate         DateTime?          // Fecha de vencimiento
+  totalAmount     Float              // Monto total de la factura
+  balanceDue      Float              // Saldo pendiente
+  status          String   @default("PENDING") // PENDING, PARTIAL, PAID, CANCELLED
+  journalEntryId  String?            // FK a la póliza que registró esta factura
+  paymentTermId  String?            // FK al término de pago
+  subtotal        Float    @default(0) // Subtotal antes de impuestos
+  taxAmount       Float    @default(0) // Total de impuestos
+  discountAmount  Float    @default(0) // Descuento total
+  description     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  company       Company       @relation(fields: [companyId], references: [id])
+  thirdParty    ThirdParty    @relation(fields: [thirdPartyId], references: [id])
+  journalEntry  JournalEntry? @relation(fields: [journalEntryId], references: [id])
+  paymentTerm   PaymentTerm?  @relation(fields: [paymentTermId], references: [id])
+
+  @@unique([companyId, invoiceType, number])
+  @@index([companyId])
+  @@index([thirdPartyId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([invoiceType])
+  @@index([paymentTermId])
+
+  lines          InvoiceLine[]
+  taxEntries     TaxEntry[]
+  paymentSchedules PaymentSchedule[]
+}
+
+// ============================================================
+// ENTIDAD 21: InvoiceLine (Líneas de Factura)
+// Detalle de cada partida de una factura (concepto, cantidad, precio).
+// Permite cálculo de subtotales por línea e impuestos.
+// ============================================================
+model InvoiceLine {
+  id             String   @id @default(cuid())
+  invoiceId      String
+  lineNumber     Int                 // Orden de la línea
+  description    String              // Descripción del concepto
+  quantity       Float    @default(1)
+  unitPrice      Float               // Precio unitario
+  unit           String   @default("PIEZA") // PIEZA, KG, LT, HR, SERVICIO, M2, M3, Caja, Paquete
+  discountRate   Float    @default(0) // Porcentaje de descuento 0-100
+  subtotal       Float               // quantity * unitPrice - discount
+  taxBase        Float    @default(0) // Base gravable
+  accountId      String?             // Cuenta contable de la partida
+  costCenterId   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  account    Account?  @relation(fields: [accountId], references: [id])
+  costCenter CostCenter? @relation(fields: [costCenterId], references: [id])
+
+  @@index([invoiceId])
+  @@index([accountId])
+}
+
+// ============================================================
+// ENTIDAD 22: TaxEntry (Entradas de Impuesto por Factura)
+// Registra los impuestos aplicados a cada factura (IVA, ISR, etc.)
+// Permite reportes fiscales (DIOT, declaración mensual)
+// ============================================================
+model TaxEntry {
+  id             String   @id @default(cuid())
+  companyId      String
+  invoiceId      String
+  taxRateId      String             // FK a la tasa de impuesto usada
+  taxType        String             // IVA, ISR, RET_IVA, RET_ISR, IEPS
+  taxableBase    Float              // Base gravable
+  taxAmount      Float              // Monto del impuesto
+  withholdingAmount Float  @default(0) // Monto retenido (si aplica)
+  isRetention    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  company Company   @relation(fields: [companyId], references: [id])
+  invoice Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  taxRate TaxRate   @relation(fields: [taxRateId], references: [id])
+
+  @@index([companyId])
+  @@index([invoiceId])
+  @@index([taxType])
+  @@index([isRetention])
+}
+
+// ============================================================
+// ENTIDAD 23: PaymentSchedule (Programa de Pagos)
+// Plan de pagos parciales para facturas a crédito.
+// Cada factura puede tener múltiples pagos programados.
+// ============================================================
+model PaymentSchedule {
+  id             String   @id @default(cuid())
+  companyId      String
+  invoiceId      String
+  paymentTermId  String?
+  installmentNumber Int              // Número de parcialidad (1, 2, 3...)
+  dueDate        DateTime           // Fecha de vencimiento de esta parcialidad
+  expectedAmount Float              // Monto esperado de esta parcialidad
+  paidAmount     Float    @default(0) // Monto pagado
+  status         String   @default("PENDING") // PENDING, PARTIAL, PAID, OVERDUE
+  paidDate       DateTime?
+  journalEntryId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  company      Company      @relation(fields: [companyId], references: [id])
+  invoice      Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  paymentTerm  PaymentTerm? @relation(fields: [paymentTermId], references: [id])
+  journalEntry JournalEntry? @relation(fields: [journalEntryId], references: [id])
+
+  @@index([companyId])
+  @@index([invoiceId])
+  @@index([dueDate])
+  @@index([status])
+}
+
+// ============================================================
+// ENTIDAD 24: ClosingEntry (Asientos de Cierre)
+// Registra los asientos automáticos de cierre de período:
+// - Cierre de ingresos y gastos a Resultados del Ejercicio
+// - Cierre de Resultados a Capital
+// Se genera automáticamente al cerrar el período.
+// ============================================================
+model ClosingEntry {
+  id              String   @id @default(cuid())
+  companyId       String
+  periodId        String
+  journalEntryId  String             // FK al asiento de cierre generado
+  closingType     String             // INCOME_EXPENSE, NET_INCOME, PREVIOUS_YEAR
+  concept         String             // "Cierre de Ingresos y Gastos"
+  totalIncome     Float    @default(0) // Suma de ingresos cerrados
+  totalExpense    Float    @default(0) // Suma de gastos cerrados
+  netResult       Float    @default(0) // Resultado neto (ingresos - gastos)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  company      Company          @relation(fields: [companyId], references: [id])
+  period       AccountingPeriod @relation(fields: [periodId], references: [id])
+  journalEntry JournalEntry     @relation(fields: [journalEntryId], references: [id])
+
+  @@unique([companyId, periodId, closingType])
+  @@index([companyId])
+  @@index([periodId])
+  @@index([closingType])
+}
+
+// ============================================================
+// ENTIDAD 25: FinancialConcept (Catálogo de Conceptos Financieros)
+// Catálogo maestro de conceptos contables reutilizables
+// para pólizas, facturas y movimientos bancarios.
+// ============================================================
+model FinancialConcept {
+  id        String   @id @default(cuid())
+  companyId String
+  code      String              // Ej: "ANT-IBS", "NOM-QUIN", "SER-PROF"
+  name      String              // "Anticipo de IBS", "Nómina Quincenal", "Servicios Profesionales"
+  category  String              // NOMINA, SERVICIO, IMPUESTO, ANTICIPO, TRASPASO, AJUSTE, OTRO
+  defaultAccountId  String?     // Cuenta contable por defecto
+  defaultCostCenterId String?   // Centro de costo por defecto
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company    Company    @relation(fields: [companyId], references: [id])
+  account    Account?   @relation("ConceptAccount", fields: [defaultAccountId], references: [id])
+  costCenter CostCenter? @relation("ConceptCostCenter", fields: [defaultCostCenterId], references: [id])
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([category])
+}
+
+// ============================================================
+// ENTIDAD 9: BankAccount (Cuentas Bancarias)
+// Cada cuenta bancaria real de la empresa.
+// Se usa para conciliación bancaria.
+// ============================================================
+model BankAccount {
+  id            String   @id @default(cuid())
+  companyId     String
+  bankName      String              // Nombre del banco
+  accountNumber String              // Número de cuenta (enmascarado en frontend)
+  accountType   String   @default("CHECKING") // CHECKING, SAVINGS, INVESTMENT
+  currency      String   @default("MXN")
+  initialBalance Float   @default(0) // Saldo inicial
+  currentBalance Float   @default(0) // Saldo actual (calculado)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  company    Company          @relation(fields: [companyId], references: [id])
+  movements  BankMovement[]
+
+  @@unique([companyId, accountNumber])
+  @@index([companyId])
+}
+
+// ============================================================
+// ENTIDAD 10: BankMovement (Movimientos Bancarios)
+// Cada movimiento individual de un estado de cuenta bancario.
+// Se usa para conciliación con los asientos contables.
+// RECONCILED: movimiento ya cruzado con asiento contable.
+// PENDING: movimiento pendiente de conciliar.
+// ============================================================
+model BankMovement {
+  id              String   @id @default(cuid())
+  bankAccountId   String
+  movementDate    DateTime
+  description     String
+  reference       String?            // Número de referencia del banco
+  amount          Float              // Monto del movimiento
+  movementType    String             // DEBIT (salida), CREDIT (entrada)
+  status          String   @default("PENDING") // RECONCILED, PENDING, EXCLUDED
+  journalLineId   String?            // FK a la partida contable correspondiente
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  bankAccount BankAccount @relation(fields: [bankAccountId], references: [id])
+
+  @@index([bankAccountId])
+  @@index([status])
+  @@index([movementDate])
+}
+
+// ============================================================
+// ENTIDAD 11: User (Usuarios del Sistema)
+// Usuarios con acceso al sistema ERP. Cada usuario pertenece a
+// una compañía. Los roles controlan el nivel de acceso.
+// ============================================================
+model User {
+  id          String    @id @default(cuid())
+  companyId   String
+  email       String    @unique
+  name        String
+  password    String               // hashed password
+  role        String    @default("ACCOUNTANT") // ADMIN, ACCOUNTANT, MANAGER, VIEWER
+  isActive    Boolean   @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  company       Company        @relation(fields: [companyId], references: [id])
+  auditLogs     AuditLog[]
+  notifications Notification[]
+
+  @@index([companyId])
+  @@index([email])
+}
+
+// ============================================================
+// ENTIDAD 12: AuditLog (Bitácora de Auditoría - CRÍTICO)
+// Registro inmutable de todas las acciones en el sistema.
+// Permite trazabilidad completa de cambios.
+// ============================================================
+model AuditLog {
+  id          String   @id @default(cuid())
+  companyId   String
+  userId      String?               // nullable - puede ser sistema
+  action      String                // CREATE, UPDATE, DELETE, POST, CLOSE, LOGIN, EXPORT
+  entityType  String                // Company, Account, JournalEntry, Invoice, etc
+  entityId    String                // ID of the affected entity
+  entityLabel String?               // Human-readable label like "Póliza 0001"
+  oldValues   String?               // JSON string of previous values
+  newValues   String?               // JSON string of new values
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ============================================================
+// ENTIDAD 13: ExchangeRate (Tipos de Cambio)
+// Registra los tipos de cambio entre monedas para conversiones.
+// Una compañía puede operar en múltiples monedas.
+// ============================================================
+model ExchangeRate {
+  id          String   @id @default(cuid())
+  companyId   String
+  fromCurrency String               // e.g. "USD"
+  toCurrency   String               // e.g. "MXN"
+  rate        Float                 // exchange rate
+  date        DateTime              // effective date
+  source      String?               // e.g. "BANXICO", "FIXER"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, fromCurrency, toCurrency, date])
+  @@index([companyId])
+  @@index([date])
+}
+
+// ============================================================
+// ENTIDAD 14: FixedAsset (Activos Fijos)
+// Registro de activos fijos con depreciación calculada.
+// Se vincula a la cuenta contable correspondiente.
+// ============================================================
+model FixedAsset {
+  id                      String   @id @default(cuid())
+  companyId               String
+  code                    String
+  name                    String
+  assetType               String               // BUILDING, FURNITURE, COMPUTER, VEHICLE, MACHINERY, OTHER
+  purchaseDate            DateTime
+  purchaseAmount          Float                 // original cost
+  salvageValue            Float    @default(0)
+  usefulLifeMonths        Int                   // in months
+  depreciationMethod      String   @default("STRAIGHT_LINE") // STRAIGHT_LINE, DECLINING
+  currentBookValue        Float
+  accumulatedDepreciation Float    @default(0)
+  status                  String   @default("ACTIVE") // ACTIVE, DISPOSED, SOLD
+  location                String?
+  accountId               String?
+  isActive                Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  company           Company            @relation(fields: [companyId], references: [id])
+  account           Account?           @relation(fields: [accountId], references: [id])
+  depreciationEntries DepreciationEntry[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([accountId])
+  @@index([status])
+}
+
+// ============================================================
+// ENTIDAD 15: DepreciationEntry (Entradas de Depreciación)
+// Registra cada cargo de depreciación mensual para un activo fijo.
+// Se vincula opcionalmente a la póliza contable y al período.
+// ============================================================
+model DepreciationEntry {
+  id                String   @id @default(cuid())
+  companyId         String
+  fixedAssetId      String
+  periodId          String?
+  journalEntryId    String?
+  month             Int
+  year              Int
+  depreciationAmount Float
+  accumulatedTotal  Float
+  bookValueAfter    Float
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  company     Company          @relation(fields: [companyId], references: [id])
+  fixedAsset  FixedAsset       @relation(fields: [fixedAssetId], references: [id])
+  period      AccountingPeriod? @relation(fields: [periodId], references: [id])
+  journalEntry JournalEntry?    @relation(fields: [journalEntryId], references: [id])
+
+  @@unique([fixedAssetId, year, month])
+  @@index([companyId])
+  @@index([fixedAssetId])
+  @@index([periodId])
+  @@index([journalEntryId])
+}
+
+// ============================================================
+// ENTIDAD 16: Budget (Presupuestos)
+// Presupuesto por cuenta contable, centro de costo y mes.
+// Permite comparación presupuestal vs real.
+// ============================================================
+model Budget {
+  id             String   @id @default(cuid())
+  companyId      String
+  year           Int
+  accountId      String
+  costCenterId   String?
+  month          Int                  // 1-12
+  budgetedAmount Float
+  actualAmount   Float    @default(0) // calculated from journal entries
+  variance       Float    @default(0) // difference budget - actual
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  company    Company    @relation(fields: [companyId], references: [id])
+  account    Account    @relation(fields: [accountId], references: [id])
+  costCenter CostCenter? @relation(fields: [costCenterId], references: [id])
+
+  @@unique([companyId, year, accountId, month, costCenterId])
+  @@index([companyId])
+  @@index([accountId])
+  @@index([costCenterId])
+  @@index([year, month])
+}
+
+// ============================================================
+// ENTIDAD 17: Notification (Notificaciones)
+// Sistema de notificaciones internas para alertas y recordatorios.
+// Se vinculan opcionalmente a un usuario específico.
+// ============================================================
+model Notification {
+  id         String    @id @default(cuid())
+  companyId  String
+  userId     String?
+  type       String                // OVERDUE_INVOICE, PERIOD_CLOSE, BALANCE_MISMATCH, LOW_CASH, TASK_ASSIGNED, SYSTEM
+  title      String
+  message    String
+  entityType String?               // e.g. "Invoice"
+  entityId   String?
+  isRead     Boolean   @default(false)
+  readAt     DateTime?
+  priority   String    @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([isRead])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// ============================================================
+// ENTIDAD 18: FileAttachment (Adjuntos de Documentos)
+// Gestión de archivos adjuntos para facturas, pólizas, movimientos.
+// Almacena metadatos; el archivo real se gestiona en storage.
+// ============================================================
+model FileAttachment {
+  id          String   @id @default(cuid())
+  companyId   String
+  entityType  String               // Invoice, JournalEntry, BankMovement, ThirdParty
+  entityId    String
+  fileName    String
+  fileUrl     String
+  fileSize    Int                   // bytes
+  mimeType    String                // e.g. "application/pdf"
+  description String?
+  uploadedBy  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([entityType, entityId])
+  @@index([uploadedBy])
+}

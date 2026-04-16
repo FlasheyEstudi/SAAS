@@ -5,6 +5,7 @@ import type { User, Company, Notification } from '@/lib/api/types';
 // Navigation view type
 export type AppView =
   | 'login'
+  | 'register'
   | 'dashboard'
   | 'companies'
   | 'periods'

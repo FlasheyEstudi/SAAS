@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
 import { FloatingInput } from '@/components/ui/floating-input';
-import { useAuth } from '@/modules/auth/hooks/useAuth';
+import { useAppStore } from '@/lib/stores/useAppStore';
 
 // ─── Validation schema ───────────────────────────────────────
 const loginSchema = z.object({
@@ -64,7 +64,7 @@ const blobVariants = {
 
 // ─── Component ───────────────────────────────────────────────
 export function LoginPage() {
-  const { login, isLoading, error, clearError } = useAuth();
+  const { login, isLoading, error, clearError, navigate } = useAppStore();
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -84,6 +84,10 @@ export function LoginPage() {
   const handleQuickLogin = () => {
     clearError();
     login({ email: 'admin@contable.com', password: 'admin123' });
+  };
+
+  const goToRegister = () => {
+    if (navigate) navigate('register');
   };
 
   return (
@@ -155,10 +159,10 @@ export function LoginPage() {
             </motion.div>
 
             <h1 className="font-playfair text-2xl md:text-3xl font-bold text-vintage-900 tracking-tight">
-              Contable ERP
+              GANESHA
             </h1>
             <p className="mt-1.5 text-sm text-vintage-600">
-              Sistema de Gestión Contable Empresarial
+              Sistema de Gestión GANESHA Empresarial
             </p>
           </motion.div>
 
@@ -298,9 +302,9 @@ export function LoginPage() {
             <button
               type="button"
               className="font-semibold text-vintage-500 hover:text-vintage-700 transition-colors hover:underline underline-offset-2"
-              onClick={() => toast.info('Registro próximamente disponible.')}
+              onClick={goToRegister}
             >
-              Solicitar acceso
+              Crear cuenta
             </button>
           </motion.p>
         </VintageCard>
@@ -310,7 +314,7 @@ export function LoginPage() {
           variants={itemVariants}
           className="mt-6 text-center text-[11px] text-vintage-400"
         >
-          © {new Date().getFullYear()} Contable ERP · Todos los derechos reservados
+          © {new Date().getFullYear()} GANESHA · Todos los derechos reservados
         </motion.p>
       </motion.div>
     </div>

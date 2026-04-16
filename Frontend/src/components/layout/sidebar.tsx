@@ -39,7 +39,7 @@ const navItems: NavItem[] = [
   { id: 'search', label: 'Búsqueda', icon: <Search className="w-5 h-5" /> },
   { id: 'data-mgmt', label: 'Import/Export', icon: <Database className="w-5 h-5" /> },
   { id: 'system', label: 'Sistema', icon: <Activity className="w-5 h-5" /> },
-  { id: 'ai-chat', label: 'IA Contable', icon: <Bot className="w-5 h-5" />, badge: 'IA' },
+  { id: 'ai-chat', label: 'IA GANESHA', icon: <Bot className="w-5 h-5" />, badge: 'IA' },
 ];
 
 export function Sidebar() {
@@ -84,7 +84,7 @@ export function Sidebar() {
                 C
               </div>
               <div>
-                <h1 className="text-sm font-playfair font-bold text-sidebar-foreground">Contable</h1>
+                <h1 className="text-sm font-playfair font-bold text-sidebar-foreground">GANESHA</h1>
                 <p className="text-[10px] text-sidebar-foreground/60">ERP Enterprise</p>
               </div>
             </motion.div>

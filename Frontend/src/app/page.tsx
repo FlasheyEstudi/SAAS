@@ -2,6 +2,7 @@
 
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { LoginPage } from '@/modules/auth/components/LoginPage';
+import { RegisterPage } from '@/modules/auth/components/RegisterPage';
 import { DashboardView } from '@/modules/dashboard/components/DashboardView';
 import { JournalListView } from '@/modules/journal/components/JournalListView';
 import { JournalEntryForm } from '@/modules/journal/components/JournalEntryForm';
@@ -54,6 +55,7 @@ function ViewRouter() {
   const renderView = () => {
     switch (currentView) {
       case 'login': return <LoginPage />;
+      case 'register': return <RegisterPage />;
       case 'dashboard': return <DashboardView />;
       case 'companies': return <CompaniesView />;
       case 'periods': return <PeriodsView />;

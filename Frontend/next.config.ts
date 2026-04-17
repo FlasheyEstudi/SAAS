@@ -7,6 +7,15 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  allowedDevOrigins: ['172.16.27.22', 'localhost'],
+  async rewrites() {
+    return [
+      {
+        source: '/backend-api/:path*',
+        destination: 'http://localhost:3001/api/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;

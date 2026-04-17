@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod/v4';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { apiClient } from '@/lib/api/client';
+import { AUTH } from '@/lib/api/endpoints';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, BookOpen, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
@@ -72,6 +74,7 @@ export function LoginPage() {
   const {
     register,
     handleSubmit,
+    getValues,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -81,6 +84,22 @@ export function LoginPage() {
   const onSubmit = (data: LoginFormData) => {
     if (clearError) clearError();
     login({ ...data, companyId: '' });
+  };
+
+  const handleForgotPassword = () => {
+    const emailValue = getValues('email');
+    if (!emailValue) {
+      toast.error('Por favor ingresa tu correo para recuperar la contraseña');
+      return;
+    }
+    toast.promise(
+      apiClient.post(AUTH.resetPassword('1'), { email: emailValue }), // Call standard resetting process
+      {
+        loading: 'Enviando instrucciones de recuperación...',
+        success: `Instrucciones enviadas a ${emailValue}`,
+        error: 'Instrucciones enviadas o error de red'
+      }
+    );
   };
 
   const handleQuickLogin = () => {
@@ -248,7 +267,7 @@ export function LoginPage() {
               <button
                 type="button"
                 className="text-xs text-vintage-500 hover:text-vintage-700 transition-colors hover:underline"
-                onClick={() => toast.info('Función de recuperación próximamente disponible.')}
+                onClick={handleForgotPassword}
               >
                 ¿Olvidaste tu contraseña?
               </button>

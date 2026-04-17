@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
           name: 'Grupo Empresarial Alpha S.A. de C.V.',
           taxId: 'GEA200101ABC',
           currency: 'MXN',
-          address: 'Av. Reforma 250, Col. Juárez, Cuauhtémoc, Ciudad de México, 06600',
+          address: 'Pista Jean Paul Genie, Edificio Invent, Piso 5, Managua, Nicaragua',
           phone: '+52 55 1234 5678',
           email: 'contacto@gea.com.mx',
         },
@@ -262,8 +262,8 @@ export async function POST(request: NextRequest) {
         // SUPPLIERS
         { type: 'SUPPLIER', name: 'Proveedor de Materiales del Sur S.A.', taxId: 'PMS200101JKL', email: 'ventas@pmatsur.mx', city: 'Oaxaca', state: 'Oaxaca' },
         { type: 'SUPPLIER', name: 'Servicios de Limpieza Profesional', taxId: 'SLP200101MNO', email: 'admin@limpiezapro.mx', city: 'Puebla', state: 'Puebla' },
-        { type: 'SUPPLIER', name: 'Arrendadora Nacional S.A.', taxId: 'ANS200101PQR', email: 'contratos@arnacional.mx', city: 'Ciudad de México', state: 'CDMX' },
-        { type: 'SUPPLIER', name: 'Consultores Financieros Asociados', taxId: 'CFA200101STU', email: 'contacto@cfasociados.mx', city: 'Ciudad de México', state: 'CDMX' },
+        { type: 'SUPPLIER', name: 'Arrendadora Nacional S.A.', taxId: 'ANS200101-PQR1', email: 'contratos@arnacional.ni', city: 'Managua', state: 'Managua' },
+        { type: 'SUPPLIER', name: 'Consultores Financieros Asociados', taxId: 'CFA200101-STU2', email: 'contacto@cfasociados.ni', city: 'Managua', state: 'Managua' },
         { type: 'SUPPLIER', name: 'Distribuidora de Papel y Oficina', taxId: 'DPO200101VWX', email: 'ventas@dpoficina.mx', city: 'León', state: 'Guanajuato' },
       ];
 
@@ -276,7 +276,7 @@ export async function POST(request: NextRequest) {
           email: tp.email,
           city: tp.city,
           state: tp.state,
-          country: 'México',
+          country: 'Nicaragua',
         })),
       });
 
@@ -747,7 +747,7 @@ export async function POST(request: NextRequest) {
         { email: 'gerente@gea.com.mx', name: 'Roberto López', role: 'MANAGER' as const, password: Buffer.from('Gerente123!').toString('base64') },
       ];
 
-      const createdUsers = [];
+      const createdUsers: any[] = [];
       for (const u of usersData) {
         const user = await tx.user.create({
           data: {
@@ -889,7 +889,7 @@ export async function POST(request: NextRequest) {
         },
       ];
 
-      const createdFixedAssets = [];
+      const createdFixedAssets: any[] = [];
       for (const fa of fixedAssetsData) {
         const asset = await tx.fixedAsset.create({
           data: {

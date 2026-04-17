@@ -3,8 +3,8 @@ import { format, formatDistanceToNow, parseISO, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 // Currency formatting
-export function formatCurrency(amount: number, currency: string = 'USD', decimals: number = 2): string {
-  return new Intl.NumberFormat('es-MX', {
+export function formatCurrency(amount: number, currency: string = 'NIO', decimals: number = 2): string {
+  return new Intl.NumberFormat('es-NI', {
     style: 'currency',
     currency,
     minimumFractionDigits: decimals,
@@ -14,7 +14,7 @@ export function formatCurrency(amount: number, currency: string = 'USD', decimal
 
 // Number formatting with thousands separator
 export function formatNumber(value: number, decimals: number = 2): string {
-  return new Intl.NumberFormat('es-MX', {
+  return new Intl.NumberFormat('es-NI', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(value);

@@ -13,6 +13,7 @@ import {
   Scale,
 } from 'lucide-react';
 import { useReports } from '../hooks/useReports';
+import { usePeriods } from '@/modules/periods/hooks/usePeriods';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
 import { VintageTabs, AnimatedCounter, PageLoader } from '@/components/ui/vintage-ui';
@@ -38,9 +39,6 @@ const PIE_COLORS = ['#a8b5a2', '#f0c8c0', '#c4b7d4'];
 const INCOME_COLOR = '#a8b5a2';
 const EXPENSE_COLOR = '#f0c8c0';
 
-const years = ['2023', '2024', '2025'];
-const periods = ['2025-01', '2025-02', '2025-03', '2025-04', '2025-05', '2025-06', '2025-07', '2025-08', '2025-09', '2025-10', '2025-11', '2025-12'];
-
 function VintageTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
@@ -56,16 +54,41 @@ function VintageTooltip({ active, payload, label }: any) {
 }
 
 export function ReportsView() {
+  const { periods: dynamicPeriods = [] } = usePeriods();
   const {
     isLoading, period, setPeriod, year, setYear,
-    trialBalance, balanceSheet, incomeStatement,
-    totalDebit, totalCredit,
-  } = useReports();
+    trialBalance = [], balanceSheet = { totalAssets: 0, totalLiabilities: 0, totalEquity: 0, assets: [], liabilities: [], equity: [] }, incomeStatement = { totalIncome: 0, totalExpenses: 0, netIncome: 0, grossProfit: 0, incomeDetails: [], expenseDetails: [] },
+    totalDebit = 0, totalCredit = 0,
+  } = useReports() as any;
+
+  // Extract unique years from dynamic periods
+  const years = Array.from(new Set(dynamicPeriods.map(p => p.year.toString()))).sort().reverse();
+  const availablePeriods = dynamicPeriods
+    .filter(p => !year || p.year.toString() === year)
+    .map(p => `${p.year}-${p.month.toString().padStart(2, '0')}`);
 
   const [activeTab, setActiveTab] = useState('trial-balance');
 
-  const handleExport = (format: string) => {
-    toast.info(`Exportación a ${format.toUpperCase()} próximamente disponible`);
+  const handleExport = async (format: string) => {
+    if (format !== 'excel') {
+      toast.info(`La generación de PDFs está en desarrollo. Descargando en Excel.`);
+    }
+    
+    try {
+      toast.loading('Generando reporte...');
+      if (activeTab === 'trial-balance') {
+        await exportTrialBalanceExcel(trialBalance, 'GANESHA Compañía Demo', period, { totalDebit, totalCredit, totalBalance: totalDebit - totalCredit });
+      } else if (activeTab === 'balance-sheet') {
+        await exportBalanceSheetExcel(balanceSheet.assets || [], balanceSheet.liabilities || [], balanceSheet.equity || [], 'GANESHA Compañía Demo', period);
+      } else if (activeTab === 'income-statement') {
+        await exportIncomeStatementExcel(incomeStatement.incomeDetails || [], incomeStatement.expenseDetails || [], incomeStatement.netIncome || 0, 'GANESHA Compañía Demo', period);
+      }
+      toast.dismiss();
+      toast.success('Reporte exportado correctamente');
+    } catch (e) {
+      toast.dismiss();
+      toast.error('Error al exportar el reporte');
+    }
   };
 
   if (isLoading) return <PageLoader text="Cargando reportes..." />;
@@ -161,7 +184,7 @@ export function ReportsView() {
             onChange={(e) => setPeriod(e.target.value)}
             className="px-3 py-2 text-sm bg-card border border-vintage-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-vintage-400"
           >
-            {periods.map((p) => (
+            {availablePeriods.map((p) => (
               <option key={p} value={p}>{p}</option>
             ))}
           </select>
@@ -324,7 +347,7 @@ export function ReportsView() {
                     Activos ({formatCurrency(balanceSheet.totalAssets, 'MXN')})
                   </h4>
                   <div className="space-y-2">
-                    {balanceSheet.assets.map((section) => (
+                    {(balanceSheet.assets || []).map((section: any) => (
                       <div key={section.name}>
                         <p className="text-sm font-medium text-vintage-700">{section.name}: {formatCurrency(section.amount, 'MXN')}</p>
                         {section.subItems?.map((sub) => (
@@ -344,7 +367,7 @@ export function ReportsView() {
                     Pasivos ({formatCurrency(balanceSheet.totalLiabilities, 'MXN')})
                   </h4>
                   <div className="space-y-2">
-                    {balanceSheet.liabilities.map((section) => (
+                    {(balanceSheet.liabilities || []).map((section: any) => (
                       <div key={section.name}>
                         <p className="text-sm font-medium text-vintage-700">{section.name}: {formatCurrency(section.amount, 'MXN')}</p>
                         {section.subItems?.map((sub) => (
@@ -364,7 +387,7 @@ export function ReportsView() {
                     Patrimonio ({formatCurrency(balanceSheet.totalEquity, 'MXN')})
                   </h4>
                   <div className="space-y-2">
-                    {balanceSheet.equity.map((section) => (
+                    {(balanceSheet.equity || []).map((section: any) => (
                       <div key={section.name}>
                         <p className="text-sm font-medium text-vintage-700">{section.name}: {formatCurrency(section.amount, 'MXN')}</p>
                         {section.subItems?.map((sub) => (
@@ -458,7 +481,7 @@ export function ReportsView() {
                   <h3 className="text-sm font-semibold text-vintage-800">Desglose de Ingresos</h3>
                 </div>
                 <div className="p-4 space-y-3">
-                  {incomeStatement.incomeDetails.map((item) => {
+                  {(incomeStatement.incomeDetails || []).map((item: any) => {
                     const pct = (item.amount / incomeStatement.totalIncome) * 100;
                     return (
                       <div key={item.name} className="space-y-1">
@@ -490,7 +513,7 @@ export function ReportsView() {
                   <h3 className="text-sm font-semibold text-vintage-800">Desglose de Gastos</h3>
                 </div>
                 <div className="p-4 space-y-3">
-                  {incomeStatement.expenseDetails.map((item) => {
+                  {(incomeStatement.expenseDetails || []).map((item: any) => {
                     const pct = (item.amount / incomeStatement.totalExpenses) * 100;
                     return (
                       <div key={item.name} className="space-y-1">

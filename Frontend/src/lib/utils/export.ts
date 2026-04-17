@@ -50,7 +50,7 @@ export async function exportToExcelTemplate(options: ExcelExportOptions): Promis
     });
 
     // Define styles
-    const titleStyle = {
+    const titleStyle: any = {
       font: { name: 'Georgia', size: 24, bold: true, color: { argb: 'FF4A3F7F' } },
       alignment: { horizontal: 'center', vertical: 'middle' },
       border: {
@@ -58,12 +58,12 @@ export async function exportToExcelTemplate(options: ExcelExportOptions): Promis
       },
     };
 
-    const subtitleStyle = {
+    const subtitleStyle: any = {
       font: { name: 'Arial', size: 12, italic: true, color: { argb: 'FF80739E' } },
       alignment: { horizontal: 'center', vertical: 'middle' },
     };
 
-    const headerStyle = {
+    const headerStyle: any = {
       font: { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } },
       fill: {
         type: 'pattern',
@@ -79,7 +79,7 @@ export async function exportToExcelTemplate(options: ExcelExportOptions): Promis
       },
     };
 
-    const cellStyle = {
+    const cellStyle: any = {
       font: { name: 'Arial', size: 10, color: { argb: 'FF333333' } },
       alignment: { horizontal: 'left', vertical: 'middle' },
       border: {
@@ -148,21 +148,26 @@ export async function exportToExcelTemplate(options: ExcelExportOptions): Promis
     });
 
     // Auto-fit columns
-    worksheet.columns.forEach((column) => {
-      column.width = 15;
-      let maxLength = 0;
-      column.eachCell({ includeEmpty: true }, (cell) => {
-        const cellValue = cell.value ? String(cell.value) : '';
-        maxLength = Math.max(maxLength, cellValue.length + 2);
+    if (worksheet.columns) {
+      worksheet.columns.forEach((column) => {
+        if (!column) return;
+        column.width = 15;
+        let maxLength = 0;
+        if (column.eachCell) {
+          column.eachCell({ includeEmpty: true }, (cell) => {
+            const cellValue = cell.value ? String(cell.value) : '';
+            maxLength = Math.max(maxLength, cellValue.length + 2);
+          });
+        }
+        column.width = Math.min(Math.max(maxLength, 15), 50);
       });
-      column.width = Math.min(Math.max(maxLength, 15), 50);
-    });
+    }
 
     // Add footer with generation date
     const lastRow = data.length + 4;
     worksheet.mergeCells(`A${lastRow}:${String.fromCharCode(65 + headers.length - 1)}${lastRow}`);
     const footerCell = worksheet.getCell(`A${lastRow}`);
-    footerCell.value = `Generado el ${generatedDate.toLocaleDateString('es-MX', { 
+    footerCell.value = `Generado el ${generatedDate.toLocaleDateString('es-NI', { 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric',
@@ -391,7 +396,7 @@ export async function exportThirdPartiesExcel(
   thirdParties: any[],
   company: string
 ): Promise<void> {
-  const headers = ['Nombre', 'RFC', 'Tipo', 'Email', 'Teléfono', 'Saldo'];
+  const headers = ['Nombre', 'RUC', 'Tipo', 'Email', 'Teléfono', 'Saldo'];
   const rows = thirdParties.map(tp => [
     tp.name,
     tp.taxId,

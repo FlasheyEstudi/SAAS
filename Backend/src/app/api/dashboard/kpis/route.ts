@@ -217,13 +217,45 @@ export async function GET(request: Request) {
     // Sort by amount descending
     expenseByCostCenter.sort((a, b) => b.amount - a.amount);
 
+    // ---- Accounts Receivable & Payable ----
+    const pendingInvoices = await db.invoice.findMany({
+      where: { companyId, status: { in: ['PENDING', 'PARTIAL'] } },
+    });
+
+    const accountsReceivable = pendingInvoices
+      .filter(i => i.invoiceType === 'SALE')
+      .reduce((s, i) => s + i.balanceDue, 0);
+
+    const accountsPayable = pendingInvoices
+      .filter(i => i.invoiceType === 'PURCHASE')
+      .reduce((s, i) => s + i.balanceDue, 0);
+
+    const now = new Date();
+    const overdueCount = pendingInvoices.filter(i => i.dueDate && new Date(i.dueDate) < now).length;
+
+    // ---- Cash Balance ----
+    const bankAccounts = await db.bankAccount.findMany({
+      where: { companyId, isActive: true },
+    });
+    const cashBalance = bankAccounts.reduce((s, a) => s + a.currentBalance, 0);
+
+    // ---- Pending Journal Entries ----
+    const pendingEntriesCount = await db.journalEntry.count({
+      where: { companyId, status: 'DRAFT' },
+    });
+
     return success({
-      income: currentIncome,
-      incomeVsLastMonth: pctChange(currentIncome, prevIncome),
-      expenses: currentExpenses,
-      expensesVsLastMonth: pctChange(currentExpenses, prevExpenses),
+      totalRevenue: currentIncome,
+      revenueChange: pctChange(currentIncome, prevIncome),
+      totalExpenses: currentExpenses,
+      expenseChange: pctChange(currentExpenses, prevExpenses),
       netIncome: currentNetIncome,
       netIncomeVsLastMonth: pctChange(currentNetIncome, prevNetIncome),
+      accountsReceivable: roundTwo(accountsReceivable),
+      accountsPayable: roundTwo(accountsPayable),
+      cashBalance: roundTwo(cashBalance),
+      overdueInvoices: overdueCount,
+      pendingJournalEntries: pendingEntriesCount,
       workingCapital: currentWorkingCapital,
       workingCapitalVsLastMonth: pctChange(currentWorkingCapital, prevWorkingCapital),
       incomeVsExpenseChart: chartData,

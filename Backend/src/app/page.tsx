@@ -182,7 +182,7 @@ const MODULES: ModuleDef[] = [
     icon: Landmark,
     endpoints: [
       { id: 'bankaccounts-list', method: 'GET', url: '/api/bank-accounts', description: 'Listar cuentas bancarias', queryParams: '{\n  "companyId": "REPLACE_ID",\n  "limit": 10\n}' },
-      { id: 'bankaccounts-create', method: 'POST', url: '/api/bank-accounts', description: 'Crear cuenta bancaria', body: '{\n  "companyId": "REPLACE_ID",\n  "bankName": "BBVA México",\n  "accountNumber": "012180012345678901",\n  "accountType": "CHECKING"\n}' },
+      { id: 'bankaccounts-create', method: 'POST', url: '/api/bank-accounts', description: 'Crear cuenta bancaria', body: '{\n  "companyId": "REPLACE_ID",\n  "bankName": "BANPRO Nicaragua",\n  "accountNumber": "100123456789",\n  "accountType": "CHECKING"\n}' },
       { id: 'bankaccounts-get', method: 'GET', url: '/api/bank-accounts/REPLACE_ID', description: 'Obtener cuenta bancaria' },
       { id: 'bankmovements-list', method: 'GET', url: '/api/bank-movements', description: 'Listar movimientos', queryParams: '{\n  "bankAccountId": "REPLACE_ID",\n  "limit": 10\n}' },
       { id: 'bankmovements-create', method: 'POST', url: '/api/bank-movements', description: 'Crear movimiento', body: '{\n  "bankAccountId": "REPLACE_ID",\n  "movementDate": "2025-01-15",\n  "description": "Depósito de cliente",\n  "amount": 50000.00,\n  "movementType": "CREDIT"\n}' },
@@ -428,7 +428,7 @@ const MODULES: ModuleDef[] = [
     icon: Scale,
     endpoints: [
       { id: 'tax-iva-summary', method: 'GET', url: '/api/tax/reports/iva-summary', description: 'Resumen IVA', queryParams: '{\n  "companyId": "REPLACE_ID",\n  "year": 2025,\n  "month": 1\n}' },
-      { id: 'tax-diot', method: 'GET', url: '/api/tax/reports/diot', description: 'DIOT (SAT)', queryParams: '{\n  "companyId": "REPLACE_ID",\n  "year": 2025,\n  "month": 1\n}' },
+      { id: 'tax-diot', method: 'GET', url: '/api/tax/reports/diot', description: 'DIOT (DGI)', queryParams: '{\n  "companyId": "REPLACE_ID",\n  "year": 2025,\n  "month": 1\n}' },
       { id: 'tax-withholding', method: 'GET', url: '/api/tax/reports/withholding', description: 'Retenciones', queryParams: '{\n  "companyId": "REPLACE_ID",\n  "year": 2025,\n  "month": 1\n}' },
       { id: 'tax-monthly-declaration', method: 'GET', url: '/api/tax/reports/monthly-declaration', description: 'Declaración mensual', queryParams: '{\n  "companyId": "REPLACE_ID",\n  "year": 2025,\n  "month": 1\n}' },
     ],

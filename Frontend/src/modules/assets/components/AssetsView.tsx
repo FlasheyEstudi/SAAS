@@ -65,10 +65,10 @@ export function AssetsView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-vintage-100">
-              {assets.length === 0 ? (
+              {(!assets || assets.length === 0) ? (
                 <tr><td colSpan={7} className="px-4 py-8 text-center text-vintage-500">No hay activos registrados</td></tr>
               ) : (
-                assets.map((a, i) => (
+                (assets || []).map((a: any, i: number) => (
                   <motion.tr key={a.id} className="hover:bg-vintage-50 transition-colors" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}>
                     <td className="px-4 py-3"><div><p className="text-sm font-medium text-vintage-800">{a.name}</p><p className="text-xs text-vintage-500">Adq: {formatDate(a.acquisitionDate)}</p></div></td>
                     <td className="px-4 py-3 text-sm text-vintage-600">{a.category}</td>

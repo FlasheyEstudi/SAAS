@@ -63,12 +63,15 @@ function getTypeBadgeColor(type: string) {
 export function InvoiceListView() {
   const navigate = useAppStore((s) => s.navigate);
   const {
-    invoices, thirdParties, isLoading, total, totalPages, page, limit,
-    search, typeFilter, statusFilter,
-    setSearch, setTypeFilter, setStatusFilter, setPage, clearFilters,
+    invoices = [], thirdParties = [], isLoading,
     payInvoice, cancelInvoice,
-    totalInvoiced, pendingAmount, overdueAmount, paidAmount,
-  } = useInvoices();
+    summary = { totalInvoiced: 0, pendingAmount: 0, overdueAmount: 0, paidAmount: 0 },
+    total = 0, totalPages = 1, page = 1, limit = 20,
+    search = '', typeFilter = '', statusFilter = '',
+    setSearch, setTypeFilter, setStatusFilter, setPage, clearFilters,
+  } = useInvoices() as any;
+
+  const { totalInvoiced = 0, pendingAmount = 0, overdueAmount = 0, paidAmount = 0 } = summary || {};
 
   const [cancelDialogId, setCancelDialogId] = useState<string | null>(null);
   const [payingId, setPayingId] = useState<string | null>(null);

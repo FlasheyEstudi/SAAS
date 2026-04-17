@@ -2,60 +2,88 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { PiggyBank, BarChart3 } from 'lucide-react';
+import { PiggyBank, BarChart3, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { StatusBadge } from '@/components/ui/vintage-ui';
+import { PastelButton } from '@/components/ui/pastel-button';
+import { AnimatePresence } from 'framer-motion';
 import { formatCurrency } from '@/lib/utils/format';
+import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 
-interface BudgetLine { account: string; budgeted: number; actual: number; }
-interface Budget { id: string; name: string; period: string; status: 'DRAFT' | 'APPROVED' | 'ACTIVE' | 'CLOSED'; totalBudgeted: number; totalActual: number; lines: BudgetLine[]; }
-
-const mockBudgets: Budget[] = [
-  { id: '1', name: 'Presupuesto Q3 2025', period: 'Jul-Sep 2025', status: 'ACTIVE', totalBudgeted: 1920000, totalActual: 1650000, lines: [
-    { account: 'Nóminas', budgeted: 850000, actual: 820000 }, { account: 'Servicios', budgeted: 320000, actual: 295000 },
-    { account: 'Arrendamiento', budgeted: 240000, actual: 240000 }, { account: 'Impuestos', budgeted: 200000, actual: 180000 },
-    { account: 'Gastos Admin', budgeted: 310000, actual: 115000 },
-  ]},
-  { id: '2', name: 'Presupuesto Q4 2025', period: 'Oct-Dic 2025', status: 'APPROVED', totalBudgeted: 2050000, totalActual: 480000, lines: [
-    { account: 'Nóminas', budgeted: 880000, actual: 280000 }, { account: 'Servicios', budgeted: 340000, actual: 95000 },
-    { account: 'Arrendamiento', budgeted: 240000, actual: 80000 }, { account: 'Impuestos', budgeted: 220000, actual: 25000 },
-    { account: 'Gastos Admin', budgeted: 370000, actual: 0 },
-  ]},
-  { id: '3', name: 'Presupuesto Q2 2025', period: 'Abr-Jun 2025', status: 'CLOSED', totalBudgeted: 1850000, totalActual: 1780000, lines: [
-    { account: 'Nóminas', budgeted: 820000, actual: 810000 }, { account: 'Servicios', budgeted: 300000, actual: 315000 },
-    { account: 'Arrendamiento', budgeted: 240000, actual: 240000 }, { account: 'Impuestos', budgeted: 190000, actual: 175000 },
-    { account: 'Gastos Admin', budgeted: 300000, actual: 240000 },
-  ]},
-  { id: '4', name: 'Presupuesto Q1 2025', period: 'Ene-Mar 2025', status: 'CLOSED', totalBudgeted: 1800000, totalActual: 1920000, lines: [
-    { account: 'Nóminas', budgeted: 800000, actual: 830000 }, { account: 'Servicios', budgeted: 290000, actual: 340000 },
-    { account: 'Arrendamiento', budgeted: 240000, actual: 240000 }, { account: 'Impuestos', budgeted: 180000, actual: 210000 },
-    { account: 'Gastos Admin', budgeted: 290000, actual: 300000 },
-  ]},
-];
+import { useBudgets } from '../hooks/useBudgets';
 
 const statusColors: Record<string, string> = { DRAFT: 'neutral', APPROVED: 'info', ACTIVE: 'success', CLOSED: 'warning' };
 const statusLabels: Record<string, string> = { DRAFT: 'Borrador', APPROVED: 'Aprobado', ACTIVE: 'Activo', CLOSED: 'Cerrado' };
 
 export function BudgetsView() {
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<Budget | null>(null);
+  const { budgets, isLoading: loading, createBudget, isCreating } = useBudgets();
+  const [selected, setSelected] = useState<any | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({ name: '', description: '', totalBudgeted: 0 });
 
-  useEffect(() => { setTimeout(() => { setBudgets(mockBudgets); setSelected(mockBudgets[0]); setLoading(false); }, 500); }, []);
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
   const budget = selected || budgets[0];
+
+  if (!budget && !loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div><h2 className="text-2xl font-playfair font-bold text-vintage-900">Presupuestos</h2><p className="text-sm text-vintage-600 mt-1">Comparación presupuesto vs real</p></div>
+          <PastelButton onClick={() => setShowModal(true)}><Plus className="w-4 h-4 mr-2" />Nuevo Presupuesto</PastelButton>
+        </div>
+        <div className="py-24 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-vintage-100 mb-4 text-vintage-400"><PiggyBank className="w-8 h-8" /></div>
+          <h3 className="text-lg font-playfair font-bold text-vintage-800">No hay presupuestos todavía</h3>
+          <p className="text-vintage-500 mb-6">Comienza creando tu primer presupuesto para el periodo actual.</p>
+          <PastelButton onClick={() => setShowModal(true)}>Crear mi primer presupuesto</PastelButton>
+        </div>
+        {renderModal()}
+      </div>
+    );
+  }
+
+  function renderModal() {
+    return (
+      <AnimatePresence>
+        {showModal && (
+          <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div className="bg-card w-full max-w-md rounded-2xl shadow-2xl border border-vintage-200" initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}>
+              <div className="p-6 border-b border-vintage-100 flex items-center justify-between">
+                <h3 className="text-lg font-playfair font-bold text-vintage-800">Nuevo Presupuesto</h3>
+                <button onClick={() => setShowModal(false)} className="text-vintage-400">×</button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="space-y-1.5"><label className="text-xs font-semibold text-vintage-600 ml-1">Nombre</label><input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full px-3 py-2 text-sm bg-vintage-50 border border-vintage-200 rounded-xl" /></div>
+                <div className="space-y-1.5"><label className="text-xs font-semibold text-vintage-600 ml-1">Monto Total</label><input type="number" value={formData.totalBudgeted} onChange={e => setFormData({ ...formData, totalBudgeted: parseFloat(e.target.value) })} className="w-full px-3 py-2 text-sm bg-vintage-50 border border-vintage-200 rounded-xl" /></div>
+                <div className="space-y-1.5"><label className="text-xs font-semibold text-vintage-600 ml-1">Descripción</label><textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full px-3 py-2 text-sm bg-vintage-50 border border-vintage-200 rounded-xl min-h-[80px]" /></div>
+              </div>
+              <div className="p-6 bg-vintage-50 flex justify-end gap-3">
+                <button onClick={() => setShowModal(false)} className="text-sm font-semibold text-vintage-600 px-4">Cancelar</button>
+                <PastelButton onClick={() => createBudget(formData, { onSuccess: () => setShowModal(false) })} loading={isCreating}>Crear</PastelButton>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+  }
+
   const pctUsed = budget.totalBudgeted > 0 ? ((budget.totalActual / budget.totalBudgeted) * 100) : 0;
   const variance = budget.totalBudgeted - budget.totalActual;
 
-  const chartData = budget.lines.map(l => ({ name: l.account, Presupuestado: l.budgeted, Real: l.actual }));
+  const chartData = (budget.lines || []).map((l: any) => ({ name: l.account?.name || l.accountId || 'Cuenta', Presupuestado: l.budgetedAmount || 0, Real: l.actualAmount || 0 }));
+
 
   return (
     <div className="space-y-6">
-      <div><h2 className="text-2xl font-playfair font-bold text-vintage-900">Presupuestos</h2><p className="text-sm text-vintage-600 mt-1">Comparación presupuesto vs real</p></div>
+      <div className="flex justify-between items-center">
+        <div><h2 className="text-2xl font-playfair font-bold text-vintage-900">Presupuestos</h2><p className="text-sm text-vintage-600 mt-1">Comparación presupuesto vs real</p></div>
+        <PastelButton onClick={() => setShowModal(true)}><Plus className="w-4 h-4 mr-2" />Nuevo Presupuesto</PastelButton>
+      </div>
 
       <div className="flex gap-2 overflow-x-auto pb-2">
         {budgets.map(b => (
@@ -98,13 +126,13 @@ export function BudgetsView() {
           <table className="w-full">
             <thead><tr className="border-b border-vintage-200 bg-vintage-50/50"><th className="px-4 py-2 text-xs font-semibold text-vintage-700 text-left">Cuenta</th><th className="px-4 py-2 text-xs font-semibold text-vintage-700 text-right">Presup.</th><th className="px-4 py-2 text-xs font-semibold text-vintage-700 text-right">Real</th><th className="px-4 py-2 text-xs font-semibold text-vintage-700 text-right">Var.</th></tr></thead>
             <tbody className="divide-y divide-vintage-100">
-              {budget.lines.map((l, i) => {
-                const v = l.budgeted - l.actual;
+              {(budget.lines || []).map((l: any, i: number) => {
+                const v = (l.budgetedAmount || 0) - (l.actualAmount || 0);
                 return (
                   <motion.tr key={i} className="hover:bg-vintage-50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }}>
-                    <td className="px-4 py-2.5 text-sm text-vintage-700">{l.account}</td>
-                    <td className="px-4 py-2.5 text-sm text-vintage-600 text-right font-mono">{formatCurrency(l.budgeted)}</td>
-                    <td className="px-4 py-2.5 text-sm text-vintage-600 text-right font-mono">{formatCurrency(l.actual)}</td>
+                    <td className="px-4 py-2.5 text-sm text-vintage-700">{l.account?.name || l.accountId || 'Cuenta'}</td>
+                    <td className="px-4 py-2.5 text-sm text-vintage-600 text-right font-mono">{formatCurrency(l.budgetedAmount || 0)}</td>
+                    <td className="px-4 py-2.5 text-sm text-vintage-600 text-right font-mono">{formatCurrency(l.actualAmount || 0)}</td>
                     <td className={cn('px-4 py-2.5 text-sm text-right font-mono', v >= 0 ? 'text-success' : 'text-error')}>{formatCurrency(Math.abs(v))}</td>
                   </motion.tr>
                 );
@@ -113,6 +141,7 @@ export function BudgetsView() {
           </table>
         </VintageCard>
       </div>
+      {renderModal()}
     </div>
   );
 }

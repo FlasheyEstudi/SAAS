@@ -58,7 +58,7 @@ const itemVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] },
+    transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as any },
   },
 };
 
@@ -324,11 +324,31 @@ function TopClientRow({ client, index }: { client: any; index: number }) {
 
 // ─── Main Dashboard View ───────────────────────────────────────────
 export function DashboardView() {
-  const { data, isLoading, error, refetch } = useDashboard();
+  const { data, isLoading, error } = useDashboard();
   const navigate = useAppStore((s) => s.navigate);
   const user = useAppStore((s) => s.user);
+  const companyId = useAppStore((s) => s.companyId);
 
   const [activeTab, setActiveTab] = useState('polizas');
+
+  if (!companyId) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center px-4">
+        <div className="w-20 h-20 rounded-full bg-vintage-100 flex items-center justify-center">
+          <CheckCircle2 className="w-10 h-10 text-vintage-400" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-playfair font-bold text-vintage-800">No hay empresa seleccionada</h2>
+          <p className="text-vintage-500 mt-2 max-w-md mx-auto">
+            Por favor, seleccione una empresa en el menú de configuración para ver las métricas y el estado contable.
+          </p>
+        </div>
+        <PastelButton onClick={() => navigate('companies')}>
+          Ir a Empresas
+        </PastelButton>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return <PageLoader text="Cargando panel de control..." />;
@@ -339,14 +359,14 @@ export function DashboardView() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <AlertCircle className="w-12 h-12 text-error/60" />
         <p className="text-vintage-600 text-sm">{error || 'No se pudieron cargar los datos'}</p>
-        <PastelButton variant="outline" onClick={refetch}>
+        <PastelButton variant="outline" onClick={() => window.location.reload()}>
           Reintentar
         </PastelButton>
       </div>
     );
   }
 
-  const { kpis, revenueTrend, expenseCategories, recentJournalEntries, recentInvoices, topClients } = data;
+  const { kpis = { totalRevenue: 0, totalExpenses: 0, netIncome: 0, cashBalance: 0, accountsReceivable: 0, overdueInvoices: 0, accountsPayable: 0, pendingJournalEntries: 0 }, revenueTrend = [], expenseCategories = [], recentJournalEntries = [], recentInvoices = [], topClients = [] } = data || {};
 
   // Pie data: income vs expenses
   const pieData = [

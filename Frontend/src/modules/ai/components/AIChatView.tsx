@@ -51,7 +51,7 @@ export function AIChatView() {
             </motion.div>
           </div>
           <div>
-            <h3 className="font-playfair text-lg font-bold text-vintage-800">Gemma Contable</h3>
+            <h3 className="font-playfair text-lg font-bold text-vintage-800">GANESHA AI</h3>
             <p className="text-xs text-vintage-500">Asistente IA • Especialista en contabilidad</p>
           </div>
           <div className="ml-auto flex items-center gap-1.5">
@@ -67,7 +67,7 @@ export function AIChatView() {
           {messages.length === 0 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center h-full text-center py-12">
               <Bot className="w-16 h-16 text-vintage-300 mb-4" />
-              <h3 className="text-lg font-playfair font-bold text-vintage-700 mb-2">¡Hola! Soy Gemma</h3>
+              <h3 className="text-lg font-playfair font-bold text-vintage-700 mb-2">¡Hola! Soy GANESHA</h3>
               <p className="text-sm text-vintage-500 max-w-md">Tu asistente contable de IA. Puedo ayudarte a consultar datos financieros, generar reportes y responder preguntas sobre tu contabilidad.</p>
             </motion.div>
           )}

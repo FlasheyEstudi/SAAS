@@ -58,14 +58,16 @@ export function useAudit() {
         responseType: 'blob',
       });
       
-      const blob = new Blob([response.data], { 
+      const blob = new Blob([response.data || response], { 
         type: format === 'pdf' ? 'application/pdf' : 'text/csv' 
       });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `audit-logs-${new Date().toISOString().split('T')[0]}.${format}`;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
       toast.success(`Registros exportados correctamente`);

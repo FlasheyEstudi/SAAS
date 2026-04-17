@@ -10,48 +10,28 @@ import { StatusBadge, ConfirmDialog, EmptyState } from '@/components/ui/vintage-
 import { formatDate } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 
-interface Period { id: string; name: string; startDate: string; endDate: string; status: 'OPEN' | 'CLOSED' | 'LOCKED'; year: number; month: number; entryCount: number; }
-
-const mockPeriods: Period[] = [
-  { id: '1', name: 'Enero 2025', startDate: '2025-01-01', endDate: '2025-01-31', status: 'CLOSED', year: 2025, month: 1, entryCount: 45 },
-  { id: '2', name: 'Febrero 2025', startDate: '2025-02-01', endDate: '2025-02-28', status: 'CLOSED', year: 2025, month: 2, entryCount: 38 },
-  { id: '3', name: 'Marzo 2025', startDate: '2025-03-01', endDate: '2025-03-31', status: 'CLOSED', year: 2025, month: 3, entryCount: 52 },
-  { id: '4', name: 'Abril 2025', startDate: '2025-04-01', endDate: '2025-04-30', status: 'CLOSED', year: 2025, month: 4, entryCount: 41 },
-  { id: '5', name: 'Mayo 2025', startDate: '2025-05-01', endDate: '2025-05-31', status: 'CLOSED', year: 2025, month: 5, entryCount: 37 },
-  { id: '6', name: 'Junio 2025', startDate: '2025-06-01', endDate: '2025-06-30', status: 'OPEN', year: 2025, month: 6, entryCount: 29 },
-  { id: '7', name: 'Julio 2025', startDate: '2025-07-01', endDate: '2025-07-31', status: 'OPEN', year: 2025, month: 7, entryCount: 12 },
-  { id: '8', name: 'Agosto 2025', startDate: '2025-08-01', endDate: '2025-08-31', status: 'OPEN', year: 2025, month: 8, entryCount: 3 },
-  { id: '9', name: 'Septiembre 2025', startDate: '2025-09-01', endDate: '2025-09-30', status: 'OPEN', year: 2025, month: 9, entryCount: 0 },
-  { id: '10', name: 'Octubre 2025', startDate: '2025-10-01', endDate: '2025-10-31', status: 'OPEN', year: 2025, month: 10, entryCount: 0 },
-  { id: '11', name: 'Noviembre 2025', startDate: '2025-11-01', endDate: '2025-11-30', status: 'OPEN', year: 2025, month: 11, entryCount: 0 },
-  { id: '12', name: 'Diciembre 2025', startDate: '2025-12-01', endDate: '2025-12-31', status: 'OPEN', year: 2025, month: 12, entryCount: 0 },
-];
+import { usePeriods } from '../hooks/usePeriods';
 
 const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 export function PeriodsView() {
-  const [periods, setPeriods] = useState<Period[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { periods, isLoading: loading } = usePeriods();
   const [confirmAction, setConfirmAction] = useState<{ id: string; action: 'close' | 'reopen' } | null>(null);
-
-  useEffect(() => { setTimeout(() => { setPeriods(mockPeriods); setLoading(false); }, 500); }, []);
 
   const handleClose = () => {
     if (!confirmAction) return;
-    setPeriods(prev => prev.map(p => p.id === confirmAction.id ? { ...p, status: 'CLOSED' as const } : p));
-    toast.success('Período cerrado correctamente');
+    toast.message('Función pendiente de API POST /close');
     setConfirmAction(null);
   };
 
   const handleReopen = () => {
     if (!confirmAction) return;
-    setPeriods(prev => prev.map(p => p.id === confirmAction.id ? { ...p, status: 'OPEN' as const } : p));
-    toast.success('Período reabierto correctamente');
+    toast.message('Función pendiente de API POST /reopen');
     setConfirmAction(null);
   };
 
-  const openPeriods = periods.filter(p => p.status === 'OPEN');
-  const closedPeriods = periods.filter(p => p.status === 'CLOSED');
+  const openPeriods = (periods || []).filter(p => p.status === 'OPEN');
+  const closedPeriods = (periods || []).filter(p => p.status === 'CLOSED');
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
@@ -71,31 +51,31 @@ export function PeriodsView() {
       {/* Period grid - calendar-like */}
       <VintageCard>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-          {periods.map((period, i) => (
-            <motion.div
-              key={period.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
-              className={cn(
-                'rounded-xl p-3 border transition-all hover:shadow-md cursor-pointer',
-                period.status === 'OPEN' ? 'bg-success/5 border-success/30 hover:border-success/50' :
-                period.status === 'CLOSED' ? 'bg-vintage-50 border-vintage-200 opacity-75' : 'bg-error/5 border-error/20'
-              )}
-              onClick={() => {
-                if (period.status === 'OPEN') setConfirmAction({ id: period.id, action: 'close' });
-                else if (period.status === 'CLOSED') setConfirmAction({ id: period.id, action: 'reopen' });
-              }}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-lg font-bold text-vintage-800">{period.month}</span>
-                {period.status === 'OPEN' ? <Unlock className="w-3.5 h-3.5 text-success" /> : <Lock className="w-3.5 h-3.5 text-vintage-400" />}
-              </div>
-              <p className="text-xs font-medium text-vintage-700">{months[period.month - 1]}</p>
-              <p className="text-[10px] text-vintage-500 mt-0.5">{period.entryCount} pólizas</p>
-              <StatusBadge status={period.status === 'OPEN' ? 'success' : period.status === 'CLOSED' ? 'neutral' : 'error'} label={period.status === 'OPEN' ? 'Abierto' : 'Cerrado'} />
-            </motion.div>
-          ))}
+          {(periods || []).map((period: any, i: number) => (
+              <motion.div
+                key={period.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03 }}
+                className={cn(
+                  'rounded-xl p-3 border transition-all hover:shadow-md cursor-pointer',
+                  period.status === 'OPEN' ? 'bg-success/5 border-success/30 hover:border-success/50' :
+                  period.status === 'CLOSED' ? 'bg-vintage-50 border-vintage-200 opacity-75' : 'bg-error/5 border-error/20'
+                )}
+                onClick={() => {
+                  if (period.status === 'OPEN') setConfirmAction({ id: period.id, action: 'close' });
+                  else if (period.status === 'CLOSED') setConfirmAction({ id: period.id, action: 'reopen' });
+                }}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-lg font-bold text-vintage-800">{period.month}</span>
+                  {period.status === 'OPEN' ? <Unlock className="w-3.5 h-3.5 text-success" /> : <Lock className="w-3.5 h-3.5 text-vintage-400" />}
+                </div>
+                <p className="text-xs font-medium text-vintage-700">{months[period.month - 1]}</p>
+                <p className="text-[10px] text-vintage-500 mt-0.5">{period.entryCount || 0} pólizas</p>
+                <StatusBadge status={period.status === 'OPEN' ? 'success' : period.status === 'CLOSED' ? 'neutral' : 'error'} label={period.status === 'OPEN' ? 'Abierto' : 'Cerrado'} />
+              </motion.div>
+            ))}
         </div>
       </VintageCard>
 
@@ -114,12 +94,12 @@ export function PeriodsView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-vintage-100">
-              {periods.map((p) => (
+              {(periods || []).map((p: any) => (
                 <tr key={p.id} className="hover:bg-vintage-50 transition-colors">
                   <td className="px-4 py-3 text-sm font-medium text-vintage-800">{p.name}</td>
                   <td className="px-4 py-3 text-xs text-vintage-600">{formatDate(p.startDate)}</td>
                   <td className="px-4 py-3 text-xs text-vintage-600">{formatDate(p.endDate)}</td>
-                  <td className="px-4 py-3 text-sm text-vintage-700 text-center">{p.entryCount}</td>
+                  <td className="px-4 py-3 text-sm text-vintage-700 text-center">{p.entryCount || 0}</td>
                   <td className="px-4 py-3 text-center">
                     <StatusBadge status={p.status === 'OPEN' ? 'success' : 'neutral'} label={p.status === 'OPEN' ? 'Abierto' : 'Cerrado'} />
                   </td>

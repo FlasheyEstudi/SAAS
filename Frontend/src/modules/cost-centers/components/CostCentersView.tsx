@@ -9,38 +9,23 @@ import { PastelButton } from '@/components/ui/pastel-button';
 import { FloatingInput } from '@/components/ui/floating-input';
 import { StatusBadge, ConfirmDialog } from '@/components/ui/vintage-ui';
 
-interface CostCenter { id: string; code: string; name: string; description: string; isActive: boolean; entryCount: number; }
-
-const mockCenters: CostCenter[] = [
-  { id: '1', code: 'ADM', name: 'Administración', description: 'Gastos administrativos generales', isActive: true, entryCount: 85 },
-  { id: '2', code: 'CON', name: 'Contabilidad', description: 'Departamento contable', isActive: true, entryCount: 120 },
-  { id: '3', code: 'VEN', name: 'Ventas', description: 'Departamento comercial', isActive: true, entryCount: 64 },
-  { id: '4', code: 'OPE', name: 'Operaciones', description: 'Área de operaciones y producción', isActive: true, entryCount: 95 },
-  { id: '5', code: 'FIN', name: 'Finanzas', description: 'Departamento financiero', isActive: true, entryCount: 45 },
-  { id: '6', code: 'RH', name: 'Recursos Humanos', description: 'Gestión de personal', isActive: true, entryCount: 32 },
-  { id: '7', code: 'TI', name: 'Tecnología', description: 'Sistemas y soporte técnico', isActive: false, entryCount: 18 },
-  { id: '8', code: 'MKT', name: 'Marketing', description: 'Publicidad y promoción', isActive: true, entryCount: 27 },
-];
+import { useCostCenters } from '../hooks/useCostCenters';
 
 export function CostCentersView() {
-  const [centers, setCenters] = useState<CostCenter[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { costCenters: centers, isLoading: loading } = useCostCenters();
   const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState<CostCenter | null>(null);
+  const [editing, setEditing] = useState<any | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState({ code: '', name: '', description: '' });
 
-  useEffect(() => { setTimeout(() => { setCenters(mockCenters); setLoading(false); }, 500); }, []);
-
   const openCreate = () => { setEditing(null); setForm({ code: '', name: '', description: '' }); setShowForm(true); };
-  const openEdit = (c: CostCenter) => { setEditing(c); setForm({ code: c.code, name: c.name, description: c.description }); setShowForm(true); };
+  const openEdit = (c: any) => { setEditing(c); setForm({ code: c.code, name: c.name, description: c.description || '' }); setShowForm(true); };
   const handleSave = () => {
     if (!form.code || !form.name) { toast.error('Código y nombre son obligatorios'); return; }
-    if (editing) { setCenters(prev => prev.map(c => c.id === editing.id ? { ...c, ...form } : c)); toast.success('Centro actualizado'); }
-    else { setCenters(prev => [...prev, { id: Date.now().toString(), ...form, isActive: true, entryCount: 0 }]); toast.success('Centro creado'); }
+    toast.message('Función guardar pendiente de API POST/PUT'); 
     setShowForm(false);
   };
-  const handleDelete = () => { if (deleteId) { setCenters(prev => prev.filter(c => c.id !== deleteId)); toast.success('Centro eliminado'); setDeleteId(null); } };
+  const handleDelete = () => { if (deleteId) { toast.message('Función eliminar pendiente de API DELETE'); setDeleteId(null); } };
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
@@ -52,9 +37,9 @@ export function CostCentersView() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <VintageCard><p className="text-xs text-vintage-500">Total</p><p className="text-2xl font-bold text-vintage-800">{centers.length}</p></VintageCard>
-        <VintageCard><p className="text-xs text-vintage-500">Activos</p><p className="text-2xl font-bold text-success">{centers.filter(c => c.isActive).length}</p></VintageCard>
-        <VintageCard><p className="text-xs text-vintage-500">Total Pólizas</p><p className="text-2xl font-bold text-vintage-800">{centers.reduce((s, c) => s + c.entryCount, 0)}</p></VintageCard>
+        <VintageCard><p className="text-xs text-vintage-500">Total</p><p className="text-2xl font-bold text-vintage-800">{(centers || []).length}</p></VintageCard>
+        <VintageCard><p className="text-xs text-vintage-500">Activos</p><p className="text-2xl font-bold text-success">{(centers || []).filter(c => c.isActive).length}</p></VintageCard>
+        <VintageCard><p className="text-xs text-vintage-500">Total Pólizas</p><p className="text-2xl font-bold text-vintage-800">{(centers || []).reduce((s, c) => s + (c.journalEntryCount || 0), 0)}</p></VintageCard>
       </div>
 
       <VintageCard className="p-0 overflow-hidden">
@@ -70,12 +55,12 @@ export function CostCentersView() {
             </tr>
           </thead>
           <tbody className="divide-y divide-vintage-100">
-            {centers.map((c, i) => (
+            {(centers || []).map((c, i) => (
               <motion.tr key={c.id} className="hover:bg-vintage-50 transition-colors" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}>
                 <td className="px-4 py-3"><span className="font-mono text-sm font-medium text-vintage-700 bg-vintage-100 px-2 py-0.5 rounded">{c.code}</span></td>
                 <td className="px-4 py-3 text-sm font-medium text-vintage-800">{c.name}</td>
                 <td className="px-4 py-3 text-xs text-vintage-600">{c.description}</td>
-                <td className="px-4 py-3 text-sm text-vintage-700 text-center">{c.entryCount}</td>
+                <td className="px-4 py-3 text-sm text-vintage-700 text-center">{c.journalEntryCount || 0}</td>
                 <td className="px-4 py-3 text-center"><StatusBadge status={c.isActive ? 'success' : 'neutral'} label={c.isActive ? 'Activo' : 'Inactivo'} /></td>
                 <td className="px-4 py-3 text-center">
                   <div className="flex justify-center gap-1">

@@ -41,7 +41,8 @@ export function useFixedAssets() {
     try {
       setLoading(true);
       const response = await apiClient.get(ASSETS.list);
-      setAssets(response.data || []);
+      const data = response?.data || response || [];
+      setAssets(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching fixed assets:', error);
       toast.error('No se pudieron cargar los activos fijos');
@@ -53,9 +54,11 @@ export function useFixedAssets() {
   const fetchSummary = useCallback(async () => {
     try {
       const response = await apiClient.get(ASSETS.summary);
-      setSummary(response.data);
+      const data = response?.data || response || {};
+      setSummary(data);
     } catch (error) {
       console.error('Error fetching asset summary:', error);
+      setSummary({} as any); // Fallback so UI doesnt crash
     }
   }, []);
 

@@ -50,23 +50,11 @@ const statusFilterOptions = [
 export function JournalListView() {
   const navigate = useAppStore((s) => s.navigate);
   const {
-    entries,
-    isLoading,
-    total,
-    totalPages,
-    page,
-    limit,
-    search,
-    typeFilter,
-    statusFilter,
-    setSearch,
-    setTypeFilter,
-    setStatusFilter,
-    setPage,
-    clearFilters,
-    deleteEntry,
-    postEntry,
-  } = useJournalEntries();
+    entries = [], isLoading, total = 0, totalPages = 1, page = 1, limit = 20,
+    search = '', typeFilter = '', statusFilter = '',
+    setSearch, setTypeFilter, setStatusFilter, setPage, clearFilters,
+    deleteEntry, postEntry,
+  } = useJournalEntries() as any;
 
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [postingId, setPostingId] = useState<string | null>(null);
@@ -203,19 +191,19 @@ export function JournalListView() {
         <VintageCard hover={false} className="p-4">
           <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Publicadas</p>
           <p className="text-xl font-playfair text-success mt-1">
-            {entries.filter((e) => e.status === 'POSTED').length}
+            {(entries || []).filter((e: any) => e.status === 'POSTED').length}
           </p>
         </VintageCard>
         <VintageCard hover={false} className="p-4">
           <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Borradores</p>
           <p className="text-xl font-playfair text-warning mt-1">
-            {entries.filter((e) => e.status === 'DRAFT').length}
+            {(entries || []).filter((e: any) => e.status === 'DRAFT').length}
           </p>
         </VintageCard>
         <VintageCard hover={false} className="p-4">
           <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Debe</p>
           <p className="text-xl font-playfair text-vintage-800 mt-1">
-            {formatCurrency(entries.reduce((s, e) => s + e.totalDebit, 0), 'MXN')}
+            {formatCurrency((entries || []).reduce((s: number, e: any) => s + (e.totalDebit || 0), 0), 'MXN')}
           </p>
         </VintageCard>
       </motion.div>

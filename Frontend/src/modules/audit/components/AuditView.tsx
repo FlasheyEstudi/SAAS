@@ -25,14 +25,19 @@ const actionColors: Record<string, string> = {
 };
 
 export function AuditView() {
-  const { logs, stats, loading, exporting, refreshLogs, exportLogs } = useAudit();
+  const { logs = [], stats, loading, exporting, refreshLogs, exportLogs } = useAudit();
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('');
 
-  const filtered = logs.filter(l => {
-    const ms = !search || l.user.toLowerCase().includes(search.toLowerCase()) || l.details.toLowerCase().includes(search.toLowerCase()) || l.entityId.toLowerCase().includes(search.toLowerCase());
-    const ma = !actionFilter || l.action === actionFilter;
-    return ms && ma;
+  const filtered = (logs || []).filter(l => {
+    if (!l) return false;
+    const searchLower = (search || '').toLowerCase();
+    const actionMatch = !actionFilter || l.action === actionFilter;
+    const searchMatch = !search || 
+      (l.user?.toLowerCase().includes(searchLower)) || 
+      (l.details?.toLowerCase().includes(searchLower)) || 
+      (l.entityId?.toLowerCase().includes(searchLower));
+    return actionMatch && searchMatch;
   });
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
@@ -63,7 +68,7 @@ export function AuditView() {
         </div>
         <select value={actionFilter} onChange={(e) => setActionFilter(e.target.value)} className="px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400">
           <option value="">Todas las acciones</option>
-          {logs.length > 0 && Array.from(new Set(logs.map(l => l.action))).map(a => <option key={a} value={a}>{a}</option>)}
+          {(logs || []).length > 0 && Array.from(new Set((logs || []).map(l => l.action))).map(a => <option key={a} value={a}>{a}</option>)}
         </select>
       </div>
 

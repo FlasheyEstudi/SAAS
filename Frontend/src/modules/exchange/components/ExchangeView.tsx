@@ -10,37 +10,24 @@ import { FloatingInput } from '@/components/ui/floating-input';
 import { formatDate } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 
-interface Rate { id: string; from: string; to: string; rate: number; effectiveDate: string; }
-
-const mockRates: Rate[] = [
-  { id: '1', from: 'USD', to: 'MXN', rate: 17.85, effectiveDate: '2025-08-01' },
-  { id: '2', from: 'EUR', to: 'MXN', rate: 19.42, effectiveDate: '2025-08-01' },
-  { id: '3', from: 'GBP', to: 'MXN', rate: 22.68, effectiveDate: '2025-08-01' },
-  { id: '4', from: 'CAD', to: 'MXN', rate: 13.02, effectiveDate: '2025-08-01' },
-  { id: '5', from: 'JPY', to: 'MXN', rate: 0.119, effectiveDate: '2025-08-01' },
-  { id: '6', from: 'MXN', to: 'USD', rate: 0.056, effectiveDate: '2025-08-01' },
-  { id: '7', from: 'MXN', to: 'EUR', rate: 0.051, effectiveDate: '2025-08-01' },
-];
+import { useExchangeRates } from '../hooks/useExchangeRates';
 
 export function ExchangeView() {
-  const [rates, setRates] = useState<Rate[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { exchangeRates: rates, isLoading: loading } = useExchangeRates();
   const [amount, setAmount] = useState('1000');
   const [fromCurrency, setFromCurrency] = useState('USD');
   const [toCurrency, setToCurrency] = useState('MXN');
   const [convertedAmount, setConvertedAmount] = useState<string | null>(null);
 
-  useEffect(() => { setTimeout(() => { setRates(mockRates); setLoading(false); }, 500); }, []);
-
   const getRate = (from: string, to: string): number => {
     if (from === to) return 1;
-    const direct = rates.find(r => r.from === from && r.to === to);
+    const direct = (rates || []).find(r => r.fromCurrency === from && r.toCurrency === to);
     if (direct) return direct.rate;
-    const reverse = rates.find(r => r.from === to && r.to === from);
+    const reverse = (rates || []).find(r => r.fromCurrency === to && r.toCurrency === from);
     if (reverse) return 1 / reverse.rate;
     // Try via USD
-    const toUsd = rates.find(r => r.from === from && r.to === 'USD');
-    const usdTo = rates.find(r => r.from === 'USD' && r.to === to);
+    const toUsd = (rates || []).find(r => r.fromCurrency === from && r.toCurrency === 'USD');
+    const usdTo = (rates || []).find(r => r.fromCurrency === 'USD' && r.toCurrency === to);
     if (toUsd && usdTo) return toUsd.rate * usdTo.rate;
     return 0;
   };
@@ -55,7 +42,7 @@ export function ExchangeView() {
     toast.success(`${fromCurrency} → ${toCurrency}: ${rate.toFixed(4)}`);
   };
 
-  const currencies = ['USD', 'MXN', 'EUR', 'GBP', 'CAD', 'JPY'];
+  const currencies = ['USD', 'MXN', 'NIO', 'EUR', 'GBP', 'CAD', 'JPY'];
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
@@ -92,11 +79,11 @@ export function ExchangeView() {
         <table className="w-full">
           <thead><tr className="border-b border-vintage-200 bg-vintage-50/50"><th className="px-4 py-3 text-xs font-semibold text-vintage-700 text-left">De</th><th className="px-4 py-3 text-xs font-semibold text-vintage-700 text-left">A</th><th className="px-4 py-3 text-xs font-semibold text-vintage-700 text-right">Tipo de Cambio</th><th className="px-4 py-3 text-xs font-semibold text-vintage-700 text-left">Fecha</th></tr></thead>
           <tbody className="divide-y divide-vintage-100">
-            {rates.map((r, i) => (
+            {(rates || []).map((r, i) => (
               <motion.tr key={r.id} className="hover:bg-vintage-50 cursor-pointer transition-colors" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}
-                onClick={() => { setFromCurrency(r.from); setToCurrency(r.to); setAmount('1'); handleConvert(); }}>
-                <td className="px-4 py-3"><span className="font-mono text-sm font-medium text-vintage-700 bg-vintage-100 px-2 py-0.5 rounded">{r.from}</span></td>
-                <td className="px-4 py-3"><span className="font-mono text-sm font-medium text-vintage-700 bg-vintage-100 px-2 py-0.5 rounded">{r.to}</span></td>
+                onClick={() => { setFromCurrency(r.fromCurrency); setToCurrency(r.toCurrency); setAmount('1'); handleConvert(); }}>
+                <td className="px-4 py-3"><span className="font-mono text-sm font-medium text-vintage-700 bg-vintage-100 px-2 py-0.5 rounded">{r.fromCurrency}</span></td>
+                <td className="px-4 py-3"><span className="font-mono text-sm font-medium text-vintage-700 bg-vintage-100 px-2 py-0.5 rounded">{r.toCurrency}</span></td>
                 <td className="px-4 py-3 text-sm font-mono text-vintage-800 text-right font-medium">{r.rate.toFixed(4)}</td>
                 <td className="px-4 py-3 text-xs text-vintage-500">{formatDate(r.effectiveDate)}</td>
               </motion.tr>

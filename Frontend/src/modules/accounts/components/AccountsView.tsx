@@ -11,56 +11,14 @@ import { StatusBadge, EmptyState } from '@/components/ui/vintage-ui';
 import { formatCurrency } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 
+import { useAccounts } from '../hooks/useAccounts';
+
 interface Account {
   id: string; code: string; name: string; accountType: 'ASSET' | 'LIABILITY' | 'EQUITY' | 'INCOME' | 'EXPENSE';
   nature: 'DEBIT' | 'CREDIT'; isGroup: boolean; isActive: boolean; currentBalance: number;
   children?: Account[]; level: number; parentId?: string;
 }
 
-const mockAccounts: Account[] = [
-  { id: '1', code: '1000', name: 'ACTIVO', accountType: 'ASSET', nature: 'DEBIT', isGroup: true, isActive: true, currentBalance: 5420000, level: 0, children: [
-    { id: '1.1', code: '1100', name: 'Activo Circulante', accountType: 'ASSET', nature: 'DEBIT', isGroup: true, isActive: true, currentBalance: 2180000, level: 1, parentId: '1', children: [
-      { id: '1.1.1', code: '1101', name: 'Caja y Bancos', accountType: 'ASSET', nature: 'DEBIT', isGroup: false, isActive: true, currentBalance: 1250000, level: 2, parentId: '1.1' },
-      { id: '1.1.2', code: '1103', name: 'Cuentas por Cobrar', accountType: 'ASSET', nature: 'DEBIT', isGroup: false, isActive: true, currentBalance: 450000, level: 2, parentId: '1.1' },
-      { id: '1.1.3', code: '1105', name: 'Inventarios', accountType: 'ASSET', nature: 'DEBIT', isGroup: false, isActive: true, currentBalance: 380000, level: 2, parentId: '1.1' },
-      { id: '1.1.4', code: '1106', name: 'IVA Acreditable', accountType: 'ASSET', nature: 'DEBIT', isGroup: false, isActive: true, currentBalance: 100000, level: 2, parentId: '1.1' },
-    ]},
-    { id: '1.2', code: '1200', name: 'Activo Fijo', accountType: 'ASSET', nature: 'DEBIT', isGroup: true, isActive: true, currentBalance: 3240000, level: 1, parentId: '1', children: [
-      { id: '1.2.1', code: '1201', name: 'Edificios', accountType: 'ASSET', nature: 'DEBIT', isGroup: false, isActive: true, currentBalance: 2500000, level: 2, parentId: '1.2' },
-      { id: '1.2.2', code: '1202', name: 'Equipo de Transporte', accountType: 'ASSET', nature: 'DEBIT', isGroup: false, isActive: true, currentBalance: 480000, level: 2, parentId: '1.2' },
-      { id: '1.2.3', code: '1203', name: 'Mobiliario y Equipo', accountType: 'ASSET', nature: 'DEBIT', isGroup: false, isActive: true, currentBalance: 260000, level: 2, parentId: '1.2' },
-    ]},
-  ]},
-  { id: '2', code: '2000', name: 'PASIVO', accountType: 'LIABILITY', nature: 'CREDIT', isGroup: true, isActive: true, currentBalance: 2100000, level: 0, children: [
-    { id: '2.1', code: '2100', name: 'Pasivo Circulante', accountType: 'LIABILITY', nature: 'CREDIT', isGroup: true, isActive: true, currentBalance: 1580000, level: 1, parentId: '2', children: [
-      { id: '2.1.1', code: '2101', name: 'Proveedores', accountType: 'LIABILITY', nature: 'CREDIT', isGroup: false, isActive: true, currentBalance: 680000, level: 2, parentId: '2.1' },
-      { id: '2.1.2', code: '2102', name: 'Impuestos por Pagar', accountType: 'LIABILITY', nature: 'CREDIT', isGroup: false, isActive: true, currentBalance: 320000, level: 2, parentId: '2.1' },
-      { id: '2.1.3', code: '2103', name: 'Acreedores Diversos', accountType: 'LIABILITY', nature: 'CREDIT', isGroup: false, isActive: true, currentBalance: 280000, level: 2, parentId: '2.1' },
-      { id: '2.1.4', code: '2105', name: 'IVA Trasladado', accountType: 'LIABILITY', nature: 'CREDIT', isGroup: false, isActive: true, currentBalance: 300000, level: 2, parentId: '2.1' },
-    ]},
-    { id: '2.2', code: '2200', name: 'Pasivo Largo Plazo', accountType: 'LIABILITY', nature: 'CREDIT', isGroup: true, isActive: true, currentBalance: 520000, level: 1, parentId: '2', children: [
-      { id: '2.2.1', code: '2201', name: 'Préstamos Bancarios', accountType: 'LIABILITY', nature: 'CREDIT', isGroup: false, isActive: true, currentBalance: 520000, level: 2, parentId: '2.2' },
-    ]},
-  ]},
-  { id: '3', code: '3000', name: 'CAPITAL', accountType: 'EQUITY', nature: 'CREDIT', isGroup: true, isActive: true, currentBalance: 3320000, level: 0, children: [
-    { id: '3.1', code: '3100', name: 'Capital Social', accountType: 'EQUITY', nature: 'CREDIT', isGroup: false, isActive: true, currentBalance: 2500000, level: 1, parentId: '3' },
-    { id: '3.2', code: '3200', name: 'Reservas', accountType: 'EQUITY', nature: 'CREDIT', isGroup: false, isActive: true, currentBalance: 500000, level: 1, parentId: '3' },
-    { id: '3.3', code: '3300', name: 'Resultado del Ejercicio', accountType: 'EQUITY', nature: 'CREDIT', isGroup: false, isActive: true, currentBalance: 320000, level: 1, parentId: '3' },
-  ]},
-  { id: '4', code: '4000', name: 'INGRESO', accountType: 'INCOME', nature: 'CREDIT', isGroup: true, isActive: true, currentBalance: 2850000, level: 0, children: [
-    { id: '4.1', code: '4100', name: 'Ingresos por Servicios', accountType: 'INCOME', nature: 'CREDIT', isGroup: false, isActive: true, currentBalance: 2200000, level: 1, parentId: '4' },
-    { id: '4.2', code: '4200', name: 'Ingresos por Ventas', accountType: 'INCOME', nature: 'CREDIT', isGroup: false, isActive: true, currentBalance: 450000, level: 1, parentId: '4' },
-    { id: '4.3', code: '4300', name: 'Ingresos Financieros', accountType: 'INCOME', nature: 'CREDIT', isGroup: false, isActive: true, currentBalance: 200000, level: 1, parentId: '4' },
-  ]},
-  { id: '5', code: '5000', name: 'GASTO', accountType: 'EXPENSE', nature: 'DEBIT', isGroup: true, isActive: true, currentBalance: 1920000, level: 0, children: [
-    { id: '5.1', code: '5100', name: 'Nóminas', accountType: 'EXPENSE', nature: 'DEBIT', isGroup: false, isActive: true, currentBalance: 850000, level: 1, parentId: '5' },
-    { id: '5.2', code: '5200', name: 'Servicios Profesionales', accountType: 'EXPENSE', nature: 'DEBIT', isGroup: false, isActive: true, currentBalance: 320000, level: 1, parentId: '5' },
-    { id: '5.3', code: '5300', name: 'Arrendamiento', accountType: 'EXPENSE', nature: 'DEBIT', isGroup: false, isActive: true, currentBalance: 240000, level: 1, parentId: '5' },
-    { id: '5.4', code: '5400', name: 'Depreciación', accountType: 'EXPENSE', nature: 'DEBIT', isGroup: false, isActive: true, currentBalance: 180000, level: 1, parentId: '5' },
-    { id: '5.5', code: '5500', name: 'Impuestos', accountType: 'EXPENSE', nature: 'DEBIT', isGroup: false, isActive: true, currentBalance: 150000, level: 1, parentId: '5' },
-    { id: '5.6', code: '5600', name: 'Gastos Administrativos', accountType: 'EXPENSE', nature: 'DEBIT', isGroup: false, isActive: true, currentBalance: 180000, level: 1, parentId: '5' },
-  ]},
-];
 
 const typeColors: Record<string, string> = { ASSET: 'bg-info/15 text-info', LIABILITY: 'bg-warning/15 text-warning', EQUITY: 'bg-lavender/50 text-vintage-800', INCOME: 'bg-success/15 text-success', EXPENSE: 'bg-error/15 text-error' };
 const typeLabels: Record<string, string> = { ASSET: 'Activo', LIABILITY: 'Pasivo', EQUITY: 'Patrimonio', INCOME: 'Ingreso', EXPENSE: 'Gasto' };
@@ -95,18 +53,34 @@ function AccountRow({ account, expanded, onToggle, level }: { account: Account; 
 }
 
 export function AccountsView() {
-  const [accounts] = useState<Account[]>(mockAccounts);
+  const { accounts, isLoading: loading, createAccount, isCreating } = useAccounts();
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['1', '2', '3', '4', '5']));
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => { setTimeout(() => setLoading(false), 500); }, []);
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({
+    code: '',
+    name: '',
+    accountType: 'ASSET' as 'ASSET' | 'LIABILITY' | 'EQUITY' | 'INCOME' | 'EXPENSE',
+    nature: 'DEBIT' as 'DEBIT' | 'CREDIT',
+    isGroup: false,
+    parentId: ''
+  });
 
   const toggle = (id: string) => setExpanded(prev => {
     const n = new Set(prev);
     if (n.has(id)) { n.delete(id); } else { n.add(id); }
     return n;
   });
+
+  const handleSave = () => {
+    if (!formData.code || !formData.name) {
+      toast.error('Código y nombre son obligatorios');
+      return;
+    }
+    createAccount(formData, {
+      onSuccess: () => setShowModal(false)
+    });
+  };
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
@@ -117,7 +91,7 @@ export function AccountsView() {
           <h2 className="text-2xl font-playfair font-bold text-vintage-900">Plan de Cuentas</h2>
           <p className="text-sm text-vintage-600 mt-1">Catálogo de cuentas contables</p>
         </div>
-        <PastelButton><Plus className="w-4 h-4 mr-2" />Nueva Cuenta</PastelButton>
+        <PastelButton onClick={() => setShowModal(true)}><Plus className="w-4 h-4 mr-2" />Nueva Cuenta</PastelButton>
       </div>
 
       <div className="relative max-w-md">
@@ -138,13 +112,71 @@ export function AccountsView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-vintage-100">
-              {accounts.map(acc => (
-                <AccountRow key={acc.id} account={acc} expanded={expanded} onToggle={toggle} level={0} />
-              ))}
+              {accounts.length === 0 ? (
+                <tr><td colSpan={5} className="py-12 text-center text-sm text-vintage-500">No se encontraron cuentas</td></tr>
+              ) : (
+                accounts.map(acc => (
+                  <AccountRow key={acc.id} account={acc} expanded={expanded} onToggle={toggle} level={0} />
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </VintageCard>
+
+      <AnimatePresence>
+        {showModal && (
+          <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div className="bg-card w-full max-w-lg rounded-2xl shadow-2xl border border-vintage-200 overflow-hidden" initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}>
+              <div className="p-6 border-b border-vintage-100 flex items-center justify-between">
+                <h3 className="text-xl font-playfair font-bold text-vintage-800">Nueva Cuenta Contable</h3>
+                <button onClick={() => setShowModal(false)} className="text-vintage-400 hover:text-vintage-600">×</button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-vintage-600 ml-1">Código</label>
+                    <input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} placeholder="Ej: 1101.01" className="w-full px-3 py-2 text-sm bg-vintage-50 border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-vintage-600 ml-1">Nombre</label>
+                    <input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Nombre de la cuenta" className="w-full px-3 py-2 text-sm bg-vintage-50 border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-vintage-600 ml-1">Tipo</label>
+                    <select value={formData.accountType} onChange={e => setFormData({ ...formData, accountType: e.target.value as any })} className="w-full px-3 py-2 text-sm bg-vintage-50 border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400">
+                      <option value="ASSET">Activo</option>
+                      <option value="LIABILITY">Pasivo</option>
+                      <option value="EQUITY">Patrimonio</option>
+                      <option value="INCOME">Ingresos</option>
+                      <option value="EXPENSE">Gastos</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-vintage-600 ml-1">Naturaleza</label>
+                    <select value={formData.nature} onChange={e => setFormData({ ...formData, nature: e.target.value as any })} className="w-full px-3 py-2 text-sm bg-vintage-50 border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400">
+                      <option value="DEBIT">Deudora</option>
+                      <option value="CREDIT">Acreedora</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 py-2">
+                  <input type="checkbox" id="isGroup" checked={formData.isGroup} onChange={e => setFormData({ ...formData, isGroup: e.target.checked })} className="w-4 h-4 rounded border-vintage-300 text-vintage-500 focus:ring-vintage-400" />
+                  <label htmlFor="isGroup" className="text-sm text-vintage-700">¿Es cuenta de grupo (mayor)?</label>
+                </div>
+              </div>
+              <div className="p-6 bg-vintage-50 flex justify-end gap-3">
+                <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm font-semibold text-vintage-600 hover:text-vintage-800">Cancelar</button>
+                <PastelButton onClick={handleSave} loading={isCreating}>Guardar Cuenta</PastelButton>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

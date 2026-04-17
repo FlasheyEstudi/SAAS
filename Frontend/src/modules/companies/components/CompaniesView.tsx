@@ -10,42 +10,24 @@ import { FloatingInput } from '@/components/ui/floating-input';
 import { StatusBadge, ConfirmDialog, EmptyState } from '@/components/ui/vintage-ui';
 import { formatCurrency } from '@/lib/utils/format';
 
-interface Company {
-  id: string; name: string; taxId: string; address: string; phone: string;
-  email: string; currency: string; isActive: boolean;
-}
-
-const mockCompanies: Company[] = [
-  { id: '1', name: 'Constructora Mérida S.A. de C.V.', taxId: 'CME200101ABC', address: 'Av. Colón 500, Mérida, Yuc.', phone: '+52 999 123 4567', email: 'contacto@constructoramerida.mx', currency: 'MXN', isActive: true },
-  { id: '2', name: 'Distribuidora del Sur S.A.', taxId: 'DSU150302DEF', address: 'Calle 60 No. 320, Cancún, Q. Roo', phone: '+52 998 987 6543', email: 'admin@distrosur.mx', currency: 'MXN', isActive: true },
-  { id: '3', name: 'Tech Solutions Latinoamérica', taxId: 'TSL180405GHI', address: 'Blvd. Kukulcan Km 12, Playa del Carmen', phone: '+52 984 555 1234', email: 'info@techsol.lat', currency: 'USD', isActive: false },
-];
+import { useCompanies } from '../hooks/useCompanies';
 
 export function CompaniesView() {
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { companies, isLoading: loading } = useCompanies();
   const [showForm, setShowForm] = useState(false);
-  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [editingCompany, setEditingCompany] = useState<any | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', taxId: '', address: '', phone: '', email: '', currency: 'MXN' });
 
-  useEffect(() => { setTimeout(() => { setCompanies(mockCompanies); setLoading(false); }, 600); }, []);
-
   const openCreate = () => { setEditingCompany(null); setForm({ name: '', taxId: '', address: '', phone: '', email: '', currency: 'MXN' }); setShowForm(true); };
-  const openEdit = (c: Company) => { setEditingCompany(c); setForm({ name: c.name, taxId: c.taxId, address: c.address, phone: c.phone, email: c.email, currency: c.currency }); setShowForm(true); };
+  const openEdit = (c: any) => { setEditingCompany(c); setForm({ name: c.name, taxId: c.taxId, address: c.address, phone: c.phone, email: c.email, currency: c.currency }); setShowForm(true); };
   const handleSave = () => {
-    if (!form.name || !form.taxId) { toast.error('Nombre y RFC son obligatorios'); return; }
-    if (editingCompany) {
-      setCompanies(prev => prev.map(c => c.id === editingCompany.id ? { ...c, ...form } : c));
-      toast.success('Empresa actualizada');
-    } else {
-      setCompanies(prev => [...prev, { id: Date.now().toString(), ...form, isActive: true }]);
-      toast.success('Empresa creada');
-    }
+    if (!form.name || !form.taxId) { toast.error('Nombre y RUC son obligatorios'); return; }
+    toast.message('Función guardar empresa pendiente de API POST/PUT'); 
     setShowForm(false);
   };
   const handleDelete = () => {
-    if (deleteId) { setCompanies(prev => prev.filter(c => c.id !== deleteId)); toast.success('Empresa eliminada'); setDeleteId(null); }
+    if (deleteId) { toast.message('Función eliminar empresa pendiente de API DELETE'); setDeleteId(null); }
   };
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
@@ -103,7 +85,7 @@ export function CompaniesView() {
             <h3 className="text-lg font-playfair font-bold text-vintage-800 mb-4">{editingCompany ? 'Editar' : 'Nueva'} Empresa</h3>
             <div className="space-y-4">
               <FloatingInput label="Nombre de la empresa" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              <FloatingInput label="RFC" value={form.taxId} onChange={(e) => setForm({ ...form, taxId: e.target.value })} />
+              <FloatingInput label="RUC" value={form.taxId} onChange={(e) => setForm({ ...form, taxId: e.target.value })} />
               <FloatingInput label="Dirección" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
               <div className="grid grid-cols-2 gap-3">
                 <FloatingInput label="Teléfono" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />

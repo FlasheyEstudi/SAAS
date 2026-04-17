@@ -173,7 +173,7 @@ export async function GET(request: Request) {
       reporte: 'Declaración Fiscal Mensual',
       empresa: {
         nombre: company?.name || 'N/A',
-        rfc: company?.taxId || 'N/A',
+        ruc: company?.taxId || 'N/A',
       },
       periodo: {
         fechaDesde: dateFrom.toISOString().split('T')[0],
@@ -225,7 +225,7 @@ export async function GET(request: Request) {
         aCargo: r(ivaACargo),
         aFavor: r(ivaAFavor),
         neto: ivaNeto,
-        estatus: ivaNeto >= 0 ? 'A CARGO (POR PAGAR AL SAT)' : 'A FAVOR (SALDO A FAVOR)',
+        estatus: ivaNeto >= 0 ? 'A CARGO (POR PAGAR A LA DGI)' : 'A FAVOR (SALDO A FAVOR)',
       },
 
       // ─── RETENCIONES DE ISR ───
@@ -258,10 +258,10 @@ export async function GET(request: Request) {
 
       // ─── OBLIGACIONES FISCALES DEL PERÍODO ───
       obligaciones: {
-        // Lo que se debe pagar al SAT
+        // Lo que se debe pagar a la DGI
         porPagar: {
           iva: ivaNeto >= 0 ? r(ivaNeto) : 0,
-          retencionIsrEfectuada: r(totalRetIsrEfectuada),
+          retencionIrEfectuada: r(totalRetIsrEfectuada),
           retencionIvaEfectuada: r(totalRetIvaEfectuada),
           total: r(
             (ivaNeto >= 0 ? ivaNeto : 0) + totalRetIsrEfectuada + totalRetIvaEfectuada

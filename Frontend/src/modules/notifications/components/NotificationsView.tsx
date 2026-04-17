@@ -10,33 +10,19 @@ import { StatusBadge, EmptyState } from '@/components/ui/vintage-ui';
 import { formatRelativeTime } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 
-interface Notification { id: string; title: string; message: string; type: 'INFO' | 'WARNING' | 'ERROR' | 'SUCCESS'; isRead: boolean; }
-
-const mockNotifications: Notification[] = [
-  { id: '1', title: 'Factura vencida', message: 'La factura FAC-2025-0065 de Constructora del Norte vence hoy.', type: 'WARNING', isRead: false },
-  { id: '2', title: 'Póliza publicada', message: 'La póliza POL-2025-0044 fue publicada exitosamente por Carlos Rodríguez.', type: 'SUCCESS', isRead: false },
-  { id: '3', title: 'Saldo insuficiente', message: 'La cuenta bancaria Santander tiene un saldo negativo de -$45,000.', type: 'ERROR', isRead: false },
-  { id: '4', title: 'Período próximo a cerrar', message: 'El período de Agosto 2025 cierra en 15 días. Revisa las pólizas pendientes.', type: 'INFO', isRead: false },
-  { id: '5', title: 'Pago recibido', message: 'Se registró un pago de $185,000 de Grupo Alfa S.A. de C.V.', type: 'SUCCESS', isRead: true },
-  { id: '6', title: 'Backup completado', message: 'El respaldo automático de datos se completó exitosamente.', type: 'INFO', isRead: true },
-  { id: '7', title: 'Nuevo usuario registrado', message: 'Laura Hernández fue registrada como Visor en el sistema.', type: 'INFO', isRead: true },
-  { id: '8', title: 'Reporte generado', message: 'El reporte de Balance General Q2 2025 fue exportado por Roberto Sánchez.', type: 'INFO', isRead: true },
-];
+import { useNotifications } from '../hooks/useNotifications';
 
 const typeIcons: Record<string, string> = { INFO: 'ℹ️', WARNING: '⚠️', ERROR: '❌', SUCCESS: '✅' };
 const typeBg: Record<string, string> = { INFO: 'bg-info/10 border-info/20', WARNING: 'bg-warning/10 border-warning/20', ERROR: 'bg-error/10 border-error/20', SUCCESS: 'bg-success/10 border-success/20' };
 
 export function NotificationsView() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { notifications, isLoading: loading } = useNotifications();
 
-  useEffect(() => { setTimeout(() => { setNotifications(mockNotifications); setLoading(false); }, 500); }, []);
+  const unread = (notifications || []).filter(n => !n.isRead);
+  const read = (notifications || []).filter(n => n.isRead);
 
-  const unread = notifications.filter(n => !n.isRead);
-  const read = notifications.filter(n => n.isRead);
-
-  const markRead = (id: string) => { setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n)); };
-  const markAllRead = () => { setNotifications(prev => prev.map(n => ({ ...n, isRead: true }))); toast.success('Todas las notificaciones marcadas como leídas'); };
+  const markRead = (id: string) => { toast.message('Función pendiente de API POST /read'); };
+  const markAllRead = () => { toast.message('Función pendiente de API POST /mark-all-read'); };
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
@@ -51,7 +37,7 @@ export function NotificationsView() {
       </div>
 
       <div className="space-y-3 max-h-[70vh] overflow-y-auto">
-        {notifications.map((n, i) => (
+        {(notifications || []).map((n: any, i: number) => (
           <motion.div
             key={n.id}
             initial={{ opacity: 0, x: -10 }}
@@ -70,7 +56,7 @@ export function NotificationsView() {
                 {!n.isRead && <span className="w-2 h-2 rounded-full bg-vintage-400 flex-shrink-0" />}
               </div>
               <p className="text-xs text-vintage-500 mt-0.5">{n.message}</p>
-              <p className="text-[10px] text-vintage-400 mt-1">{formatRelativeTime(n.timestamp)}</p>
+              <p className="text-[10px] text-vintage-400 mt-1">{formatRelativeTime(n.createdAt)}</p>
             </div>
             {!n.isRead && (
               <button className="p-1.5 rounded-lg hover:bg-vintage-100 text-vintage-400 hover:text-vintage-600 transition-colors flex-shrink-0" title="Marcar como leída">
@@ -79,7 +65,7 @@ export function NotificationsView() {
             )}
           </motion.div>
         ))}
-        {notifications.length === 0 && (
+        {(!notifications || notifications.length === 0) && (
           <EmptyState icon={<Bell className="w-8 h-8" />} title="Sin notificaciones" description="No tienes notificaciones nuevas" />
         )}
       </div>

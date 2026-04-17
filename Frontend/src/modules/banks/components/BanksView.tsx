@@ -54,15 +54,15 @@ function getMovementIcon(type: string) {
 
 export function BanksView() {
   const {
-    accounts, movements, isLoading, total, totalPages, page, limit,
-    search, accountFilter, typeFilter,
+    bankAccounts: accounts = [], movements = [], isLoading, total = 0, totalPages = 1, page = 1, limit = 20,
+    search = '', accountFilter = '', typeFilter = '',
     setSearch, setAccountFilter, setTypeFilter, setPage, clearFilters,
     createMovement, reconcileMovement,
-    totalBalance, totalDeposits, totalWithdrawals,
-  } = useBanks();
+    totalBalance = 0, totalDeposits = 0, totalWithdrawals = 0,
+  } = useBanks() as any;
 
   const [showForm, setShowForm] = useState(false);
-  const [formAccountId, setFormAccountId] = useState(accounts[0]?.id || '');
+  const [formAccountId, setFormAccountId] = useState(accounts?.[0]?.id || '');
   const [formType, setFormType] = useState<'DEPOSIT' | 'WITHDRAWAL' | 'TRANSFER'>('DEPOSIT');
   const [formDescription, setFormDescription] = useState('');
   const [formAmount, setFormAmount] = useState('');
@@ -101,7 +101,7 @@ export function BanksView() {
   }, [formAccountId, formType, formDescription, formAmount, formDate, formReference, createMovement]);
 
   const resetForm = () => {
-    setFormAccountId(accounts[0]?.id || '');
+    setFormAccountId(accounts?.[0]?.id || '');
     setFormType('DEPOSIT');
     setFormDescription('');
     setFormAmount('');
@@ -116,7 +116,7 @@ export function BanksView() {
     else toast.error('No se pudo conciliar');
   }, [reconcileMovement]);
 
-  const accountFilterOptions = accounts.map((a) => ({
+  const accountFilterOptions = (accounts || []).map((a: any) => ({
     value: a.id,
     label: `${a.bankName} (${a.accountNumber.slice(-4)})`,
   }));
@@ -152,7 +152,7 @@ export function BanksView() {
 
       {/* Account cards */}
       <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {accounts.map((acc) => {
+        {(accounts || []).map((acc: any) => {
           const colors = accountColors[acc.accountType] || accountColors.CHECKING;
           const depositTotal = movements
             .filter((m) => m.bankAccountId === acc.id && m.movementType === 'DEPOSIT')
@@ -246,7 +246,7 @@ export function BanksView() {
           emptyMessage="No se encontraron movimientos"
           emptyIcon={<Landmark />}
           renderRow={(row) => {
-            const acc = accounts.find((a) => a.id === row.bankAccountId);
+            const acc = (accounts || []).find((a: any) => a.id === row.bankAccountId);
             return (
               <>
                 <td className="px-4 py-3 text-sm text-vintage-600">{formatDate(row.movementDate)}</td>
@@ -333,7 +333,7 @@ export function BanksView() {
                     onChange={(e) => setFormAccountId(e.target.value)}
                     className="w-full px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400"
                   >
-                    {accounts.map((a) => (
+                    {(accounts || []).map((a: any) => (
                       <option key={a.id} value={a.id}>{a.bankName} ({a.accountNumber})</option>
                     ))}
                   </select>

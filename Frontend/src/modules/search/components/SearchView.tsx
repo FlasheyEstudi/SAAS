@@ -7,25 +7,22 @@ import { useAppStore } from '@/lib/stores/useAppStore';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { formatCurrency, formatDate } from '@/lib/utils/format';
 
-interface SearchResult { type: string; icon: React.ReactNode; title: string; subtitle: string; amount?: string; date: string; view: string; params: Record<string, string>; }
+import { useSearch } from '../hooks/useSearch';
 
-const mockResults: SearchResult[] = [
-  { type: 'Póliza', icon: <FileText className="w-4 h-4 text-vintage-400" />, title: 'POL-2025-0045', subtitle: 'Pago de nómina quincenal', amount: '$285,000.00', date: '2025-08-15', view: 'journal-detail', params: { id: '45' } },
-  { type: 'Póliza', icon: <FileText className="w-4 h-4 text-vintage-400" />, title: 'POL-2025-0044', subtitle: 'Ajuste de inventario', amount: '$45,200.00', date: '2025-08-15', view: 'journal-detail', params: { id: '44' } },
-  { type: 'Factura', icon: <Receipt className="w-4 h-4 text-vintage-400" />, title: 'FAC-2025-0080', subtitle: 'Hotel Paraíso Riviera', amount: '$250,000.00', date: '2025-08-14', view: 'invoice-detail', params: { id: '80' } },
-  { type: 'Tercero', icon: <Users className="w-4 h-4 text-vintage-400" />, title: 'Grupo Alfa S.A. de C.V.', subtitle: 'Cliente - RFC: GA180101XYZ', amount: '$185,000.00 saldo', date: '', view: 'third-parties', params: {} },
-  { type: 'Cuenta', icon: <BookOpen className="w-4 h-4 text-vintage-400" />, title: '1101 - Caja y Bancos', subtitle: 'Activo Circulante', amount: '$1,250,000.00', date: '', view: 'accounts', params: {} },
-  { type: 'Factura', icon: <Receipt className="w-4 h-4 text-vintage-400" />, title: 'FAC-2025-0078', subtitle: 'Constructora del Norte S.A.', amount: '$520,000.00', date: '2025-08-10', view: 'invoice-detail', params: { id: '78' } },
-  { type: 'Póliza', icon: <FileText className="w-4 h-4 text-vintage-400" />, title: 'POL-2025-0043', subtitle: 'Ingreso por servicio profesional', amount: '$120,000.00', date: '2025-08-14', view: 'journal-detail', params: { id: '43' } },
-];
+const getIcon = (type: string) => {
+  switch (type.toLowerCase()) {
+    case 'póliza': case 'journal': return <FileText className="w-4 h-4 text-vintage-400" />;
+    case 'factura': case 'invoice': return <Receipt className="w-4 h-4 text-vintage-400" />;
+    case 'tercero': case 'third-party': return <Users className="w-4 h-4 text-vintage-400" />;
+    case 'cuenta': case 'account': return <BookOpen className="w-4 h-4 text-vintage-400" />;
+    default: return <FileText className="w-4 h-4 text-vintage-400" />;
+  }
+};
 
 export function SearchView() {
   const [query, setQuery] = useState('');
   const navigate = useAppStore((s) => s.navigate);
-
-  const results = query.length >= 2
-    ? mockResults.filter(r => r.title.toLowerCase().includes(query.toLowerCase()) || r.subtitle.toLowerCase().includes(query.toLowerCase()))
-    : [];
+  const { results, isLoading } = useSearch(query);
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -58,8 +55,9 @@ export function SearchView() {
 
       {results.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs text-vintage-500">{results.length} resultado(s)</p>
-          {results.map((r, i) => (
+          {isLoading && <p className="text-xs text-vintage-500 py-2 text-center">Buscando...</p>}
+          {!isLoading && <p className="text-xs text-vintage-500">{results.length} resultado(s)</p>}
+          {!isLoading && results.map((r: any, i: number) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 5 }}
@@ -68,14 +66,14 @@ export function SearchView() {
               onClick={() => navigate(r.view as any, r.params)}
               className="flex items-center gap-4 p-4 bg-card rounded-xl border border-vintage-200 hover:border-vintage-300 hover:shadow-sm cursor-pointer transition-all"
             >
-              <div className="w-10 h-10 rounded-lg bg-vintage-100 flex items-center justify-center">{r.icon}</div>
+              <div className="w-10 h-10 rounded-lg bg-vintage-100 flex items-center justify-center">{getIcon(r.type)}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2"><span className="text-[10px] font-medium text-vintage-400 uppercase">{r.type}</span></div>
                 <p className="text-sm font-medium text-vintage-800 truncate">{r.title}</p>
                 <p className="text-xs text-vintage-500 truncate">{r.subtitle}</p>
               </div>
               <div className="text-right flex-shrink-0">
-                {r.amount && <p className="text-sm font-medium text-vintage-700">{r.amount}</p>}
+                {r.amount !== undefined && <p className="text-sm font-medium text-vintage-700">{formatCurrency(r.amount)}</p>}
                 {r.date && <p className="text-[10px] text-vintage-400">{formatDate(r.date)}</p>}
               </div>
             </motion.div>

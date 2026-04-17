@@ -330,8 +330,8 @@ export interface DashboardKPIs {
   cashBalance: number;
   overdueInvoices: number;
   pendingJournalEntries: number;
-  revenueChange: number;
-  expenseChange: number;
+  revenueChange?: number;
+  expenseChange?: number;
 }
 
 export interface AgingBucket {

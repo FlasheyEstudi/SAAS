@@ -8,28 +8,28 @@ import { VintageCard } from '@/components/ui/vintage-card';
 import { StatusBadge, ConfirmDialog } from '@/components/ui/vintage-ui';
 import { formatDate, getInitials } from '@/lib/utils/format';
 
-interface User { id: string; name: string; email: string; role: 'ADMIN' | 'ACCOUNTANT' | 'MANAGER' | 'VIEWER'; isActive: boolean; lastLogin: string; }
-
-const mockUsers: User[] = [
-  { id: '1', name: 'María García López', email: 'maria.garcia@contable.mx', role: 'ADMIN', isActive: true, lastLogin: '2025-08-15T09:30:00' },
-  { id: '2', name: 'Carlos Rodríguez', email: 'carlos.rodriguez@contable.mx', role: 'ACCOUNTANT', isActive: true, lastLogin: '2025-08-15T08:45:00' },
-  { id: '3', name: 'Ana Martínez Ruiz', email: 'ana.martinez@contable.mx', role: 'ACCOUNTANT', isActive: true, lastLogin: '2025-08-14T17:20:00' },
-  { id: '4', name: 'Roberto Sánchez', email: 'roberto.sanchez@contable.mx', role: 'MANAGER', isActive: true, lastLogin: '2025-08-14T14:10:00' },
-  { id: '5', name: 'Laura Hernández', email: 'laura.hernandez@contable.mx', role: 'VIEWER', isActive: true, lastLogin: '2025-08-13T11:00:00' },
-  { id: '6', name: 'Pedro Gómez (inactivo)', email: 'pedro.gomez@contable.mx', role: 'ACCOUNTANT', isActive: false, lastLogin: '2025-06-20T16:30:00' },
-];
+import { useUsers } from '../hooks/useUsers';
 
 const roleLabels: Record<string, string> = { ADMIN: 'Administrador', ACCOUNTANT: 'Contador', MANAGER: 'Gerente', VIEWER: 'Visor' };
 const roleColors: Record<string, string> = { ADMIN: 'error', ACCOUNTANT: 'success', MANAGER: 'warning', VIEWER: 'neutral' };
 
 export function UsersView() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { users, isLoading: loading, refetch } = useUsers();
   const [deleteId, setDeleteId] = useState<string | null>(null);
-
-  useEffect(() => { setTimeout(() => { setUsers(mockUsers); setLoading(false); }, 500); }, []);
-
-  const handleDelete = () => { if (deleteId) { setUsers(prev => prev.filter(u => u.id !== deleteId)); toast.success('Usuario eliminado'); setDeleteId(null); } };
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [form, setForm] = useState({ name: '', email: '', role: 'VIEWER' });
+  
+  const openCreate = () => { setEditing(null); setForm({ name: '', email: '', role: 'VIEWER' }); setShowForm(true); };
+  const openEdit = (u: any) => { setEditing(u); setForm({ name: u.name, email: u.email, role: u.role }); setShowForm(true); };
+  
+  const handleSave = () => {
+    if (!form.name || !form.email) { toast.error('Nombre y email requeridos'); return; }
+    toast.message('Función guardar pendiente de API POST/PUT'); 
+    setShowForm(false);
+  };
+  
+  const handleDelete = () => { if (deleteId) { toast.message('Función eliminar pendiente de API DELETE'); setDeleteId(null); } };
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
@@ -37,6 +37,7 @@ export function UsersView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h2 className="text-2xl font-playfair font-bold text-vintage-900">Usuarios</h2><p className="text-sm text-vintage-600 mt-1">Gestión de usuarios y permisos</p></div>
+        <PastelButton onClick={openCreate}>Nuevo Usuario</PastelButton>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -61,29 +62,55 @@ export function UsersView() {
             </tr>
           </thead>
           <tbody className="divide-y divide-vintage-100">
-            {users.map((u, i) => (
-              <motion.tr key={u.id} className="hover:bg-vintage-50 transition-colors" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }}>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-vintage-300 to-vintage-400 flex items-center justify-center text-white text-xs font-bold">{getInitials(u.name)}</div>
-                    <span className="text-sm font-medium text-vintage-800">{u.name}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-sm text-vintage-600">{u.email}</td>
-                <td className="px-4 py-3 text-center"><StatusBadge status={roleColors[u.role] as any} label={roleLabels[u.role]} /></td>
-                <td className="px-4 py-3 text-xs text-vintage-500">{formatDate(u.lastLogin, 'dd/MM/yyyy HH:mm')}</td>
-                <td className="px-4 py-3 text-center"><StatusBadge status={u.isActive ? 'success' : 'neutral'} label={u.isActive ? 'Activo' : 'Inactivo'} /></td>
-                <td className="px-4 py-3 text-center">
-                  <div className="flex justify-center gap-1">
-                    <button onClick={() => toast.info('Función próximamente')} className="p-1.5 rounded-lg hover:bg-vintage-100 text-vintage-500"><Edit2 className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => setDeleteId(u.id)} className="p-1.5 rounded-lg hover:bg-error/10 text-vintage-500 hover:text-error"><Trash2 className="w-3.5 h-3.5" /></button>
-                  </div>
-                </td>
-              </motion.tr>
-            ))}
+            {users.map((u, i) => {
+              if (!u) return null;
+              return (
+                <motion.tr key={u.id} className="hover:bg-vintage-50 transition-colors" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }}>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-vintage-300 to-vintage-400 flex items-center justify-center text-white text-xs font-bold">{getInitials(u.name || 'U')}</div>
+                      <span className="text-sm font-medium text-vintage-800">{u.name || 'Sin nombre'}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-vintage-600">{u.email || '-'}</td>
+                  <td className="px-4 py-3 text-center"><StatusBadge status={(u.role ? roleColors[u.role] : 'neutral') as any} label={u.role ? roleLabels[u.role] : 'N/A'} /></td>
+                  <td className="px-4 py-3 text-xs text-vintage-500">{u.lastLogin ? formatDate(u.lastLogin, 'dd/MM/yyyy HH:mm') : 'Nunca'}</td>
+                  <td className="px-4 py-3 text-center"><StatusBadge status={u.isActive ? 'success' : 'neutral'} label={u.isActive ? 'Activo' : 'Inactivo'} /></td>
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex justify-center gap-1">
+                      <button onClick={() => openEdit(u)} className="p-1.5 rounded-lg hover:bg-vintage-100 text-vintage-500"><Edit2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setDeleteId(u.id)} className="p-1.5 rounded-lg hover:bg-error/10 text-vintage-500 hover:text-error"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                  </td>
+                </motion.tr>
+              );
+            })}
           </tbody>
         </table>
       </VintageCard>
+
+      {showForm && (
+        <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowForm(false)} />
+          <motion.div className="relative bg-card rounded-2xl p-6 max-w-md w-full shadow-xl border border-vintage-200" initial={{ scale: 0.95 }} animate={{ scale: 1 }}>
+            <h3 className="text-lg font-playfair font-bold text-vintage-800 mb-4">{editing ? 'Editar' : 'Nuevo'} Usuario</h3>
+            <div className="space-y-4">
+              <div className="space-y-1"><label className="text-xs text-vintage-600 font-medium ml-1">Nombre</label>
+                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400" /></div>
+              <div className="space-y-1"><label className="text-xs text-vintage-600 font-medium ml-1">Email</label>
+                <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full px-3 py-2 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400" /></div>
+              <div className="space-y-1"><label className="text-xs text-vintage-600 font-medium ml-1">Rol</label>
+                <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="w-full px-3 py-2 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400">
+                  <option value="ADMIN">Administrador</option><option value="ACCOUNTANT">Contador</option><option value="MANAGER">Gerente</option><option value="VIEWER">Visor</option>
+                </select></div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm rounded-xl border border-vintage-200 text-vintage-700 hover:bg-vintage-50">Cancelar</button>
+              <PastelButton onClick={handleSave}>{editing ? 'Guardar' : 'Crear'}</PastelButton>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
 
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={handleDelete} title="Eliminar usuario" description="¿Eliminar este usuario del sistema?" variant="destructive" />
     </div>

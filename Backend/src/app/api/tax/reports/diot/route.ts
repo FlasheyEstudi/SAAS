@@ -4,8 +4,8 @@ import { success, error, serverError } from '@/lib/api-helpers';
 // ============================================================
 // GET /api/tax/reports/diot - Reporte DIOT
 // Declaración Informativa de Operaciones con Terceros
-// Cumplimiento SAT para compras con IVA desglosado
-// Muestra: proveedor, RFC, monto, IVA, número de factura, fecha
+// Cumplimiento DGI para compras con IVA desglosado
+// Muestra: proveedor, RUC, monto, IVA, número de factura, fecha
 // Parámetros: companyId (requerido), dateFrom, dateTo, month, year
 // ============================================================
 export async function GET(request: Request) {
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
     // Construir el reporte DIOT
     // Agrupar por proveedor (RFC)
     const proveedoresMap = new Map<string, {
-      rfc: string;
+      ruc: string;
       nombre: string;
       operaciones: Array<{
         factura: string;
@@ -101,12 +101,12 @@ export async function GET(request: Request) {
     }>();
 
     for (const invoice of purchaseInvoices) {
-      const rfc = invoice.thirdParty?.taxId || 'SIN_RFC';
+      const rucIdent = invoice.thirdParty?.taxId || 'SIN_RUC';
       const nombre = invoice.thirdParty?.name || 'Sin identificar';
 
-      if (!proveedoresMap.has(rfc)) {
-        proveedoresMap.set(rfc, {
-          rfc,
+      if (!proveedoresMap.has(rucIdent)) {
+        proveedoresMap.set(rucIdent, {
+          ruc: rucIdent,
           nombre,
           operaciones: [],
           totales: {
@@ -123,7 +123,7 @@ export async function GET(request: Request) {
         });
       }
 
-      const proveedor = proveedoresMap.get(rfc)!;
+      const proveedor = proveedoresMap.get(ruc)!;
 
       // Separar impuestos por tasa
       let iva16 = 0;

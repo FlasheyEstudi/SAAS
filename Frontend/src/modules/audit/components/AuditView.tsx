@@ -34,7 +34,8 @@ export function AuditView() {
     const searchLower = (search || '').toLowerCase();
     const actionMatch = !actionFilter || l.action === actionFilter;
     const searchMatch = !search || 
-      (l.user?.toLowerCase().includes(searchLower)) || 
+      (l.user?.name?.toLowerCase().includes(searchLower)) || 
+      (l.user?.email?.toLowerCase().includes(searchLower)) ||
       (l.details?.toLowerCase().includes(searchLower)) || 
       (l.entityId?.toLowerCase().includes(searchLower));
     return actionMatch && searchMatch;
@@ -54,10 +55,10 @@ export function AuditView() {
 
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <VintageCard><p className="text-xs text-vintage-500">Total Registros</p><p className="text-xl font-bold text-vintage-800">{stats.totalLogs}</p></VintageCard>
-          <VintageCard><p className="text-xs text-vintage-500">Acciones Únicas</p><p className="text-xl font-bold text-vintage-800">{Object.keys(stats.logsByAction || {}).length}</p></VintageCard>
-          <VintageCard><p className="text-xs text-vintage-500">Entidades</p><p className="text-xl font-bold text-vintage-800">{Object.keys(stats.logsByEntity || {}).length}</p></VintageCard>
-          <VintageCard><p className="text-xs text-vintage-500">Actividad Reciente</p><p className="text-xl font-bold text-success">{stats.recentActivity}</p></VintageCard>
+          <VintageCard><p className="text-xs text-vintage-500">Total Acciones</p><p className="text-xl font-bold text-vintage-800">{stats.totalActions}</p></VintageCard>
+          <VintageCard><p className="text-xs text-vintage-500">Tipos de Acción</p><p className="text-xl font-bold text-vintage-800">{Object.keys(stats.byAction || {}).length}</p></VintageCard>
+          <VintageCard><p className="text-xs text-vintage-500">Usuarios Activos</p><p className="text-xl font-bold text-vintage-800">{stats.byUser?.length || 0}</p></VintageCard>
+          <VintageCard><p className="text-xs text-vintage-500">Días con Actividad</p><p className="text-xl font-bold text-success">{Object.keys(stats.byDayLast30 || {}).length}</p></VintageCard>
         </div>
       )}
 
@@ -90,7 +91,7 @@ export function AuditView() {
               filtered.map((l, i) => (
                 <motion.tr key={l.id} className="hover:bg-vintage-50 transition-colors" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}>
                   <td className="px-4 py-3 text-xs text-vintage-500 whitespace-nowrap">{formatDate(l.timestamp, 'dd/MM/yy HH:mm')}</td>
-                  <td className="px-4 py-3 text-sm font-medium text-vintage-800">{l.user}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-vintage-800">{l.user?.name || 'Sistema'}</td>
                   <td className="px-4 py-3 text-center"><span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', actionColors[l.action] || 'bg-vintage-200/50 text-vintage-700')}>{l.action}</span></td>
                   <td className="px-4 py-3"><span className="font-mono text-xs text-vintage-600 bg-vintage-100 px-1.5 py-0.5 rounded">{l.entityId}</span></td>
                   <td className="px-4 py-3 text-sm text-vintage-600 max-w-xs truncate">{l.details}</td>

@@ -7,6 +7,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, BookOpen, Sparkles, User, Building2, Phone, CheckCircle, Shield, Key } from 'lucide-react';
 import { toast } from 'sonner';
+import { apiClient } from '@/lib/api/client';
+import { AUTH } from '@/lib/api/endpoints';
 import { cn } from '@/lib/utils';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
@@ -68,7 +70,7 @@ const itemVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as any },
   },
 };
 
@@ -133,33 +135,18 @@ export function RegisterPage() {
     setIsSubmitting(true);
     
     try {
-      // Hacer el request usando fetch hacia nuestro backend en el puerto 3001
-      // Asumimos que NEXT_PUBLIC_API_URL es 'http://localhost:3001/api' (como en .env) o usamos la ruta absoluta para probar
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      
-      const response = await fetch(`${apiUrl}/users/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: data.name,
-          email: data.email,
-          company: data.company,
-          phone: data.phone,
-          password: data.password
-        }),
+      await apiClient.post(AUTH.register, {
+        name: data.name,
+        email: data.email,
+        company: data.company,
+        phone: data.phone,
+        password: data.password
       });
       
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Error al registrar.');
-      }
-      
       setRegistrationSuccess(true);
-      toast.success('¡Registro exitoso! Ya puedes iniciar sesión con tu nueva cuenta.');
-    } catch (error) {
-      console.error('Error en registro:', error);
-      toast.error(error instanceof Error ? error.message : 'Error al registrar. Por favor intenta más tarde.');
+      toast.success('¡Registro exitoso! Ahora puedes iniciar sesión.');
+    } catch (error: any) {
+      toast.error(error?.error || 'Error al registrar usuario');
     } finally {
       setIsSubmitting(false);
     }
@@ -236,14 +223,7 @@ export function RegisterPage() {
       />
 
       {/* ── Subtle pattern overlay ── */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.035]"
-        style={{
-          backgroundImage:
-            'radial-gradient(circle at 1px 1px, #8B7355 1px, transparent 0)',
-          backgroundSize: '32px 32px',
-        }}
-      />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.035] subtle-pattern-overlay" />
 
       {/* ── Main card ── */}
       <motion.div

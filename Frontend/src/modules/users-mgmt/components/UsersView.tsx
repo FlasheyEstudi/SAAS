@@ -6,6 +6,7 @@ import { UserCog, Shield, Edit2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { StatusBadge, ConfirmDialog } from '@/components/ui/vintage-ui';
+import { PastelButton } from '@/components/ui/pastel-button';
 import { formatDate, getInitials } from '@/lib/utils/format';
 
 import { useUsers } from '../hooks/useUsers';
@@ -14,7 +15,7 @@ const roleLabels: Record<string, string> = { ADMIN: 'Administrador', ACCOUNTANT:
 const roleColors: Record<string, string> = { ADMIN: 'error', ACCOUNTANT: 'success', MANAGER: 'warning', VIEWER: 'neutral' };
 
 export function UsersView() {
-  const { users, isLoading: loading, refetch } = useUsers();
+  const { users, isLoading: loading, createUser, updateUser, deleteUser, isCreating, isUpdating, isDeleting } = useUsers();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
@@ -23,13 +24,31 @@ export function UsersView() {
   const openCreate = () => { setEditing(null); setForm({ name: '', email: '', role: 'VIEWER' }); setShowForm(true); };
   const openEdit = (u: any) => { setEditing(u); setForm({ name: u.name, email: u.email, role: u.role }); setShowForm(true); };
   
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name || !form.email) { toast.error('Nombre y email requeridos'); return; }
-    toast.message('Función guardar pendiente de API POST/PUT'); 
-    setShowForm(false);
+    
+    try {
+      if (editing) {
+        await updateUser({ id: editing.id, data: form });
+      } else {
+        await createUser(form);
+      }
+      setShowForm(false);
+    } catch (err) {
+      // Error handled by hook
+    }
   };
   
-  const handleDelete = () => { if (deleteId) { toast.message('Función eliminar pendiente de API DELETE'); setDeleteId(null); } };
+  const handleDelete = async () => {
+    if (deleteId) {
+      try {
+        await deleteUser(deleteId);
+        setDeleteId(null);
+      } catch (err) {
+        // Error handled by hook
+      }
+    }
+  };
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
@@ -105,8 +124,8 @@ export function UsersView() {
                 </select></div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm rounded-xl border border-vintage-200 text-vintage-700 hover:bg-vintage-50">Cancelar</button>
-              <PastelButton onClick={handleSave}>{editing ? 'Guardar' : 'Crear'}</PastelButton>
+              <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm rounded-xl border border-vintage-200 text-vintage-700 hover:bg-vintage-50" disabled={isCreating || isUpdating}>Cancelar</button>
+              <PastelButton onClick={handleSave} loading={isCreating || isUpdating}>{editing ? 'Guardar' : 'Crear'}</PastelButton>
             </div>
           </motion.div>
         </motion.div>

@@ -15,16 +15,23 @@ export function useAccounts() {
     retry: false,
   });
 
-  const createMutation = useMutation({
-    mutationFn: (newAccount: Partial<Account>) => 
-      apiClient.post(ACCOUNTS.list, newAccount),
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: Partial<Account> }) => 
+      apiClient.put(ACCOUNTS.update(id), data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts', 'tree'] });
-      toast.success('Cuenta creada exitosamente');
+      toast.success('Cuenta actualizada correctamente');
     },
-    onError: (err: any) => {
-      toast.error(err.error || 'Error al crear la cuenta');
-    }
+    onError: (err: any) => toast.error(err.error || 'Error al actualizar cuenta'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiClient.delete(ACCOUNTS.delete(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['accounts', 'tree'] });
+      toast.success('Cuenta eliminada correctamente');
+    },
+    onError: (err: any) => toast.error(err.error || 'Error al eliminar cuenta'),
   });
 
   return {
@@ -32,7 +39,11 @@ export function useAccounts() {
     isLoading,
     error: error ? (error as any).error || 'Error fetching accounts' : null,
     refetch,
-    createAccount: createMutation.mutate,
+    createAccount: createMutation.mutateAsync,
+    updateAccount: updateMutation.mutateAsync,
+    deleteAccount: deleteMutation.mutateAsync,
     isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
+    isDeleting: deleteMutation.isPending,
   };
 }

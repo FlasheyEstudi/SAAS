@@ -26,16 +26,16 @@ export function useInvoices() {
   const queryClient = useQueryClient();
 
   // Fetch invoices list
-  const { data: invoicesData, isLoading: invoicesLoading, error: invoicesError } = useQuery<{ invoices: Invoice[] }>({
+  const { data: invoicesData, isLoading: invoicesLoading, error: invoicesError } = useQuery<{ data: Invoice[] }>({
     queryKey: ['invoices', 'list'],
-    queryFn: () => apiClient.get<{ invoices: Invoice[] }>(INVOICES.list),
+    queryFn: () => apiClient.get<{ data: Invoice[] }>(INVOICES.list),
     retry: false,
   });
 
   // Fetch third parties
-  const { data: thirdPartiesData, isLoading: thirdPartiesLoading } = useQuery<{ thirdParties: ThirdParty[] }>({
+  const { data: thirdPartiesData, isLoading: thirdPartiesLoading } = useQuery<{ data: ThirdParty[] }>({
     queryKey: ['third-parties', 'list'],
-    queryFn: () => apiClient.get<{ thirdParties: ThirdParty[] }>(THIRD_PARTIES.list),
+    queryFn: () => apiClient.get<{ data: ThirdParty[] }>(THIRD_PARTIES.list),
     retry: false,
   });
 
@@ -95,8 +95,8 @@ export function useInvoices() {
   });
 
   return {
-    invoices: invoicesData?.invoices || [],
-    thirdParties: thirdPartiesData?.thirdParties || [],
+    invoices: invoicesData?.data || [],
+    thirdParties: thirdPartiesData?.data || [],
     aging: agingData,
     summary: summaryData,
     isLoading: invoicesLoading || thirdPartiesLoading || agingLoading || summaryLoading,

@@ -30,30 +30,28 @@ export function useJournalEntries() {
   const queryClient = useQueryClient();
 
   // Fetch journal entries list
-  const { data: entriesData, isLoading: entriesLoading, error: entriesError } = useQuery<{ entries: JournalEntry[] }>({
+  const { data: entriesData, isLoading: entriesLoading, error: entriesError } = useQuery<{ data: JournalEntry[] }>({
     queryKey: ['journal-entries', 'list'],
-    queryFn: () => apiClient.get<{ entries: JournalEntry[] }>(JOURNAL.list),
+    queryFn: () => apiClient.get<{ data: JournalEntry[] }>(JOURNAL.list),
     retry: false,
   });
 
   // Fetch accounts tree
-  const { data: accountsData, isLoading: accountsLoading } = useQuery<{ accounts: Account[] }>({
+  const { data: accountsData, isLoading: accountsLoading } = useQuery<Account[]>({
     queryKey: ['accounts', 'tree'],
-    queryFn: () => apiClient.get<{ accounts: Account[] }>(ACCOUNTS.tree),
+    queryFn: () => apiClient.get<Account[]>(ACCOUNTS.tree),
     retry: false,
   });
 
-  // Fetch cost centers
-  const { data: costCentersData, isLoading: costCentersLoading } = useQuery<{ costCenters: CostCenter[] }>({
+  const { data: costCentersData, isLoading: costCentersLoading } = useQuery<{ data: CostCenter[] }>({
     queryKey: ['cost-centers', 'list'],
-    queryFn: () => apiClient.get<{ costCenters: CostCenter[] }>(COST_CENTERS.list),
+    queryFn: () => apiClient.get<{ data: CostCenter[] }>(COST_CENTERS.list),
     retry: false,
   });
 
-  // Fetch periods
-  const { data: periodsData, isLoading: periodsLoading } = useQuery<{ periods: Period[] }>({
+  const { data: periodsData, isLoading: periodsLoading } = useQuery<{ data: Period[] }>({
     queryKey: ['periods', 'list'],
-    queryFn: () => apiClient.get<{ periods: Period[] }>(PERIODS.list),
+    queryFn: () => apiClient.get<{ data: Period[] }>(PERIODS.list),
     retry: false,
   });
 
@@ -95,10 +93,10 @@ export function useJournalEntries() {
   });
 
   return {
-    entries: entriesData?.entries || [],
-    accounts: accountsData?.accounts || [],
-    costCenters: costCentersData?.costCenters || [],
-    periods: periodsData?.periods || [],
+    entries: entriesData?.data || [],
+    accounts: accountsData || [],
+    costCenters: costCentersData?.data || [],
+    periods: periodsData?.data || [],
     isLoading: entriesLoading || accountsLoading || costCentersLoading || periodsLoading,
     error: entriesError,
     createEntry: createMutation.mutateAsync,

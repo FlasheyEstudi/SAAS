@@ -203,7 +203,7 @@ export function JournalListView() {
         <VintageCard hover={false} className="p-4">
           <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Debe</p>
           <p className="text-xl font-playfair text-vintage-800 mt-1">
-            {formatCurrency((entries || []).reduce((s: number, e: any) => s + (e.totalDebit || 0), 0), 'MXN')}
+            {formatCurrency((entries || []).reduce((s: number, e: any) => s + (e.totalDebit || 0), 0), 'NIO')}
           </p>
         </VintageCard>
       </motion.div>
@@ -231,10 +231,10 @@ export function JournalListView() {
                 <span className="text-sm text-vintage-700 line-clamp-1">{row.description}</span>
               </td>
               <td className="px-4 py-3 text-right">
-                <span className="text-sm font-mono text-vintage-700">{formatCurrency(row.totalDebit, 'MXN')}</span>
+                <span className="text-sm font-mono text-vintage-700">{formatCurrency(row.totalDebit, 'NIO')}</span>
               </td>
               <td className="px-4 py-3 text-right">
-                <span className="text-sm font-mono text-vintage-700">{formatCurrency(row.totalCredit, 'MXN')}</span>
+                <span className="text-sm font-mono text-vintage-700">{formatCurrency(row.totalCredit, 'NIO')}</span>
               </td>
               <td className="px-4 py-3 text-center">{getStatusBadge(row.status)}</td>
               <td className="px-4 py-3 text-center">

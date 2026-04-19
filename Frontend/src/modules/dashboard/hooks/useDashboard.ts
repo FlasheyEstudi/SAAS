@@ -40,11 +40,11 @@ export interface DashboardData {
 /**
  * Dashboard hook - consumes real Backend APIs
  */
-export function useDashboard() {
+export function useDashboard(consolidated = false) {
   // Fetch KPIs from backend
   const { data: kpisData, isLoading: kpisLoading, error: kpisError } = useQuery<DashboardKPIs>({
-    queryKey: ['dashboard', 'kpis'],
-    queryFn: () => apiClient.get<DashboardKPIs>(DASHBOARD.kpis),
+    queryKey: ['dashboard', 'kpis', { consolidated }],
+    queryFn: () => apiClient.get<DashboardKPIs>(DASHBOARD.kpis, { consolidated }),
     retry: false,
   });
 
@@ -105,8 +105,8 @@ export function useDashboard() {
     kpis: kpisData,
     revenueTrend: periodData?.trends || [],
     expenseCategories: periodData?.expenseCategories || [],
-    recentJournalEntries: journalData?.entries || [],
-    recentInvoices: invoicesData?.invoices || [],
+    recentJournalEntries: (journalData as any)?.data || [],
+    recentInvoices: (invoicesData as any)?.data || [],
     topClients: customersData?.customers || [],
   } : undefined;
 

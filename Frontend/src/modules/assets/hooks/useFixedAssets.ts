@@ -100,6 +100,48 @@ export function useFixedAssets() {
     }
   }, []);
 
+  const createAsset = useCallback(async (data: Partial<FixedAsset>) => {
+    try {
+      await apiClient.post(ASSETS.create, data);
+      toast.success('Activo creado correctamente');
+      fetchAssets();
+      fetchSummary();
+      return true;
+    } catch (error: any) {
+      console.error('Error creating asset:', error);
+      toast.error(error.error || 'No se pudo crear el activo');
+      return false;
+    }
+  }, [fetchAssets, fetchSummary]);
+
+  const updateAsset = useCallback(async (id: string, data: Partial<FixedAsset>) => {
+    try {
+      await apiClient.put(ASSETS.update(id), data);
+      toast.success('Activo actualizado correctamente');
+      fetchAssets();
+      fetchSummary();
+      return true;
+    } catch (error: any) {
+      console.error('Error updating asset:', error);
+      toast.error(error.error || 'No se pudo actualizar el activo');
+      return false;
+    }
+  }, [fetchAssets, fetchSummary]);
+
+  const deleteAsset = useCallback(async (id: string) => {
+    try {
+      await apiClient.delete(ASSETS.delete(id));
+      toast.success('Activo eliminado correctamente');
+      fetchAssets();
+      fetchSummary();
+      return true;
+    } catch (error: any) {
+      console.error('Error deleting asset:', error);
+      toast.error(error.error || 'No se pudo eliminar el activo');
+      return false;
+    }
+  }, [fetchAssets, fetchSummary]);
+
   useEffect(() => {
     fetchAssets();
     fetchSummary();
@@ -114,5 +156,8 @@ export function useFixedAssets() {
     depreciateAsset,
     bulkDepreciate,
     getAssetHistory,
+    createAsset,
+    updateAsset,
+    deleteAsset,
   };
 }

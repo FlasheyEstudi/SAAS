@@ -271,13 +271,13 @@ export function JournalEntryDetail() {
         <VintageCard hover={false} className="p-4">
           <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Debe</p>
           <p className="text-xl font-playfair text-vintage-800 mt-1 font-mono">
-            {formatCurrency(entry.totalDebit, 'MXN')}
+            {formatCurrency(entry.totalDebit, 'NIO')}
           </p>
         </VintageCard>
         <VintageCard hover={false} className="p-4">
           <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Haber</p>
           <p className="text-xl font-playfair text-vintage-800 mt-1 font-mono">
-            {formatCurrency(entry.totalCredit, 'MXN')}
+            {formatCurrency(entry.totalCredit, 'NIO')}
           </p>
         </VintageCard>
         <VintageCard hover={false} className="p-4">
@@ -286,7 +286,7 @@ export function JournalEntryDetail() {
             'text-xl font-playfair mt-1 font-mono',
             entry.difference <= 0.01 ? 'text-success' : 'text-error'
           )}>
-            {formatCurrency(entry.difference, 'MXN')}
+            {formatCurrency(entry.difference, 'NIO')}
           </p>
         </VintageCard>
       </motion.div>

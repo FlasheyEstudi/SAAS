@@ -113,15 +113,15 @@ export function EmptyState({
 // Loading skeleton with shimmer
 export function VintageSkeleton({ className, lines = 3 }: { className?: string; lines?: number }) {
   return (
-    <div className={cn('space-y-3', className)}>
+    <div className={cn('space-y-3 vintage-skeleton', className)}>
       {Array.from({ length: lines }).map((_, i) => (
         <div
           key={i}
-          className="h-4 bg-vintage-100 rounded shimmer-bg"
-          style={{
-            width: i === lines - 1 ? '60%' : '100%',
-            animationDelay: `${i * 0.1}s`,
-          }}
+          className={cn(
+            'h-4 bg-vintage-100 rounded shimmer-bg',
+            i === lines - 1 ? 'w-[60%]' : 'w-full',
+            i === 0 ? 'delay-0' : i === 1 ? 'delay-100' : i === 2 ? 'delay-200' : 'delay-300'
+          )}
         />
       ))}
     </div>

@@ -47,9 +47,18 @@ export async function POST(request: Request) {
           name,
           password: hashedPassword,
           companyId: companyRecord.id,
-          role: 'ADMIN', // El que crea la empresa es ADMIN
+          role: 'ADMIN', // El que crea la empresa es ADMIN en el campo global (por ahora compatible)
           isActive: true
         },
+      });
+
+      // Crear el vínculo de membresía explícito
+      await tx.userCompany.create({
+        data: {
+          userId: newUser.id,
+          companyId: companyRecord.id,
+          role: 'OWNER',
+        }
       });
 
       return { companyRecord, newUser };
@@ -63,6 +72,11 @@ export async function POST(request: Request) {
         name: result.newUser.name,
         email: result.newUser.email,
         companyId: result.newUser.companyId,
+        availableCompanies: [{
+          id: result.companyRecord.id,
+          name: result.companyRecord.name,
+          role: 'OWNER'
+        }]
       }
     });
   } catch (err) {

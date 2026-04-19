@@ -2,6 +2,112 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
 // ============================================================
+// AUTH VALIDATION
+// ============================================================
+
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  role: 'ADMIN' | 'ACCOUNTANT' | 'MANAGER' | 'USER';
+  companyId: string | null; // Currently active/default company
+  availableCompanies: { id: string, name: string, role: string }[];
+}
+
+export async function validateAuth(request: Request): Promise<AuthUser | null> {
+  try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return null;
+    }
+
+    const token = authHeader.substring(7); // Remove 'Bearer '
+    const decoded = Buffer.from(token, 'base64').toString('utf-8');
+    const [userId] = decoded.split(':');
+
+    if (!userId) return null;
+
+    const user = await db.user.findFirst({
+      where: { id: userId, isActive: true },
+      select: {
+        id: true,
+        companyId: true,
+        name: true,
+        email: true,
+        role: true,
+        memberships: {
+          include: {
+            company: {
+              select: { id: true, name: true }
+            }
+          }
+        }
+      },
+    });
+
+    if (!user) return null;
+
+    let availableCompanies = user.memberships.map(m => ({
+      id: m.companyId,
+      name: m.company.name,
+      role: m.role
+    }));
+
+    // Auto-curación: Si el usuario no tiene membresías pero tiene un companyId por defecto,
+    // creamos una membresía OWNER al vuelo para evitar el 401.
+    if (availableCompanies.length === 0 && user.companyId) {
+      try {
+        const defaultCompany = await db.company.findUnique({ where: { id: user.companyId } });
+        if (defaultCompany) {
+          // Crear la membresía en la base de datos de forma asíncrona (fuego y olvido relativo)
+          db.userCompany.create({
+            data: { userId: user.id, companyId: user.companyId, role: 'OWNER' }
+          }).catch(e => console.error('Error in auto-heal membership creation:', e));
+
+          availableCompanies = [{
+            id: defaultCompany.id,
+            name: defaultCompany.name,
+            role: 'OWNER'
+          }];
+        }
+      } catch (e) {
+        console.error('Error auto-healing companies:', e);
+      }
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role as any,
+      companyId: user.companyId,
+      availableCompanies
+    };
+  } catch (err) {
+    console.error('Auth validation error:', err);
+    return null;
+  }
+}
+
+export function requireAuth(user: AuthUser | null) {
+  if (!user) {
+    return unauthorized('Token de autenticación requerido');
+  }
+  return null;
+}
+
+/**
+ * Valida que el usuario tenga acceso a una empresa específica.
+ */
+export function requireCompanyAccess(user: AuthUser, companyId: string) {
+  const hasAccess = user.availableCompanies.some(c => c.id === companyId);
+  if (!hasAccess) {
+    return unauthorized('No tienes acceso a esta empresa');
+  }
+  return null;
+}
+
+// ============================================================
 // HELPERS GENÉRICOS PARA RESPUESTAS API
 // Estandarizan el formato de éxito y error en todos los endpoints.
 // ============================================================

@@ -152,9 +152,9 @@ export function InvoiceDetail() {
             <Receipt className="w-4 h-4 text-vintage-500" />
             <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total</p>
           </div>
-          <p className="text-xl font-playfair text-vintage-800 font-bold">{formatCurrency(invoice.totalAmount, 'MXN')}</p>
+          <p className="text-xl font-playfair text-vintage-800 font-bold">{formatCurrency(invoice.totalAmount, 'NIO')}</p>
           {invoice.balanceDue > 0 && (
-            <p className="text-xs text-warning font-medium mt-1">Saldo pendiente: {formatCurrency(invoice.balanceDue, 'MXN')}</p>
+            <p className="text-xs text-warning font-medium mt-1">Saldo pendiente: {formatCurrency(invoice.balanceDue, 'NIO')}</p>
           )}
         </VintageCard>
       </motion.div>
@@ -194,16 +194,16 @@ export function InvoiceDetail() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-vintage-700 text-center">{line.quantity}</td>
-                    <td className="px-4 py-3 text-sm font-mono text-vintage-700 text-right">{formatCurrency(line.unitPrice, 'MXN')}</td>
-                    <td className="px-4 py-3 text-sm font-mono text-vintage-600 text-right">{formatCurrency(line.subtotal, 'MXN')}</td>
-                    <td className="px-4 py-3 text-sm font-mono text-vintage-800 font-semibold text-right">{formatCurrency(line.total, 'MXN')}</td>
+                    <td className="px-4 py-3 text-sm font-mono text-vintage-700 text-right">{formatCurrency(line.unitPrice, 'NIO')}</td>
+                    <td className="px-4 py-3 text-sm font-mono text-vintage-600 text-right">{formatCurrency(line.subtotal, 'NIO')}</td>
+                    <td className="px-4 py-3 text-sm font-mono text-vintage-800 font-semibold text-right">{formatCurrency(line.total, 'NIO')}</td>
                   </motion.tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-vintage-200 bg-vintage-50/30">
                   <td colSpan={4} className="px-4 py-3 text-sm font-semibold text-vintage-700 text-right">Subtotal</td>
-                  <td colSpan={2} className="px-4 py-3 text-sm font-mono text-vintage-700 text-right">{formatCurrency(invoice.subtotal, 'MXN')}</td>
+                  <td colSpan={2} className="px-4 py-3 text-sm font-mono text-vintage-700 text-right">{formatCurrency(invoice.subtotal, 'NIO')}</td>
                 </tr>
                 {invoice.taxEntries.map((tax) => (
                   <tr key={tax.id} className="border-t border-vintage-100">
@@ -211,12 +211,12 @@ export function InvoiceDetail() {
                       <Percent className="w-3 h-3" />
                       {tax.taxName}
                     </td>
-                    <td colSpan={2} className="px-4 py-2 text-sm font-mono text-vintage-600 text-right">{formatCurrency(tax.taxAmount, 'MXN')}</td>
+                    <td colSpan={2} className="px-4 py-2 text-sm font-mono text-vintage-600 text-right">{formatCurrency(tax.taxAmount, 'NIO')}</td>
                   </tr>
                 ))}
                 <tr className="border-t-2 border-vintage-300 bg-vintage-100/50">
                   <td colSpan={4} className="px-4 py-3 text-base font-bold text-vintage-800 text-right">Total</td>
-                  <td colSpan={2} className="px-4 py-3 text-base font-mono font-bold text-vintage-800 text-right">{formatCurrency(invoice.totalAmount, 'MXN')}</td>
+                  <td colSpan={2} className="px-4 py-3 text-base font-mono font-bold text-vintage-800 text-right">{formatCurrency(invoice.totalAmount, 'NIO')}</td>
                 </tr>
               </tfoot>
             </table>

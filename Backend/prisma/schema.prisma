@@ -14,6 +14,7 @@ datasource db {
 // ============================================================
 model Company {
   id        String   @id @default(cuid())
+  parentId  String?              // Empresa padre si esta es una sucursal
   name      String   @unique
   taxId     String              // RFC, NIT, RUT según país
   logoUrl   String?
@@ -46,6 +47,10 @@ model Company {
   closingEntries      ClosingEntry[]
   paymentSchedules    PaymentSchedule[]
   financialConcepts   FinancialConcept[]
+  
+  parent              Company?           @relation("CompanyHierarchy", fields: [parentId], references: [id])
+  branches            Company[]          @relation("CompanyHierarchy")
+  members             UserCompany[]
 }
 
 // ============================================================
@@ -535,7 +540,7 @@ model BankMovement {
 // ============================================================
 model User {
   id          String    @id @default(cuid())
-  companyId   String
+  companyId   String?              // Default/Current company
   email       String    @unique
   name        String
   password    String               // hashed password
@@ -545,12 +550,33 @@ model User {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  company       Company        @relation(fields: [companyId], references: [id])
+  company       Company?       @relation(fields: [companyId], references: [id])
+  memberships   UserCompany[]
   auditLogs     AuditLog[]
   notifications Notification[]
 
   @@index([companyId])
   @@index([email])
+}
+
+// ============================================================
+// ENTIDAD 12 bis: UserCompany (Membresías / Relación N:M)
+// Permite que un usuario pertenezca a múltiples empresas.
+// ============================================================
+model UserCompany {
+  id        String   @id @default(cuid())
+  userId    String
+  companyId String
+  role      String   @default("OWNER") // OWNER, ADMIN, ACCOUNTANT, VIEWER
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@index([userId])
+  @@index([companyId])
 }
 
 // ============================================================

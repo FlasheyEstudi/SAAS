@@ -6,7 +6,12 @@ import { toast } from 'sonner';
 export interface AuditLog {
   id: string;
   userId: string;
-  user: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+
   action: string;
   entity: string;
   entityId: string;
@@ -16,11 +21,10 @@ export interface AuditLog {
 }
 
 export interface AuditStats {
-  totalLogs: number;
-  logsByAction: Record<string, number>;
-  logsByEntity: Record<string, number>;
-  topUsers: Array<{ user: string; count: number }>;
-  recentActivity: number;
+  totalActions: number;
+  byAction: Record<string, number>;
+  byUser: Array<{ userId: string; userName: string; count: number }>;
+  byDayLast30: Record<string, number>;
 }
 
 export function useAudit() {
@@ -32,7 +36,7 @@ export function useAudit() {
   const fetchLogs = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get(AUDIT.list);
+      const response = await apiClient.get<{ data: AuditLog[] }>(AUDIT.list);
       setLogs(response.data || []);
     } catch (error) {
       console.error('Error fetching audit logs:', error);

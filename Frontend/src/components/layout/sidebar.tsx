@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils';
 import { useAppStore, type AppView } from '@/lib/stores/useAppStore';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useCompanies } from '@/modules/companies/hooks/useCompanies';
 import {
   LayoutDashboard, Building2, CalendarDays, BookOpen, Target,
   FileText, Users, Receipt, Landmark, BarChart3, Package,
@@ -24,15 +25,19 @@ const navItems: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
   { id: 'journal', label: 'Pólizas', icon: <FileText className="w-5 h-5" /> },
   { id: 'invoices', label: 'Facturación', icon: <Receipt className="w-5 h-5" /> },
+  { id: 'taxes', label: 'Impuestos', icon: <Percent className="w-5 h-5" /> },
   { id: 'accounts', label: 'Plan de Cuentas', icon: <BookOpen className="w-5 h-5" /> },
   { id: 'cost-centers', label: 'Centros de Costo', icon: <Target className="w-5 h-5" /> },
   { id: 'third-parties', label: 'Terceros', icon: <Users className="w-5 h-5" /> },
   { id: 'banks', label: 'Bancos', icon: <Landmark className="w-5 h-5" /> },
   { id: 'periods', label: 'Períodos', icon: <CalendarDays className="w-5 h-5" /> },
+  { id: 'closing-entries', label: 'Cierres', icon: <Lock className="w-5 h-5" /> },
   { id: 'reports', label: 'Reportes', icon: <BarChart3 className="w-5 h-5" /> },
   { id: 'assets', label: 'Activos Fijos', icon: <Package className="w-5 h-5" /> },
   { id: 'budgets', label: 'Presupuestos', icon: <PiggyBank className="w-5 h-5" /> },
   { id: 'exchange', label: 'Tipos de Cambio', icon: <ArrowLeftRight className="w-5 h-5" /> },
+  { id: 'financial-concepts', label: 'Conceptos', icon: <BookOpen className="w-5 h-5" /> },
+  { id: 'payment-terms', label: 'Términos', icon: <Clock className="w-5 h-5" /> },
   { id: 'users', label: 'Usuarios', icon: <UserCog className="w-5 h-5" /> },
   { id: 'audit', label: 'Auditoría', icon: <Shield className="w-5 h-5" /> },
   { id: 'notifications', label: 'Notificaciones', icon: <Bell className="w-5 h-5" /> },
@@ -43,7 +48,15 @@ const navItems: NavItem[] = [
 ];
 
 export function Sidebar() {
-  const { currentView, navigate, sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed, user, logout, unreadCount } = useAppStore();
+  const { currentView, navigate, sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed, user, logout, unreadCount, currentCompany, setCurrentCompany } = useAppStore();
+  const { companies, isLoading: companiesLoading } = useCompanies();
+
+  const handleCompanyChange = (companyId: string) => {
+    const selected = companies.find((company) => company.id === companyId);
+    if (selected) {
+      setCurrentCompany(selected);
+    }
+  };
 
   return (
     <>
@@ -98,6 +111,8 @@ export function Sidebar() {
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden p-1 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/60"
+            title="Cerrar menú"
+            aria-label="Cerrar menú"
           >
             <X className="w-5 h-5" />
           </button>
@@ -105,10 +120,38 @@ export function Sidebar() {
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className="hidden lg:flex p-1 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/60"
+            title={sidebarCollapsed ? 'Expandir barra' : 'Contraer barra'}
+            aria-label={sidebarCollapsed ? 'Expandir barra' : 'Contraer barra'}
           >
             {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
+
+        {/* Company selector */}
+        {!sidebarCollapsed && (
+          <div className="px-4 py-3 border-b border-sidebar-border">
+            <label htmlFor="company-switcher" className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sidebar-foreground/70 mb-2 block">
+              Empresa activa
+            </label>
+            <select
+              id="company-switcher"
+              value={currentCompany?.id || ''}
+              onChange={(e) => handleCompanyChange(e.target.value)}
+              disabled={companiesLoading || companies.length === 0}
+              className="w-full bg-sidebar border border-sidebar-border rounded-xl px-3 py-2 text-sm text-sidebar-foreground focus:outline-none focus:ring-2 focus:ring-vintage-300"
+              aria-label="Seleccionar empresa"
+            >
+              <option value="" disabled>
+                {companiesLoading ? 'Cargando empresas...' : companies.length === 0 ? 'No hay empresas' : 'Selecciona una empresa'}
+              </option>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-2 px-2">
@@ -123,7 +166,8 @@ export function Sidebar() {
                   : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground',
                 sidebarCollapsed && 'justify-center px-2'
               )}
-              title={sidebarCollapsed ? item.label : undefined}
+              title={item.label}
+              aria-label={item.label}
             >
               <span className={cn(
                 'transition-colors',

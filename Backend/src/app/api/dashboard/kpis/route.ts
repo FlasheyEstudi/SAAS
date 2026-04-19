@@ -26,15 +26,23 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     const periodId = searchParams.get('periodId');
+    const consolidated = searchParams.get('consolidated') === 'true';
 
     if (!companyId) return error('El parámetro companyId es obligatorio');
+
+    // Si es consolidado, obtenemos los IDs de todas las sucursales
+    let targetCompanyIds = [companyId];
+    if (consolidated) {
+      const branches = await db.company.findMany({ where: { parentId: companyId } as any, select: { id: true } });
+      targetCompanyIds = [companyId, ...branches.map(b => b.id)];
+    }
 
     // Resolve current period
     let currentPeriod;
     if (periodId) {
-      currentPeriod = await db.accountingPeriod.findFirst({ where: { id: periodId, companyId } });
+      currentPeriod = await db.accountingPeriod.findFirst({ where: { id: periodId } });
     } else {
-      // Get the most recent period
+      // Get the most recent period for the main company
       currentPeriod = await db.accountingPeriod.findFirst({
         where: { companyId },
         orderBy: [{ year: 'desc' }, { month: 'desc' }],
@@ -55,9 +63,9 @@ export async function GET(request: Request) {
     const currentLines = await db.journalEntryLine.findMany({
       where: {
         journalEntry: {
-          periodId: currentPeriod.id,
+          period: { year: currentPeriod.year, month: currentPeriod.month },
           status: 'POSTED',
-          companyId,
+          companyId: { in: targetCompanyIds },
         },
       },
       include: {
@@ -98,9 +106,9 @@ export async function GET(request: Request) {
       const prevLines = await db.journalEntryLine.findMany({
         where: {
           journalEntry: {
-            periodId: prevPeriod.id,
+            period: { year: prevYear, month: prevMonth },
             status: 'POSTED',
-            companyId,
+            companyId: { in: targetCompanyIds },
           },
         },
         include: {
@@ -134,7 +142,7 @@ export async function GET(request: Request) {
 
     // Get the 6 periods before (and including) current
     const recentPeriods = await db.accountingPeriod.findMany({
-      where: { companyId },
+      where: { companyId }, // Usamos los períodos de la principal como referencia temporal
       orderBy: [{ year: 'asc' }, { month: 'asc' }],
     });
 
@@ -154,14 +162,16 @@ export async function GET(request: Request) {
       ? await db.journalEntryLine.findMany({
           where: {
             journalEntry: {
-              periodId: { in: chartPeriodIds },
+              period: { 
+                OR: chartPeriods.map(p => ({ year: p.year, month: p.month }))
+              },
               status: 'POSTED',
-              companyId,
+              companyId: { in: targetCompanyIds },
             },
           },
           include: {
             account: { select: { accountType: true } },
-            journalEntry: { select: { periodId: true } },
+            journalEntry: { select: { period: true } },
           },
         })
       : [];
@@ -169,13 +179,14 @@ export async function GET(request: Request) {
     // Group by period
     const periodLineMap = new Map<string, typeof chartLines>();
     for (const line of chartLines) {
-      const pid = line.journalEntry.periodId;
-      if (!periodLineMap.has(pid)) periodLineMap.set(pid, []);
-      periodLineMap.get(pid)!.push(line);
+      const p = line.journalEntry.period;
+      const key = `${p.year}-${p.month}`;
+      if (!periodLineMap.has(key)) periodLineMap.set(key, []);
+      periodLineMap.get(key)!.push(line);
     }
 
     for (const period of chartPeriods) {
-      const pLines = periodLineMap.get(period.id) || [];
+      const pLines = periodLineMap.get(`${period.year}-${period.month}`) || [];
       let pIncome = 0;
       let pExpenses = 0;
 
@@ -219,7 +230,7 @@ export async function GET(request: Request) {
 
     // ---- Accounts Receivable & Payable ----
     const pendingInvoices = await db.invoice.findMany({
-      where: { companyId, status: { in: ['PENDING', 'PARTIAL'] } },
+      where: { companyId: { in: targetCompanyIds }, status: { in: ['PENDING', 'PARTIAL'] } },
     });
 
     const accountsReceivable = pendingInvoices
@@ -235,13 +246,13 @@ export async function GET(request: Request) {
 
     // ---- Cash Balance ----
     const bankAccounts = await db.bankAccount.findMany({
-      where: { companyId, isActive: true },
+      where: { companyId: { in: targetCompanyIds }, isActive: true },
     });
     const cashBalance = bankAccounts.reduce((s, a) => s + a.currentBalance, 0);
 
     // ---- Pending Journal Entries ----
     const pendingEntriesCount = await db.journalEntry.count({
-      where: { companyId, status: 'DRAFT' },
+      where: { companyId: { in: targetCompanyIds }, status: 'DRAFT' },
     });
 
     return success({

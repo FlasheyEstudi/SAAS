@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { success, created, error, parsePagination, serverError } from '@/lib/api-helpers';
+import { success, created, error, parsePagination, serverError, validateAuth, requireAuth } from '@/lib/api-helpers';
 import type { PaginatedResponse } from '@/lib/api-helpers';
 import { Prisma } from '@prisma/client';
 
@@ -8,15 +8,28 @@ import { Prisma } from '@prisma/client';
 // ============================================================
 export async function GET(request: Request) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
     const { page, limit, sortBy, sortOrder } = parsePagination(searchParams);
     const search = searchParams.get('search') || '';
 
-    const where: Prisma.CompanyWhereInput = {};
+    const where: Prisma.CompanyWhereInput = {
+      members: {
+        some: { userId: user!.id }
+      }
+    };
+
     if (search) {
-      where.OR = [
-        { name: { contains: search } },
-        { taxId: { contains: search } },
+      where.AND = [
+        {
+          OR: [
+            { name: { contains: search } },
+            { taxId: { contains: search } },
+          ]
+        }
       ];
     }
 
@@ -63,21 +76,25 @@ export async function GET(request: Request) {
 // ============================================================
 export async function POST(request: Request) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
     const body = await request.json();
-    const { name, taxId, logoUrl, address, phone, email, currency } = body;
+    const { name, taxId, logoUrl, address, phone, email, currency, parentId } = body;
 
     // Validate required fields
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return error('El nombre de la empresa es obligatorio');
     }
     if (!taxId || typeof taxId !== 'string' || taxId.trim().length === 0) {
-      return error('El RFC/identificación fiscal es obligatorio');
+      return error('El RUC/identificación fiscal es obligatorio');
     }
 
     const trimmedName = name.trim();
     const trimmedTaxId = taxId.trim();
 
-    // Check name uniqueness
+    // Check name uniqueness (allow branches with similar names but unique IDs)
     const existing = await db.company.findFirst({
       where: { name: trimmedName },
     });
@@ -85,25 +102,31 @@ export async function POST(request: Request) {
       return error('Ya existe una empresa con ese nombre');
     }
 
-    const company = await db.company.create({
-      data: {
-        name: trimmedName,
-        taxId: trimmedTaxId,
-        logoUrl: logoUrl || null,
-        address: address || null,
-        phone: phone || null,
-        email: email || null,
-        currency: currency || 'MXN',
-      },
-      include: {
-        _count: {
-          select: {
-            accountingPeriods: true,
-            accounts: true,
-            journalEntries: true,
-          },
+    // Use a transaction to create the company and the membership link
+    const company = await db.$transaction(async (tx) => {
+      const newCompany = await tx.company.create({
+        data: {
+          name: trimmedName,
+          taxId: trimmedTaxId,
+          logoUrl: logoUrl || null,
+          address: address || null,
+          phone: phone || null,
+          email: email || null,
+          currency: currency || 'NIO',
+          parentId: parentId || null,
         },
-      },
+      });
+
+      // Automatically link the creator as OWNER
+      await tx.userCompany.create({
+        data: {
+          userId: user!.id,
+          companyId: newCompany.id,
+          role: 'OWNER',
+        }
+      });
+
+      return newCompany;
     });
 
     return created(company);
@@ -111,7 +134,7 @@ export async function POST(request: Request) {
     console.error('Error creating company:', err);
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
-        return error('Ya existe una empresa con ese nombre o RFC');
+        return error('Ya existe una empresa con ese nombre o RUC');
       }
     }
     return serverError('Error al crear la empresa');

@@ -25,7 +25,14 @@ class ApiClient {
     
     // Inject companyId for multi-tenant requests
     const companyId = this.getCompanyId();
-    if (companyId && !url.includes('companies') && !url.includes('auth') && !url.includes('login')) {
+    if (
+      companyId &&
+      !url.includes('companies') &&
+      !url.includes('auth') &&
+      !url.includes('login') &&
+      !url.includes('/register') &&
+      !url.includes('/ai/')
+    ) {
       const separator = fullUrl.includes('?') ? '&' : '?';
       fullUrl = `${fullUrl}${separator}companyId=${companyId}`;
     }
@@ -108,7 +115,13 @@ class ApiClient {
       return {} as T;
     }
 
-    return response.json();
+    const result = await response.json();
+    if (result.success && result.data !== undefined) {
+      return result.data as T;
+    }
+
+    return result;
+
   }
 
   async get<T = any>(url: string, params?: Record<string, any>): Promise<T> {

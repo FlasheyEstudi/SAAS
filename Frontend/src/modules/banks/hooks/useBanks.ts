@@ -29,16 +29,16 @@ export function useBanks() {
   const queryClient = useQueryClient();
 
   // Fetch bank accounts list
-  const { data: banksData, isLoading: banksLoading, error: banksError } = useQuery<{ bankAccounts: BankAccount[] }>({
+  const { data: banksData, isLoading: banksLoading, error: banksError } = useQuery<{ data: BankAccount[] }>({
     queryKey: ['bank-accounts', 'list'],
-    queryFn: () => apiClient.get<{ bankAccounts: BankAccount[] }>(BANKS.list),
+    queryFn: () => apiClient.get<{ data: BankAccount[] }>(BANKS.list),
     retry: false,
   });
 
   // Fetch bank movements
-  const { data: movementsData, isLoading: movementsLoading } = useQuery<{ movements: BankMovement[] }>({
+  const { data: movementsData, isLoading: movementsLoading } = useQuery<{ data: BankMovement[] }>({
     queryKey: ['bank-movements', 'list'],
-    queryFn: () => apiClient.get<{ movements: BankMovement[] }>(BANKS.movements.list),
+    queryFn: () => apiClient.get<{ data: BankMovement[] }>(BANKS.movements.list),
     retry: false,
   });
 
@@ -90,8 +90,8 @@ export function useBanks() {
   });
 
   return {
-    bankAccounts: banksData?.bankAccounts || [],
-    movements: movementsData?.movements || [],
+    bankAccounts: banksData?.data || [],
+    movements: movementsData?.data || [],
     isLoading: banksLoading || movementsLoading,
     error: banksError,
     createAccount: createAccountMutation.mutateAsync,

@@ -7,10 +7,9 @@ import { toast } from 'sonner';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
 import { FloatingInput } from '@/components/ui/floating-input';
-import { StatusBadge, EmptyState } from '@/components/ui/vintage-ui';
+import { StatusBadge, ConfirmDialog } from '@/components/ui/vintage-ui';
 import { formatCurrency } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
-
 import { useAccounts } from '../hooks/useAccounts';
 
 interface Account {
@@ -19,17 +18,16 @@ interface Account {
   children?: Account[]; level: number; parentId?: string;
 }
 
-
 const typeColors: Record<string, string> = { ASSET: 'bg-info/15 text-info', LIABILITY: 'bg-warning/15 text-warning', EQUITY: 'bg-lavender/50 text-vintage-800', INCOME: 'bg-success/15 text-success', EXPENSE: 'bg-error/15 text-error' };
 const typeLabels: Record<string, string> = { ASSET: 'Activo', LIABILITY: 'Pasivo', EQUITY: 'Patrimonio', INCOME: 'Ingreso', EXPENSE: 'Gasto' };
 
-function AccountRow({ account, expanded, onToggle, level }: { account: Account; expanded: Set<string>; onToggle: (id: string) => void; level: number }) {
+function AccountRow({ account, expanded, onToggle, onEdit, onDelete, level }: { account: Account; expanded: Set<string>; onToggle: (id: string) => void; onEdit: (a: Account) => void; onDelete: (id: string) => void; level: number }) {
   const hasChildren = account.children && account.children.length > 0;
   const isExpanded = expanded.has(account.id);
 
   return (
     <>
-      <motion.tr className={cn('hover:bg-vintage-50 transition-colors', account.isGroup && 'font-medium bg-vintage-50/30')} layout>
+      <motion.tr className={cn('hover:bg-vintage-50 transition-colors group', account.isGroup && 'font-medium bg-vintage-50/30')} layout>
         <td className="px-4 py-2.5" style={{ paddingLeft: `${12 + level * 24}px` }}>
           <div className="flex items-center gap-2">
             {hasChildren ? (
@@ -43,20 +41,31 @@ function AccountRow({ account, expanded, onToggle, level }: { account: Account; 
         <td className="px-4 py-2.5 text-sm text-vintage-700">{account.name}</td>
         <td className="px-4 py-2.5 text-center"><span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full', typeColors[account.accountType])}>{typeLabels[account.accountType]}</span></td>
         <td className="px-4 py-2.5 text-sm text-vintage-700 text-right font-mono">{formatCurrency(account.currentBalance)}</td>
-        <td className="px-4 py-2.5 text-center"><StatusBadge status={account.isActive ? 'success' : 'neutral'} label={account.isActive ? 'Activa' : 'Inactiva'} /></td>
+        <td className="px-4 py-2.5 text-center">
+            <div className="flex items-center justify-center gap-1">
+                <StatusBadge status={account.isActive ? 'success' : 'neutral'} label={account.isActive ? 'Activa' : 'Inactiva'} />
+                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                    <button onClick={() => onEdit(account)} className="p-1 rounded hover:bg-vintage-200 text-vintage-500"><Edit2 className="w-3 h-3" /></button>
+                    <button onClick={() => onDelete(account.id)} className="p-1 rounded hover:bg-error/10 text-vintage-400 hover:text-error"><Trash2 className="w-3 h-3" /></button>
+                </div>
+            </div>
+        </td>
       </motion.tr>
       {hasChildren && isExpanded && account.children!.map(child => (
-        <AccountRow key={child.id} account={child} expanded={expanded} onToggle={onToggle} level={level + 1} />
+        <AccountRow key={child.id} account={child} expanded={expanded} onToggle={onToggle} onEdit={onEdit} onDelete={onDelete} level={level + 1} />
       ))}
     </>
   );
 }
 
 export function AccountsView() {
-  const { accounts, isLoading: loading, createAccount, isCreating } = useAccounts();
+  const { accounts, isLoading: loading, createAccount, updateAccount, deleteAccount, isCreating, isUpdating, isDeleting } = useAccounts();
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['1', '2', '3', '4', '5']));
   const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState<Account | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     code: '',
     name: '',
@@ -72,14 +81,37 @@ export function AccountsView() {
     return n;
   });
 
-  const handleSave = () => {
+  const openCreate = () => {
+    setEditing(null);
+    setFormData({ code: '', name: '', accountType: 'ASSET', nature: 'DEBIT', isGroup: false, parentId: '' });
+    setShowModal(true);
+  };
+
+  const openEdit = (a: any) => {
+    setEditing(a);
+    setFormData({ code: a.code, name: a.name, accountType: a.accountType, nature: a.nature, isGroup: a.isGroup, parentId: a.parentId || '' });
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
     if (!formData.code || !formData.name) {
       toast.error('Código y nombre son obligatorios');
       return;
     }
-    createAccount(formData, {
-      onSuccess: () => setShowModal(false)
-    });
+    
+    if (editing) {
+      await updateAccount({ id: editing.id, data: formData });
+    } else {
+      await createAccount(formData);
+    }
+    setShowModal(false);
+  };
+
+  const handleDelete = async () => {
+    if (deleteId) {
+      await deleteAccount(deleteId);
+      setDeleteId(null);
+    }
   };
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
@@ -91,7 +123,7 @@ export function AccountsView() {
           <h2 className="text-2xl font-playfair font-bold text-vintage-900">Plan de Cuentas</h2>
           <p className="text-sm text-vintage-600 mt-1">Catálogo de cuentas contables</p>
         </div>
-        <PastelButton onClick={() => setShowModal(true)}><Plus className="w-4 h-4 mr-2" />Nueva Cuenta</PastelButton>
+        <PastelButton onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Nueva Cuenta</PastelButton>
       </div>
 
       <div className="relative max-w-md">
@@ -108,7 +140,7 @@ export function AccountsView() {
                 <th className="px-4 py-3 text-xs font-semibold text-vintage-700 text-left">Nombre</th>
                 <th className="px-4 py-3 text-xs font-semibold text-vintage-700 text-center">Tipo</th>
                 <th className="px-4 py-3 text-xs font-semibold text-vintage-700 text-right">Saldo</th>
-                <th className="px-4 py-3 text-xs font-semibold text-vintage-700 text-center">Estado</th>
+                <th className="px-4 py-3 text-xs font-semibold text-vintage-700 text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-vintage-100">
@@ -116,7 +148,7 @@ export function AccountsView() {
                 <tr><td colSpan={5} className="py-12 text-center text-sm text-vintage-500">No se encontraron cuentas</td></tr>
               ) : (
                 accounts.map(acc => (
-                  <AccountRow key={acc.id} account={acc} expanded={expanded} onToggle={toggle} level={0} />
+                  <AccountRow key={acc.id} account={acc as any} expanded={expanded} onToggle={toggle} onEdit={openEdit} onDelete={setDeleteId} level={0} />
                 ))
               )}
             </tbody>
@@ -129,8 +161,8 @@ export function AccountsView() {
           <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <motion.div className="bg-card w-full max-w-lg rounded-2xl shadow-2xl border border-vintage-200 overflow-hidden" initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}>
               <div className="p-6 border-b border-vintage-100 flex items-center justify-between">
-                <h3 className="text-xl font-playfair font-bold text-vintage-800">Nueva Cuenta Contable</h3>
-                <button onClick={() => setShowModal(false)} className="text-vintage-400 hover:text-vintage-600">×</button>
+                <h3 className="text-xl font-playfair font-bold text-vintage-800">{editing ? 'Editar' : 'Nueva'} Cuenta Contable</h3>
+                <button onClick={() => setShowModal(false)} className="text-vintage-400 hover:text-vintage-600 font-bold text-2xl">×</button>
               </div>
               <div className="p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -171,12 +203,14 @@ export function AccountsView() {
               </div>
               <div className="p-6 bg-vintage-50 flex justify-end gap-3">
                 <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm font-semibold text-vintage-600 hover:text-vintage-800">Cancelar</button>
-                <PastelButton onClick={handleSave} loading={isCreating}>Guardar Cuenta</PastelButton>
+                <PastelButton onClick={handleSave} loading={isCreating || isUpdating}>Guardar Cuenta</PastelButton>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+      
+      <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={handleDelete} title="Eliminar Cuenta" description="¿Está seguro de eliminar esta cuenta contable? Esta acción no se puede deshacer si la cuenta tiene movimientos asociados." variant="destructive" />
     </div>
   );
 }

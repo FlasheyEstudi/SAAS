@@ -14,6 +14,7 @@ export async function GET() {
     ]);
 
     return success({
+      status: ollamaAvailable ? 'online' : 'offline',
       ollamaAvailable,
       model: OLLAMA_MODEL,
       url: OLLAMA_URL,

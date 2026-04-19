@@ -11,11 +11,22 @@ export async function POST(request: Request) {
       return error('email y password son obligatorios');
     }
 
-    const user = await db.user.findFirst({ where: { email, isActive: true } });
+    const user = await db.user.findFirst({ 
+      where: { email, isActive: true },
+      include: {
+        memberships: {
+          include: {
+            company: {
+              select: { id: true, name: true }
+            }
+          }
+        }
+      }
+    });
+
     if (!user) return error('Credenciales inválidas');
 
     // Temporalmente: si la contraseña en la BD es base64 (para cuentas antiguas/demo), bcrypt.compare fallaría.
-    // Verificamos si es demo y lo saltamos
     let passwordMatches = false;
     if (email === 'admin@gea.com.mx') {
       passwordMatches = true; // ByPass temporal para la cuenta del SEED
@@ -42,6 +53,11 @@ export async function POST(request: Request) {
         email: user.email,
         role: user.role,
         isActive: user.isActive,
+        availableCompanies: user.memberships.map(m => ({
+          id: m.companyId,
+          name: m.company.name,
+          role: m.role
+        })),
         lastLoginAt: new Date(),
       },
       token,

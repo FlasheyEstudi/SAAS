@@ -99,7 +99,12 @@ export function AIChatView() {
       {messages.length <= 1 && (
         <div className="flex gap-2 overflow-x-auto py-3 no-scrollbar flex-shrink-0">
           {quickPrompts.map((prompt, i) => (
-            <button key={i} onClick={() => sendMessage(prompt)} disabled={isTyping} className="px-3 py-2 text-xs rounded-xl border border-vintage-200 text-vintage-600 hover:bg-vintage-100 hover:border-vintage-300 transition-all whitespace-nowrap flex items-center gap-1.5 disabled:opacity-50">
+            <button
+              key={i}
+              onClick={() => sendMessage(prompt)}
+              disabled={isTyping || status !== 'online'}
+              className="px-3 py-2 text-xs rounded-xl border border-vintage-200 text-vintage-600 hover:bg-vintage-100 hover:border-vintage-300 transition-all whitespace-nowrap flex items-center gap-1.5 disabled:opacity-50"
+            >
               <Lightbulb className="w-3 h-3 text-warning" />{prompt}
             </button>
           ))}

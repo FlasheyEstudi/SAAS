@@ -1,6 +1,7 @@
 // Centralized API Endpoints Catalog - Matched with Backend APIs
 export const AUTH = {
   login: '/users/login',
+  register: '/users/register',
   users: '/users',
   getUser: (id: string) => `/users/${id}`,
   updateUser: (id: string) => `/users/${id}`,

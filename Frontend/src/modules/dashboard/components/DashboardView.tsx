@@ -64,6 +64,23 @@ const itemVariants = {
 
 // ─── Pastel Chart Colors ───────────────────────────────────────────
 const PASTEL_COLORS = ['#FFB6C1', '#D4A5A5', '#E6E6FA', '#F5E6D3', '#86C1A5', '#FFDAB9'];
+const DASHBOARD_DOT_CLASSES = [
+  'dashboard-dot-0',
+  'dashboard-dot-1',
+  'dashboard-dot-2',
+  'dashboard-dot-3',
+  'dashboard-dot-4',
+  'dashboard-dot-5',
+];
+
+function getDashboardDotClass(index: number) {
+  return DASHBOARD_DOT_CLASSES[index % DASHBOARD_DOT_CLASSES.length];
+}
+
+function getProgressFillClass(percent: number) {
+  const step = Math.min(100, Math.max(0, Math.round(percent / 10) * 10));
+  return `progress-fill-${step}`;
+}
 
 // ─── Custom Tooltip ────────────────────────────────────────────────
 function VintageTooltip({ active, payload, label }: any) {
@@ -74,13 +91,10 @@ function VintageTooltip({ active, payload, label }: any) {
       <p className="text-xs font-medium text-vintage-600 mb-2">{label}</p>
       {payload.map((entry: any, index: number) => (
         <div key={index} className="flex items-center gap-2 text-xs mb-1 last:mb-0">
-          <span
-            className="w-2.5 h-2.5 rounded-full shrink-0"
-            style={{ backgroundColor: entry.color || PASTEL_COLORS[index % PASTEL_COLORS.length] }}
-          />
+          <span className={cn('w-2.5 h-2.5 rounded-full shrink-0', getDashboardDotClass(index))} />
           <span className="text-vintage-600 capitalize">{entry.name}:</span>
           <span className="font-semibold text-vintage-800">
-            {formatCurrency(entry.value, 'MXN', 0)}
+            {formatCurrency(entry.value, 'NIO', 0)}
           </span>
         </div>
       ))}
@@ -96,13 +110,10 @@ function PieVintageTooltip({ active, payload }: any) {
   return (
     <div className="bg-white/95 backdrop-blur-sm border border-vintage-200 rounded-xl p-3 shadow-lg">
       <div className="flex items-center gap-2 text-xs">
-        <span
-          className="w-2.5 h-2.5 rounded-full shrink-0"
-          style={{ backgroundColor: entry.payload.color }}
-        />
+        <span className={cn('w-2.5 h-2.5 rounded-full shrink-0', getDashboardDotClass(entry.payload?.index ?? 0))} />
         <span className="text-vintage-600">{entry.name}:</span>
         <span className="font-semibold text-vintage-800">
-          {formatCurrency(entry.value, 'MXN', 0)}
+          {formatCurrency(entry.value, 'NIO', 0)}
         </span>
       </div>
     </div>
@@ -116,8 +127,7 @@ function VintageTick({ x, y, payload }: any) {
       x={x}
       y={y + 12}
       textAnchor="middle"
-      className="fill-vintage-500 text-[10px]"
-      style={{ fontFamily: 'var(--font-inter)' }}
+      className="fill-vintage-500 text-[10px] font-sans"
     >
       {payload.value}
     </text>
@@ -156,7 +166,7 @@ function KPICard({
             <div className="mb-2">
               <AnimatedCounter
                 value={value}
-                prefix="$"
+                prefix="C$"
                 decimals={0}
                 className="text-2xl sm:text-3xl font-bold text-vintage-800"
               />
@@ -225,7 +235,7 @@ function JournalEntryRow({ entry }: { entry: any }) {
       </div>
       <div className="text-right shrink-0 hidden sm:block">
         <p className="text-sm font-semibold text-vintage-800">
-          {formatCurrency(entry.totalDebit, 'MXN', 0)}
+          {formatCurrency(entry.totalDebit, 'NIO', 0)}
         </p>
         <p className="text-xs text-vintage-400">{formatDate(entry.entryDate, 'dd/MM/yy')}</p>
       </div>
@@ -270,11 +280,11 @@ function InvoiceRow({ invoice }: { invoice: any }) {
       </div>
       <div className="text-right shrink-0 hidden sm:block">
         <p className="text-sm font-semibold text-vintage-800">
-          {formatCurrency(invoice.totalAmount, 'MXN', 0)}
+          {formatCurrency(invoice.totalAmount, 'NIO', 0)}
         </p>
         {invoice.balanceDue > 0 && (
           <p className="text-xs text-error">
-            Saldo: {formatCurrency(invoice.balanceDue, 'MXN', 0)}
+            Saldo: {formatCurrency(invoice.balanceDue, 'NIO', 0)}
           </p>
         )}
       </div>
@@ -293,20 +303,14 @@ function TopClientRow({ client, index }: { client: any; index: number }) {
   return (
     <div className="flex items-center gap-3 py-2.5 px-1 hover:bg-vintage-50/50 rounded-lg transition-colors">
       <span className="text-xs font-bold text-vintage-400 w-4 text-center">{index + 1}</span>
-      <div
-        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-        style={{ backgroundColor: client.color }}
-      >
+      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 bg-vintage-300">
         {client.initials}
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-vintage-800 truncate">{client.nombre}</p>
         <div className="flex items-center gap-2 mt-0.5">
           <div className="flex-1 h-1.5 bg-vintage-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-success rounded-full transition-all duration-700"
-              style={{ width: `${paidPercent}%` }}
-            />
+            <div className={cn('h-full bg-success rounded-full transition-all duration-700', getProgressFillClass(paidPercent))} />
           </div>
           <span className="text-[10px] text-vintage-400 shrink-0">
             {client.facturasPagadas}/{total}
@@ -324,10 +328,15 @@ function TopClientRow({ client, index }: { client: any; index: number }) {
 
 // ─── Main Dashboard View ───────────────────────────────────────────
 export function DashboardView() {
-  const { data, isLoading, error } = useDashboard();
+  const [isConsolidated, setIsConsolidated] = useState(false);
+  const { data, isLoading, error } = useDashboard(isConsolidated);
   const navigate = useAppStore((s) => s.navigate);
   const user = useAppStore((s) => s.user);
   const companyId = useAppStore((s) => s.companyId);
+  const currentCompany = useAppStore((s) => s.currentCompany);
+  const availableCompanies = useAppStore((s) => s.availableCompanies);
+
+  const hasBranches = availableCompanies.length > 1;
 
   const [activeTab, setActiveTab] = useState('polizas');
 
@@ -383,13 +392,32 @@ export function DashboardView() {
     >
       {/* ─── Header ───────────────────────────────────────────── */}
       <motion.div variants={itemVariants} className="mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-playfair text-vintage-800 font-bold">
-              Panel de Control
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl sm:text-3xl font-playfair text-vintage-800 font-bold">
+                Panel de Control
+              </h1>
+              {hasBranches && (
+                <button
+                  onClick={() => setIsConsolidated(!isConsolidated)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase border transition-all",
+                    isConsolidated 
+                      ? "bg-vintage-800 text-white border-vintage-800 shadow-sm" 
+                      : "bg-white text-vintage-400 border-vintage-200 hover:border-vintage-400"
+                  )}
+                >
+                  <Sparkles className={cn("w-3 h-3", isConsolidated ? "text-peach" : "text-vintage-300")} />
+                  {isConsolidated ? 'Vista Consolidada' : 'Vista Individual'}
+                </button>
+              )}
+            </div>
             <p className="text-sm text-vintage-500 mt-1">
-              Bienvenido, {user?.name || 'Usuario'} · Resumen del periodo actual
+              {isConsolidated 
+                ? `Consolidado de ${currentCompany?.name} y sus sucursales` 
+                : `Bienvenido, ${user?.name || 'Usuario'} · Resumen de ${currentCompany?.name || 'la empresa'}`
+              }
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs text-vintage-400">
@@ -440,7 +468,7 @@ export function DashboardView() {
           </div>
           <div className="flex-1">
             <p className="text-xs text-vintage-500">Cuentas por Cobrar</p>
-            <p className="text-sm font-bold text-vintage-800">{formatCurrency(kpis.accountsReceivable, 'MXN', 0)}</p>
+            <p className="text-sm font-bold text-vintage-800">{formatCurrency(kpis.accountsReceivable, 'NIO', 0)}</p>
           </div>
           <div className="text-right">
             <p className="text-xs text-vintage-400">Vencidas</p>
@@ -454,7 +482,7 @@ export function DashboardView() {
           </div>
           <div className="flex-1">
             <p className="text-xs text-vintage-500">Cuentas por Pagar</p>
-            <p className="text-sm font-bold text-vintage-800">{formatCurrency(kpis.accountsPayable, 'MXN', 0)}</p>
+            <p className="text-sm font-bold text-vintage-800">{formatCurrency(kpis.accountsPayable, 'NIO', 0)}</p>
           </div>
         </VintageCard>
 
@@ -555,7 +583,7 @@ export function DashboardView() {
           <div className="flex justify-center gap-6 mt-2">
             {pieData.map((item, i) => (
               <div key={i} className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                <span className={cn('w-2.5 h-2.5 rounded-full', getDashboardDotClass(i))} />
                 <span className="text-xs text-vintage-600">{item.name}</span>
               </div>
             ))}
@@ -686,7 +714,7 @@ export function DashboardView() {
               <span className="font-semibold text-vintage-800">
                 {formatCurrency(
                   topClients.reduce((sum, c) => sum + c.totalFacturado, 0),
-                  'MXN',
+                  'NIO',
                   0
                 )}
               </span>

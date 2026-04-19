@@ -13,21 +13,43 @@ import { formatCurrency } from '@/lib/utils/format';
 import { useCompanies } from '../hooks/useCompanies';
 
 export function CompaniesView() {
-  const { companies, isLoading: loading } = useCompanies();
+  const { companies, isLoading: loading, createCompany, updateCompany, deleteCompany, isCreating, isUpdating, isDeleting } = useCompanies();
   const [showForm, setShowForm] = useState(false);
   const [editingCompany, setEditingCompany] = useState<any | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', taxId: '', address: '', phone: '', email: '', currency: 'MXN' });
+  const [form, setForm] = useState({ name: '', taxId: '', address: '', phone: '', email: '', currency: 'MXN', parentId: '' });
 
-  const openCreate = () => { setEditingCompany(null); setForm({ name: '', taxId: '', address: '', phone: '', email: '', currency: 'MXN' }); setShowForm(true); };
-  const openEdit = (c: any) => { setEditingCompany(c); setForm({ name: c.name, taxId: c.taxId, address: c.address, phone: c.phone, email: c.email, currency: c.currency }); setShowForm(true); };
+  const openCreate = () => { setEditingCompany(null); setForm({ name: '', taxId: '', address: '', phone: '', email: '', currency: 'MXN', parentId: '' }); setShowForm(true); };
+  const openEdit = (c: any) => { setEditingCompany(c); setForm({ name: c.name, taxId: c.taxId, address: c.address, phone: c.phone, email: c.email, currency: c.currency, parentId: c.parentId || '' }); setShowForm(true); };
   const handleSave = () => {
-    if (!form.name || !form.taxId) { toast.error('Nombre y RUC son obligatorios'); return; }
-    toast.message('Función guardar empresa pendiente de API POST/PUT'); 
+    if (!form.name || !form.taxId) { 
+      toast.error('Nombre y RUC son obligatorios'); 
+      return; 
+    }
+    
+    const companyData = {
+      name: form.name,
+      taxId: form.taxId,
+      address: form.address || undefined,
+      phone: form.phone || undefined,
+      email: form.email || undefined,
+      currency: form.currency,
+      parentId: form.parentId || undefined,
+    };
+    
+    if (editingCompany) {
+      updateCompany({ id: editingCompany.id, data: companyData });
+    } else {
+      createCompany(companyData);
+    }
+    
     setShowForm(false);
   };
   const handleDelete = () => {
-    if (deleteId) { toast.message('Función eliminar empresa pendiente de API DELETE'); setDeleteId(null); }
+    if (deleteId) { 
+      deleteCompany(deleteId);
+      setDeleteId(null); 
+    }
   };
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
@@ -54,8 +76,14 @@ export function CompaniesView() {
                     <Building2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-vintage-800 text-sm">{company.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-vintage-800 text-sm">{company.name}</h3>
+                      {company.parentId && <span className="bg-vintage-100 text-[10px] px-1.5 py-0.5 rounded-full text-vintage-500 font-medium">Sucursal</span>}
+                    </div>
                     <p className="text-xs text-vintage-500 font-mono">{company.taxId}</p>
+                    {company.parentId && companies.find(p => p.id === company.parentId) && (
+                      <p className="text-[10px] text-vintage-400 mt-0.5">Padre: {companies.find(p => p.id === company.parentId)?.name}</p>
+                    )}
                   </div>
                 </div>
                 <StatusBadge status={company.isActive ? 'success' : 'neutral'} label={company.isActive ? 'Activa' : 'Inactiva'} size="sm" />
@@ -68,8 +96,22 @@ export function CompaniesView() {
               <div className="flex items-center justify-between pt-3 border-t border-vintage-100">
                 <span className="text-xs font-medium text-vintage-500">Moneda: {company.currency}</span>
                 <div className="flex gap-1">
-                  <button onClick={() => openEdit(company)} className="p-1.5 rounded-lg hover:bg-vintage-100 text-vintage-500 hover:text-vintage-700 transition-colors"><Edit2 className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => setDeleteId(company.id)} className="p-1.5 rounded-lg hover:bg-error/10 text-vintage-500 hover:text-error transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                  <button
+                  onClick={() => openEdit(company)}
+                  title="Editar empresa"
+                  aria-label="Editar empresa"
+                  className="p-1.5 rounded-lg hover:bg-vintage-100 text-vintage-500 hover:text-vintage-700 transition-colors"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setDeleteId(company.id)}
+                  title="Eliminar empresa"
+                  aria-label="Eliminar empresa"
+                  className="p-1.5 rounded-lg hover:bg-error/10 text-vintage-500 hover:text-error transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
                 </div>
               </div>
             </VintageCard>
@@ -96,10 +138,19 @@ export function CompaniesView() {
                 <option value="USD">USD - Dólar</option>
                 <option value="EUR">EUR - Euro</option>
               </FloatingSelect>
+              
+              <FloatingSelect label="Empresa Padre (Opcional)" value={form.parentId} onChange={(e) => setForm({ ...form, parentId: e.target.value })}>
+                <option value="">Ninguna (Empresa Principal)</option>
+                {companies.filter(c => c.id !== editingCompany?.id && !c.parentId).map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </FloatingSelect>
             </div>
             <div className="flex justify-end gap-3 mt-6">
               <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm rounded-xl border border-vintage-200 text-vintage-700 hover:bg-vintage-50">Cancelar</button>
-              <PastelButton onClick={handleSave}>{editingCompany ? 'Guardar' : 'Crear'}</PastelButton>
+              <PastelButton onClick={handleSave} disabled={isCreating || isUpdating}>
+                {isCreating ? 'Creando...' : isUpdating ? 'Guardando...' : editingCompany ? 'Guardar' : 'Crear'}
+              </PastelButton>
             </div>
           </motion.div>
         </motion.div>
@@ -113,7 +164,12 @@ export function CompaniesView() {
 function FloatingSelect({ label, value, onChange, children }: { label: string; value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; children: React.ReactNode }) {
   return (
     <div className="relative">
-      <select value={value} onChange={onChange} className="peer w-full px-3 pt-5 pb-2 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400 appearance-none">
+      <select
+        value={value}
+        onChange={onChange}
+        aria-label={label}
+        className="peer w-full px-3 pt-5 pb-2 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400 appearance-none"
+      >
         {children}
       </select>
       <label className="absolute left-3 top-1.5 text-xs text-vintage-500 font-medium pointer-events-none">{label}</label>

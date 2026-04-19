@@ -1,6 +1,7 @@
 'use client';
 
 import { useAppStore } from '@/lib/stores/useAppStore';
+import { useEffect } from 'react';
 import { LoginPage } from '@/modules/auth/components/LoginPage';
 import { RegisterPage } from '@/modules/auth/components/RegisterPage';
 import { DashboardView } from '@/modules/dashboard/components/DashboardView';
@@ -27,6 +28,10 @@ import { SearchView } from '@/modules/search/components/SearchView';
 import { DataMgmtView } from '@/modules/data-mgmt/components/DataMgmtView';
 import { SystemView } from '@/modules/system/components/SystemView';
 import { AIChatView } from '@/modules/ai/components/AIChatView';
+import { TaxView } from '@/modules/tax/components/TaxView';
+import { ClosingEntriesView } from '@/modules/periods/components/ClosingEntriesView';
+import { FinancialConceptsView } from '@/modules/financial-concepts/components/FinancialConceptsView';
+import { PaymentTermsView } from '@/modules/payment-terms/components/PaymentTermsView';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -51,6 +56,15 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 
 function ViewRouter() {
   const currentView = useAppStore((s) => s.currentView);
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const navigate = useAppStore((s) => s.navigate);
+
+  // Redirigir a login si no está autenticado y no está en una vista de auth
+  useEffect(() => {
+    if (!isAuthenticated && currentView !== 'login' && currentView !== 'register') {
+      navigate('login');
+    }
+  }, [isAuthenticated, currentView, navigate]);
 
   const renderView = () => {
     switch (currentView) {
@@ -80,6 +94,10 @@ function ViewRouter() {
       case 'data-mgmt': return <DataMgmtView />;
       case 'system': return <SystemView />;
       case 'ai-chat': return <AIChatView />;
+      case 'taxes': return <TaxView />;
+      case 'closing-entries': return <ClosingEntriesView />;
+      case 'financial-concepts': return <FinancialConceptsView />;
+      case 'payment-terms': return <PaymentTermsView />;
       default: return <DashboardView />;
     }
   };

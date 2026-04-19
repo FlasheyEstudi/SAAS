@@ -161,7 +161,11 @@ export function getEntryTypeColor(type: string): string {
 }
 
 // Compact number (e.g., 1.2M, 345K)
-export function formatCompactNumber(value: number): string {
+export function formatCompactNumber(value?: number | null): string {
+  if (value == null || Number.isNaN(value)) {
+    return '0';
+  }
+
   if (value >= 1_000_000) {
     return `${(value / 1_000_000).toFixed(1)}M`;
   }

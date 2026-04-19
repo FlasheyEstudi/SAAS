@@ -46,7 +46,7 @@ function VintageTooltip({ active, payload, label }: any) {
       <p className="text-sm font-medium text-vintage-800 mb-1">{label}</p>
       {payload.map((entry: any, idx: number) => (
         <p key={idx} className="text-xs" style={{ color: entry.color }}>
-          {entry.name}: {formatCurrency(entry.value, 'MXN')}
+          {entry.name}: {formatCurrency(entry.value, 'NIO')}
         </p>
       ))}
     </div>
@@ -212,14 +212,14 @@ export function ReportsView() {
                   <TrendingUp className="w-4 h-4 text-vintage-500" />
                   <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Debe</p>
                 </div>
-                <p className="text-xl font-playfair text-vintage-800 mt-1">{formatCurrency(totalDebit, 'MXN')}</p>
+                <p className="text-xl font-playfair text-vintage-800 mt-1">{formatCurrency(totalDebit, 'NIO')}</p>
               </VintageCard>
               <VintageCard hover={false} className="p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <TrendingDown className="w-4 h-4 text-vintage-500" />
                   <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Haber</p>
                 </div>
-                <p className="text-xl font-playfair text-vintage-800 mt-1">{formatCurrency(totalCredit, 'MXN')}</p>
+                <p className="text-xl font-playfair text-vintage-800 mt-1">{formatCurrency(totalCredit, 'NIO')}</p>
               </VintageCard>
             </div>
 
@@ -233,7 +233,7 @@ export function ReportsView() {
                 'text-sm font-mono font-bold',
                 Math.abs(totalDebit - totalCredit) <= 0.01 ? 'text-success' : 'text-error',
               )}>
-                {formatCurrency(Math.abs(totalDebit - totalCredit), 'MXN')}
+                {formatCurrency(Math.abs(totalDebit - totalCredit), 'NIO')}
                 {Math.abs(totalDebit - totalCredit) <= 0.01 ? ' ✓ Cuadrada' : ''}
               </span>
             </VintageCard>
@@ -260,16 +260,16 @@ export function ReportsView() {
                     </div>
                   </td>
                   <td className="px-4 py-2.5 text-right text-sm font-mono text-vintage-700">
-                    {row.debitBalance > 0 ? formatCurrency(row.debitBalance, 'MXN') : '—'}
+                    {row.debitBalance > 0 ? formatCurrency(row.debitBalance, 'NIO') : '—'}
                   </td>
                   <td className="px-4 py-2.5 text-right text-sm font-mono text-vintage-700">
-                    {row.creditBalance > 0 ? formatCurrency(row.creditBalance, 'MXN') : '—'}
+                    {row.creditBalance > 0 ? formatCurrency(row.creditBalance, 'NIO') : '—'}
                   </td>
                   <td className={cn(
                     'px-4 py-2.5 text-right text-sm font-mono font-semibold',
                     row.netBalance > 0 ? 'text-success' : row.netBalance < 0 ? 'text-error' : 'text-vintage-500',
                   )}>
-                    {formatCurrency(row.netBalance, 'MXN')}
+                    {formatCurrency(row.netBalance, 'NIO')}
                   </td>
                 </>
               )}
@@ -344,15 +344,15 @@ export function ReportsView() {
                 <VintageCard hover={false} className="p-4">
                   <h4 className="text-sm font-semibold text-vintage-800 mb-3 flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-success" />
-                    Activos ({formatCurrency(balanceSheet.totalAssets, 'MXN')})
+                    Activos ({formatCurrency(balanceSheet.totalAssets, 'NIO')})
                   </h4>
                   <div className="space-y-2">
                     {(balanceSheet.assets || []).map((section: any) => (
                       <div key={section.name}>
-                        <p className="text-sm font-medium text-vintage-700">{section.name}: {formatCurrency(section.amount, 'MXN')}</p>
+                        <p className="text-sm font-medium text-vintage-700">{section.name}: {formatCurrency(section.amount, 'NIO')}</p>
                         {section.subItems?.map((sub) => (
                           <p key={sub.name} className="text-xs text-vintage-500 pl-4">
-                            {sub.name}: {formatCurrency(sub.amount, 'MXN')}
+                            {sub.name}: {formatCurrency(sub.amount, 'NIO')}
                           </p>
                         ))}
                       </div>
@@ -364,15 +364,15 @@ export function ReportsView() {
                 <VintageCard hover={false} className="p-4">
                   <h4 className="text-sm font-semibold text-vintage-800 mb-3 flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-error" />
-                    Pasivos ({formatCurrency(balanceSheet.totalLiabilities, 'MXN')})
+                    Pasivos ({formatCurrency(balanceSheet.totalLiabilities, 'NIO')})
                   </h4>
                   <div className="space-y-2">
                     {(balanceSheet.liabilities || []).map((section: any) => (
                       <div key={section.name}>
-                        <p className="text-sm font-medium text-vintage-700">{section.name}: {formatCurrency(section.amount, 'MXN')}</p>
+                        <p className="text-sm font-medium text-vintage-700">{section.name}: {formatCurrency(section.amount, 'NIO')}</p>
                         {section.subItems?.map((sub) => (
                           <p key={sub.name} className="text-xs text-vintage-500 pl-4">
-                            {sub.name}: {formatCurrency(sub.amount, 'MXN')}
+                            {sub.name}: {formatCurrency(sub.amount, 'NIO')}
                           </p>
                         ))}
                       </div>
@@ -384,15 +384,15 @@ export function ReportsView() {
                 <VintageCard hover={false} className="p-4">
                   <h4 className="text-sm font-semibold text-vintage-800 mb-3 flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-lavender" />
-                    Patrimonio ({formatCurrency(balanceSheet.totalEquity, 'MXN')})
+                    Patrimonio ({formatCurrency(balanceSheet.totalEquity, 'NIO')})
                   </h4>
                   <div className="space-y-2">
                     {(balanceSheet.equity || []).map((section: any) => (
                       <div key={section.name}>
-                        <p className="text-sm font-medium text-vintage-700">{section.name}: {formatCurrency(section.amount, 'MXN')}</p>
+                        <p className="text-sm font-medium text-vintage-700">{section.name}: {formatCurrency(section.amount, 'NIO')}</p>
                         {section.subItems?.map((sub) => (
                           <p key={sub.name} className="text-xs text-vintage-500 pl-4">
-                            {sub.name}: {formatCurrency(sub.amount, 'MXN')}
+                            {sub.name}: {formatCurrency(sub.amount, 'NIO')}
                           </p>
                         ))}
                       </div>
@@ -487,7 +487,7 @@ export function ReportsView() {
                       <div key={item.name} className="space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-vintage-700">{item.name}</span>
-                          <span className="text-sm font-mono font-semibold text-success">{formatCurrency(item.amount, 'MXN')}</span>
+                          <span className="text-sm font-mono font-semibold text-success">{formatCurrency(item.amount, 'NIO')}</span>
                         </div>
                         <div className="h-1.5 bg-vintage-100 rounded-full overflow-hidden">
                           <motion.div
@@ -502,7 +502,7 @@ export function ReportsView() {
                   })}
                   <div className="border-t border-vintage-200 pt-2 flex justify-between">
                     <span className="text-sm font-bold text-vintage-800">Total Ingresos</span>
-                    <span className="text-sm font-mono font-bold text-success">{formatCurrency(incomeStatement.totalIncome, 'MXN')}</span>
+                    <span className="text-sm font-mono font-bold text-success">{formatCurrency(incomeStatement.totalIncome, 'NIO')}</span>
                   </div>
                 </div>
               </VintageCard>
@@ -519,7 +519,7 @@ export function ReportsView() {
                       <div key={item.name} className="space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-vintage-700">{item.name}</span>
-                          <span className="text-sm font-mono font-semibold text-error">{formatCurrency(item.amount, 'MXN')}</span>
+                          <span className="text-sm font-mono font-semibold text-error">{formatCurrency(item.amount, 'NIO')}</span>
                         </div>
                         <div className="h-1.5 bg-vintage-100 rounded-full overflow-hidden">
                           <motion.div
@@ -534,7 +534,7 @@ export function ReportsView() {
                   })}
                   <div className="border-t border-vintage-200 pt-2 flex justify-between">
                     <span className="text-sm font-bold text-vintage-800">Total Gastos</span>
-                    <span className="text-sm font-mono font-bold text-error">{formatCurrency(incomeStatement.totalExpenses, 'MXN')}</span>
+                    <span className="text-sm font-mono font-bold text-error">{formatCurrency(incomeStatement.totalExpenses, 'NIO')}</span>
                   </div>
                 </div>
               </VintageCard>

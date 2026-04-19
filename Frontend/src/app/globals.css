@@ -218,8 +218,8 @@
 /* Glassmorphism utility */
 .glass {
   background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 209, 220, 0.3);
 }
 
@@ -256,3 +256,34 @@
 .stagger-children > *:nth-child(8) { animation-delay: 0.4s; }
 .stagger-children > *:nth-child(9) { animation-delay: 0.45s; }
 .stagger-children > *:nth-child(10) { animation-delay: 0.5s; }
+
+/* Dashboard and auth utility classes */
+.subtle-pattern-overlay {
+  background-image: radial-gradient(circle at 1px 1px, #8B7355 1px, transparent 0);
+  background-size: 32px 32px;
+}
+
+.dashboard-dot-0 { background-color: #FFB6C1; }
+.dashboard-dot-1 { background-color: #D4A5A5; }
+.dashboard-dot-2 { background-color: #E6E6FA; }
+.dashboard-dot-3 { background-color: #F5E6D3; }
+.dashboard-dot-4 { background-color: #86C1A5; }
+.dashboard-dot-5 { background-color: #FFDAB9; }
+
+.progress-fill-0 { width: 0%; }
+.progress-fill-10 { width: 10%; }
+.progress-fill-20 { width: 20%; }
+.progress-fill-30 { width: 30%; }
+.progress-fill-40 { width: 40%; }
+.progress-fill-50 { width: 50%; }
+.progress-fill-60 { width: 60%; }
+.progress-fill-70 { width: 70%; }
+.progress-fill-80 { width: 80%; }
+.progress-fill-90 { width: 90%; }
+.progress-fill-100 { width: 100%; }
+
+.vintage-skeleton > div {
+  animation-duration: 2s;
+  animation-name: shimmer;
+  animation-iteration-count: infinite;
+}

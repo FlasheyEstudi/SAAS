@@ -140,14 +140,7 @@ export function LoginPage() {
       />
 
       {/* ── Subtle pattern overlay ── */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.035]"
-        style={{
-          backgroundImage:
-            'radial-gradient(circle at 1px 1px, #8B7355 1px, transparent 0)',
-          backgroundSize: '32px 32px',
-        }}
-      />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.035] subtle-pattern-overlay" />
 
       {/* ── Main card ── */}
       <motion.div

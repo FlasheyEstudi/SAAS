@@ -1,4 +1,4 @@
-import { success, error, serverError } from '@/lib/api-helpers';
+import { success, error, serverError, validateAuth, requireAuth, requireCompanyAccess } from '@/lib/api-helpers';
 import { chatWithOllama, isOllamaAvailable, AI_TOOLS, OLLAMA_MODEL } from '@/lib/ollama';
 import type { OllamaMessage } from '@/lib/ollama';
 
@@ -13,6 +13,10 @@ import type { OllamaMessage } from '@/lib/ollama';
 
 export async function POST(request: Request) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
     const body = await request.json();
     const { message, companyId, history } = body;
 
@@ -24,6 +28,10 @@ export async function POST(request: Request) {
       return error('El companyId es obligatorio');
     }
 
+    // SEGURIDAD CRÍTICA: Validar que el usuario tenga acceso a esta empresa
+    const companyError = requireCompanyAccess(user!, companyId);
+    if (companyError) return companyError;
+
     // Validate history array if provided
     let chatHistory: OllamaMessage[] = [];
     if (Array.isArray(history)) {
@@ -31,7 +39,7 @@ export async function POST(request: Request) {
         (msg: unknown) =>
           msg &&
           typeof msg === 'object' &&
-          ['system', 'user', 'assistant'].includes((msg as OllamaMessage).role) &&
+          ['system', 'user', 'assistant', 'tool'].includes((msg as OllamaMessage).role) &&
           typeof (msg as OllamaMessage).content === 'string'
       );
     }

@@ -3,9 +3,10 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useAppStore } from '@/lib/stores/useAppStore';
-import { AUTH } from '@/lib/api/endpoints';
+import { AUTH, COMPANIES } from '@/lib/api/endpoints';
 import { useApiMutation } from '@/lib/hooks/useApi';
-import type { AuthResponse, User } from '@/lib/api/types';
+import { apiClient } from '@/lib/api/client';
+import type { AuthResponse, User, Company } from '@/lib/api/types';
 
 interface LoginCredentials {
   email: string;
@@ -35,9 +36,20 @@ export function useAuth() {
 
       try {
         const payload = (await loginMutation.mutateAsync(credentials)) as any;
-        const responseData = payload.data || payload; 
+        const responseData = payload.data || payload;
         
-        loginAction(responseData.user, responseData.token, responseData.companyId || credentials.companyId);
+        // Fetch company data if companyId is available
+        let company: Company | null = null;
+        if (responseData.user?.companyId) {
+          try {
+            const companyResponse = await apiClient.get<{ data: Company }>(COMPANIES.get(responseData.user.companyId));
+            company = companyResponse.data;
+          } catch (companyErr) {
+            console.warn('Could not fetch company data:', companyErr);
+          }
+        }
+        
+        loginAction(responseData.user, responseData.token, responseData.user?.companyId || credentials.companyId, company);
         toast.success(`¡Bienvenida, ${responseData.user?.name || 'Admin'}!`);
       } catch (err: any) {
         const msg = err?.error || err?.message || 'Error al iniciar sesión';

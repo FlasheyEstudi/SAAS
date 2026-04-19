@@ -26,6 +26,7 @@ export interface Company {
   currency: string;
   fiscalYearStart: string;
   isActive: boolean;
+  parentId?: string; // Add this
   createdAt: string;
 }
 
@@ -256,7 +257,7 @@ export interface AuditLog {
   createdAt: string;
 }
 
-export interface Notification {
+export interface AppNotification {
   id: string;
   userId: string;
   title: string;

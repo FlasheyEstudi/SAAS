@@ -514,12 +514,12 @@ export function JournalEntryForm() {
                   </td>
                   <td className="px-3 py-3 text-right">
                     <span className="text-sm font-bold font-mono text-vintage-800">
-                      {formatCurrency(totalDebit, 'MXN')}
+                      {formatCurrency(totalDebit, 'NIO')}
                     </span>
                   </td>
                   <td className="px-3 py-3 text-right">
                     <span className="text-sm font-bold font-mono text-vintage-800">
-                      {formatCurrency(totalCredit, 'MXN')}
+                      {formatCurrency(totalCredit, 'NIO')}
                     </span>
                   </td>
                   <td></td>
@@ -543,14 +543,14 @@ export function JournalEntryForm() {
                 'text-sm font-medium',
                 isBalanced ? 'text-success' : 'text-error'
               )}>
-                {isBalanced ? 'Póliza cuadrada' : `Diferencia: ${formatCurrency(difference, 'MXN')}`}
+                {isBalanced ? 'Póliza cuadrada' : `Diferencia: ${formatCurrency(difference, 'NIO')}`}
               </span>
             </div>
             <span className={cn(
               'text-sm font-mono font-bold',
               isBalanced ? 'text-success' : 'text-error'
             )}>
-              {formatCurrency(difference, 'MXN')}
+              {formatCurrency(difference, 'NIO')}
             </span>
           </div>
         </VintageCard>

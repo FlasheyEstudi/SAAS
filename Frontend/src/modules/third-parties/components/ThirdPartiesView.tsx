@@ -17,7 +17,7 @@ const typeLabels: Record<string, string> = { CLIENT: 'Cliente', SUPPLIER: 'Prove
 const typeColors: Record<string, string> = { CLIENT: 'success', SUPPLIER: 'info', BOTH: 'warning' };
 
 export function ThirdPartiesView() {
-  const { parties, isLoading: loading } = useThirdParties();
+  const { parties, isLoading: loading, createParty, updateParty, deleteParty, isCreating, isUpdating, isDeleting } = useThirdParties();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -33,12 +33,31 @@ export function ThirdPartiesView() {
 
   const openCreate = () => { setEditing(null); setForm({ name: '', taxId: '', type: 'CLIENT', email: '', phone: '' }); setShowForm(true); };
   const openEdit = (c: ThirdParty) => { setEditing(c); setForm({ name: c.name, taxId: c.taxId, type: c.type, email: c.email, phone: c.phone }); setShowForm(true); };
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name || !form.taxId) { toast.error('Nombre y RUC son obligatorios'); return; }
-    toast.message('Función guardar pendiente de integrar con API POST/PUT'); 
-    setShowForm(false);
+    
+    try {
+      if (editing) {
+        await updateParty({ id: editing.id, data: form });
+      } else {
+        await createParty(form);
+      }
+      setShowForm(false);
+    } catch (err) {
+      // Error handled by hook
+    }
   };
-  const handleDelete = () => { if (deleteId) { toast.message('Función eliminar pendiente de API DELETE'); setDeleteId(null); } };
+
+  const handleDelete = async () => {
+    if (deleteId) {
+      try {
+        await deleteParty(deleteId);
+        setDeleteId(null);
+      } catch (err) {
+        // Error handled by hook
+      }
+    }
+  };
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
@@ -128,8 +147,8 @@ export function ThirdPartiesView() {
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm rounded-xl border border-vintage-200 text-vintage-700 hover:bg-vintage-50">Cancelar</button>
-              <PastelButton onClick={handleSave}>{editing ? 'Guardar' : 'Crear'}</PastelButton>
+              <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm rounded-xl border border-vintage-200 text-vintage-700 hover:bg-vintage-50" disabled={isCreating || isUpdating}>Cancelar</button>
+              <PastelButton onClick={handleSave} loading={isCreating || isUpdating}>{editing ? 'Guardar' : 'Crear'}</PastelButton>
             </div>
           </motion.div>
         </motion.div>

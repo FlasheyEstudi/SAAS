@@ -3,8 +3,8 @@ import { db } from '@/lib/db';
 import { success, error, serverError } from '@/lib/api-helpers';
 
 // ============================================================
-// SEED ROUTE: Populates the database with realistic Mexican
-// accounting data for "Grupo Empresarial Alpha S.A. de C.V."
+// SEED ROUTE: Populates the database with realistic Nicaraguan
+// accounting data for "Grupo Empresarial Alpha S.A."
 // POST /api/seed
 // ============================================================
 
@@ -38,18 +38,19 @@ export async function POST(request: NextRequest) {
       // --------------------------------------------------------
       const company = await tx.company.create({
         data: {
-          name: 'Grupo Empresarial Alpha S.A. de C.V.',
-          taxId: 'GEA200101ABC',
-          currency: 'MXN',
+          name: 'Grupo Alpha S.A.',
+          taxId: 'J0310000000001', // Example RUC format
+
+          currency: 'NIO',
           address: 'Pista Jean Paul Genie, Edificio Invent, Piso 5, Managua, Nicaragua',
-          phone: '+52 55 1234 5678',
-          email: 'contacto@gea.com.mx',
+          phone: '+505 2270 1234',
+          email: 'contacto@alpha.com.ni',
         },
       });
       const companyId = company.id;
 
       // --------------------------------------------------------
-      // 2. ACCOUNTING PERIODS (Jan-Jun 2024)
+      // 2. ACCOUNTING PERIODS (Jan-Jun 2026)
       // --------------------------------------------------------
       const periodStatuses = ['CLOSED', 'CLOSED', 'CLOSED', 'CLOSED', 'CLOSED', 'OPEN'];
       const months = [1, 2, 3, 4, 5, 6];
@@ -59,10 +60,10 @@ export async function POST(request: NextRequest) {
         const p = await tx.accountingPeriod.create({
           data: {
             companyId,
-            year: 2024,
+            year: 2026,
             month: months[i],
             status: periodStatuses[i],
-            closedAt: periodStatuses[i] !== 'OPEN' ? new Date(2024, months[i], 28, 18, 0, 0) : null,
+            closedAt: periodStatuses[i] !== 'OPEN' ? new Date(2026, months[i], 28, 18, 0, 0) : null,
           },
         });
         periods.push({ id: p.id, year: p.year, month: p.month });
@@ -100,8 +101,8 @@ export async function POST(request: NextRequest) {
         { code: '1.2.02', name: 'Depreciación Acumulada', accountType: 'ASSET', nature: 'CREDITOR', level: 3, isGroup: true, parentCode: '1.2', description: 'CONTRA-ACCOUNT' },
         // Level 4 (leaf accounts)
         { code: '1.1.01.001', name: 'Caja General', accountType: 'ASSET', nature: 'DEBITOR', level: 4, isGroup: false, parentCode: '1.1.01' },
-        { code: '1.1.01.002', name: 'Banco BBVA', accountType: 'ASSET', nature: 'DEBITOR', level: 4, isGroup: false, parentCode: '1.1.01' },
-        { code: '1.1.01.003', name: 'Banco Santander', accountType: 'ASSET', nature: 'DEBITOR', level: 4, isGroup: false, parentCode: '1.1.01' },
+        { code: '1.1.01.002', name: 'Banco BAC', accountType: 'ASSET', nature: 'DEBITOR', level: 4, isGroup: false, parentCode: '1.1.01' },
+        { code: '1.1.01.003', name: 'Banco LAFISE', accountType: 'ASSET', nature: 'DEBITOR', level: 4, isGroup: false, parentCode: '1.1.01' },
         { code: '1.1.02.001', name: 'Clientes Nacionales', accountType: 'ASSET', nature: 'DEBITOR', level: 4, isGroup: false, parentCode: '1.1.02' },
         { code: '1.1.02.002', name: 'Clientes Internacionales', accountType: 'ASSET', nature: 'DEBITOR', level: 4, isGroup: false, parentCode: '1.1.02' },
         { code: '1.1.02.003', name: 'Anticipo a Proveedores', accountType: 'ASSET', nature: 'DEBITOR', level: 4, isGroup: false, parentCode: '1.1.02' },
@@ -179,8 +180,8 @@ export async function POST(request: NextRequest) {
         { code: '5.1.03.003', name: 'Viáticos', accountType: 'EXPENSE', nature: 'DEBITOR', level: 4, isGroup: false, parentCode: '5.1.03' },
         { code: '5.2.01.001', name: 'Intereses Pagados', accountType: 'EXPENSE', nature: 'DEBITOR', level: 4, isGroup: false, parentCode: '5.2.01' },
         { code: '5.2.01.002', name: 'Pérdida por Cambio Monetario', accountType: 'EXPENSE', nature: 'DEBITOR', level: 4, isGroup: false, parentCode: '5.2.01' },
-        { code: '5.2.02.001', name: 'ISR', accountType: 'EXPENSE', nature: 'DEBITOR', level: 4, isGroup: false, parentCode: '5.2.02' },
-        { code: '5.2.02.002', name: 'PTU', accountType: 'EXPENSE', nature: 'DEBITOR', level: 4, isGroup: false, parentCode: '5.2.02' },
+        { code: '5.2.02.001', name: 'IR', accountType: 'EXPENSE', nature: 'DEBITOR', level: 4, isGroup: false, parentCode: '5.2.02' },
+        { code: '5.2.02.002', name: 'IMU', accountType: 'EXPENSE', nature: 'DEBITOR', level: 4, isGroup: false, parentCode: '5.2.02' },
         { code: '5.3.01.001', name: 'Dep. Edificios', accountType: 'EXPENSE', nature: 'DEBITOR', level: 4, isGroup: false, parentCode: '5.3.01' },
         { code: '5.3.01.002', name: 'Dep. Mobiliario y Equipo', accountType: 'EXPENSE', nature: 'DEBITOR', level: 4, isGroup: false, parentCode: '5.3.01' },
         { code: '5.3.01.003', name: 'Dep. Equipo de Cómputo', accountType: 'EXPENSE', nature: 'DEBITOR', level: 4, isGroup: false, parentCode: '5.3.01' },
@@ -254,17 +255,17 @@ export async function POST(request: NextRequest) {
       // --------------------------------------------------------
       const thirdPartiesData = [
         // CUSTOMERS
-        { type: 'CUSTOMER', name: 'Tecnologías Avanzadas S.A.', taxId: 'XAXX010101000', email: 'ventas@tecavanzada.mx', city: 'Guadalajara', state: 'Jalisco' },
-        { type: 'CUSTOMER', name: 'Constructora del Pacífico S.A.', taxId: 'CAP200101XYZ', email: 'contacto@cdpacifico.mx', city: 'Manzanillo', state: 'Colima' },
-        { type: 'CUSTOMER', name: 'Distribuidora Nacional S.A. de C.V.', taxId: 'DNS200101ABC', email: 'pedidos@distnacional.mx', city: 'Monterrey', state: 'Nuevo León' },
-        { type: 'CUSTOMER', name: 'Servicios Profesionales Gómez', taxId: 'SPG200101DEF', email: 'info@spgomez.mx', city: 'Querétaro', state: 'Querétaro' },
-        { type: 'CUSTOMER', name: 'Industrias Metálicas del Norte S.A.', taxId: 'IMN200101GHI', email: 'compras@imnorte.mx', city: 'Chihuahua', state: 'Chihuahua' },
+        { type: 'CUSTOMER', name: 'Tecnologías del Sur S.A.', taxId: 'J0310000000002', email: 'ventas@tecsur.ni', city: 'Managua', state: 'Managua' },
+        { type: 'CUSTOMER', name: 'Constructora de León S.A.', taxId: 'J0310000000003', email: 'contacto@cleon.ni', city: 'León', state: 'León' },
+        { type: 'CUSTOMER', name: 'Distribuidora del Norte S.A.', taxId: 'J0310000000004', email: 'pedidos@distnorte.ni', city: 'Estelí', state: 'Estelí' },
+        { type: 'CUSTOMER', name: 'Servicios Profesionales Pérez', taxId: '001-010180-0001A', email: 'info@perez.ni', city: 'Granada', state: 'Granada' },
+        { type: 'CUSTOMER', name: 'Industrias Metálicas S.A.', taxId: 'J0310000000005', email: 'compras@industrias.ni', city: 'Masaya', state: 'Masaya' },
         // SUPPLIERS
-        { type: 'SUPPLIER', name: 'Proveedor de Materiales del Sur S.A.', taxId: 'PMS200101JKL', email: 'ventas@pmatsur.mx', city: 'Oaxaca', state: 'Oaxaca' },
-        { type: 'SUPPLIER', name: 'Servicios de Limpieza Profesional', taxId: 'SLP200101MNO', email: 'admin@limpiezapro.mx', city: 'Puebla', state: 'Puebla' },
-        { type: 'SUPPLIER', name: 'Arrendadora Nacional S.A.', taxId: 'ANS200101-PQR1', email: 'contratos@arnacional.ni', city: 'Managua', state: 'Managua' },
-        { type: 'SUPPLIER', name: 'Consultores Financieros Asociados', taxId: 'CFA200101-STU2', email: 'contacto@cfasociados.ni', city: 'Managua', state: 'Managua' },
-        { type: 'SUPPLIER', name: 'Distribuidora de Papel y Oficina', taxId: 'DPO200101VWX', email: 'ventas@dpoficina.mx', city: 'León', state: 'Guanajuato' },
+        { type: 'SUPPLIER', name: 'Proveedor de Papelería S.A.', taxId: 'J0310000000006', email: 'ventas@papeleria.ni', city: 'Managua', state: 'Managua' },
+        { type: 'SUPPLIER', name: 'Servicios de Mantenimiento NI', taxId: 'J0310000000007', email: 'admin@manteni.ni', city: 'Managua', state: 'Managua' },
+        { type: 'SUPPLIER', name: 'Arrendadora Nacional S.A.', taxId: 'J0310000000008', email: 'contratos@arnacional.ni', city: 'Managua', state: 'Managua' },
+        { type: 'SUPPLIER', name: 'Consultores Nicaragua Asociados', taxId: 'J0310000000009', email: 'contacto@cnasociados.ni', city: 'Managua', state: 'Managua' },
+        { type: 'SUPPLIER', name: 'Distribuidora de Equipos NI', taxId: 'J0310000000010', email: 'ventas@equipos.ni', city: 'León', state: 'León' },
       ];
 
       const thirdParties = await tx.thirdParty.createMany({
@@ -312,17 +313,17 @@ export async function POST(request: NextRequest) {
 
       const journalEntries: JournalEntryDef[] = [];
 
-      // ===== MONTH 1 - JANUARY 2024 =====
+      // ===== MONTH 1 - JANUARY 2026 =====
       const p1 = getPeriodId(1);
 
       // 1. Póliza de Apertura
       journalEntries.push({
         periodId: p1, entryNumber: getEntryNumber(), description: 'Póliza de Apertura - Capital Social inicial',
-        entryDate: new Date(2024, 0, 1), entryType: 'DIARIO', status: 'POSTED',
+        entryDate: new Date(2026, 0, 1), entryType: 'DIARIO', status: 'POSTED',
         lines: [
           { accountId: acc('1.1.01.001'), description: 'Capital aportado en efectivo', debit: 200000, credit: 0 },
-          { accountId: acc('1.1.01.002'), description: 'Capital depositado en BBVA', debit: 500000, credit: 0 },
-          { accountId: acc('1.1.01.003'), description: 'Capital depositado en Santander', debit: 200000, credit: 0 },
+          { accountId: acc('1.1.01.002'), description: 'Capital depositado en BAC', debit: 500000, credit: 0 },
+          { accountId: acc('1.1.01.003'), description: 'Capital depositado en LAFISE', debit: 200000, credit: 0 },
           { accountId: acc('1.1.03.001'), description: 'Inventario inicial de mercancías', debit: 300000, credit: 0 },
           { accountId: acc('1.2.01.001'), description: 'Edificio corporativo', debit: 2000000, credit: 0 },
           { accountId: acc('1.2.01.002'), description: 'Mobiliario y equipo de oficina', debit: 150000, credit: 0 },
@@ -333,86 +334,86 @@ export async function POST(request: NextRequest) {
 
       // 2. Venta de contado
       journalEntries.push({
-        periodId: p1, entryNumber: getEntryNumber(), description: 'Venta de contado - Factura FC-2024-0001',
-        entryDate: new Date(2024, 0, 10), entryType: 'INGRESO', status: 'POSTED',
+        periodId: p1, entryNumber: getEntryNumber(), description: 'Venta de contado - Factura FC-2026-0001',
+        entryDate: new Date(2026, 0, 10), entryType: 'INGRESO', status: 'POSTED',
         lines: [
-          { accountId: acc('1.1.01.002'), description: 'Pago mediante transferencia BBVA', debit: 125000, credit: 0 },
-          { accountId: acc('4.1.01.001'), description: 'Venta de mercancías de contado', debit: 0, credit: 118750, costCenterId: cc('VEN01') },
-          { accountId: acc('2.1.02.001'), description: 'IVA trasladado (16%)', debit: 0, credit: 6250 },
+          { accountId: acc('1.1.01.002'), description: 'Pago mediante transferencia BAC', debit: 125000, credit: 0 },
+          { accountId: acc('4.1.01.001'), description: 'Venta de mercancías de contado', debit: 0, credit: 125000 - 15000, costCenterId: cc('VEN01') },
+          { accountId: acc('2.1.02.001'), description: 'IVA trasladado (15%)', debit: 0, credit: 15000 },
         ],
       });
 
       // 3. Compra de mercancía
       journalEntries.push({
-        periodId: p1, entryNumber: getEntryNumber(), description: 'Compra de mercancías - Factura FP-2024-0001',
-        entryDate: new Date(2024, 0, 12), entryType: 'EGRESO', status: 'POSTED',
+        periodId: p1, entryNumber: getEntryNumber(), description: 'Compra de mercancías - Factura FP-2026-0001',
+        entryDate: new Date(2026, 0, 12), entryType: 'EGRESO', status: 'POSTED',
         lines: [
           { accountId: acc('5.1.01.001'), description: 'Compra de mercancías para reventa', debit: 85000, credit: 0, costCenterId: cc('OPS01') },
           { accountId: acc('2.1.02.001'), description: 'IVA acreditable', debit: 13600, credit: 0 },
-          { accountId: acc('1.1.01.003'), description: 'Pago con Banco Santander', debit: 0, credit: 98600 },
+          { accountId: acc('1.1.01.003'), description: 'Pago con Banco LAFISE', debit: 0, credit: 98600 },
         ],
       });
 
       // 4. Pago de renta
       journalEntries.push({
-        periodId: p1, entryNumber: getEntryNumber(), description: 'Pago de renta de oficina - Enero 2024',
-        entryDate: new Date(2024, 0, 2), entryType: 'EGRESO', status: 'POSTED',
+        periodId: p1, entryNumber: getEntryNumber(), description: 'Pago de renta de oficina - Enero 2026',
+        entryDate: new Date(2026, 0, 2), entryType: 'EGRESO', status: 'POSTED',
         lines: [
           { accountId: acc('5.1.02.003'), description: 'Renta mensual de oficina', debit: 45000, credit: 0, costCenterId: cc('ADM01') },
-          { accountId: acc('1.1.01.002'), description: 'Pago con Banco BBVA', debit: 0, credit: 45000 },
+          { accountId: acc('1.1.01.002'), description: 'Pago con Banco BAC', debit: 0, credit: 45000 },
         ],
       });
 
       // 5. Pago de sueldos
       journalEntries.push({
         periodId: p1, entryNumber: getEntryNumber(), description: 'Nómina quincenal - Primera quincena Enero',
-        entryDate: new Date(2024, 0, 15), entryType: 'EGRESO', status: 'POSTED',
+        entryDate: new Date(2026, 0, 15), entryType: 'EGRESO', status: 'POSTED',
         lines: [
           { accountId: acc('5.1.02.001'), description: 'Sueldos del personal administrativo', debit: 95000, credit: 0, costCenterId: cc('ADM02') },
           { accountId: acc('5.1.02.001'), description: 'Sueldos del personal de ventas', debit: 35000, credit: 0, costCenterId: cc('VEN01') },
-          { accountId: acc('1.1.01.002'), description: 'Pago de nómina vía BBVA', debit: 0, credit: 130000 },
+          { accountId: acc('1.1.01.002'), description: 'Pago de nómina vía BAC', debit: 0, credit: 130000 },
         ],
       });
 
-      // ===== MONTH 2 - FEBRUARY 2024 =====
+      // ===== MONTH 2 - FEBRUARY 2026 =====
       const p2 = getPeriodId(2);
 
       // 1. Venta a crédito
       journalEntries.push({
         periodId: p2, entryNumber: getEntryNumber(), description: 'Venta a crédito - Cliente Tecnologías Avanzadas',
-        entryDate: new Date(2024, 1, 5), entryType: 'DIARIO', status: 'POSTED',
+        entryDate: new Date(2026, 1, 5), entryType: 'DIARIO', status: 'POSTED',
         lines: [
           { accountId: acc('1.1.02.001'), description: 'Cuenta por cobrar - Tec. Avanzadas', debit: 185000, credit: 0 },
-          { accountId: acc('4.1.01.002'), description: 'Venta de mercancías a crédito', debit: 0, credit: 159482.76, costCenterId: cc('VEN01') },
-          { accountId: acc('2.1.02.001'), description: 'IVA trasladado (16%)', debit: 0, credit: 25517.24 },
+          { accountId: acc('4.1.01.002'), description: 'Venta de mercancías a crédito', debit: 0, credit: 185000 / 1.15, costCenterId: cc('VEN01') },
+          { accountId: acc('2.1.02.001'), description: 'IVA trasladado (15%)', debit: 0, credit: 185000 - (185000 / 1.15) },
         ],
       });
 
       // 2. Pago a proveedor
       journalEntries.push({
         periodId: p2, entryNumber: getEntryNumber(), description: 'Pago a Proveedor de Materiales del Sur',
-        entryDate: new Date(2024, 1, 8), entryType: 'EGRESO', status: 'POSTED',
+        entryDate: new Date(2026, 1, 8), entryType: 'EGRESO', status: 'POSTED',
         lines: [
           { accountId: acc('2.1.01.001'), description: 'Liquidación a proveedor nacional', debit: 120000, credit: 0 },
-          { accountId: acc('1.1.01.002'), description: 'Pago con Banco BBVA', debit: 0, credit: 120000 },
+          { accountId: acc('1.1.01.002'), description: 'Pago con Banco BAC', debit: 0, credit: 120000 },
         ],
       });
 
       // 3. Pago servicios profesionales
       journalEntries.push({
         periodId: p2, entryNumber: getEntryNumber(), description: 'Servicios de contabilidad externa - CFA',
-        entryDate: new Date(2024, 1, 12), entryType: 'EGRESO', status: 'POSTED',
+        entryDate: new Date(2026, 1, 12), entryType: 'EGRESO', status: 'POSTED',
         lines: [
           { accountId: acc('5.1.02.002'), description: 'Honorarios contables febrero', debit: 25000, credit: 0, costCenterId: cc('ADM03') },
           { accountId: acc('2.1.02.001'), description: 'IVA retenido', debit: 4000, credit: 0 },
-          { accountId: acc('1.1.01.002'), description: 'Pago con Banco BBVA', debit: 0, credit: 29000 },
+          { accountId: acc('1.1.01.002'), description: 'Pago con Banco BAC', debit: 0, credit: 29000 },
         ],
       });
 
       // 4. Depreciación mensual
       journalEntries.push({
-        periodId: p2, entryNumber: getEntryNumber(), description: 'Depreciación mensual - Febrero 2024',
-        entryDate: new Date(2024, 1, 28), entryType: 'DIARIO', status: 'POSTED',
+        periodId: p2, entryNumber: getEntryNumber(), description: 'Depreciación mensual - Febrero 2026',
+        entryDate: new Date(2026, 1, 28), entryType: 'DIARIO', status: 'POSTED',
         lines: [
           { accountId: acc('5.3.01.001'), description: 'Depreciación edificio (5% anual)', debit: 8333.33, credit: 0, costCenterId: cc('ADM01') },
           { accountId: acc('5.3.01.002'), description: 'Depreciación mobiliario (20% anual)', debit: 2500, credit: 0, costCenterId: cc('ADM01') },
@@ -424,54 +425,54 @@ export async function POST(request: NextRequest) {
       // 5. Ingreso por intereses
       journalEntries.push({
         periodId: p2, entryNumber: getEntryNumber(), description: 'Intereses bancarios - Banco Santander',
-        entryDate: new Date(2024, 1, 28), entryType: 'INGRESO', status: 'POSTED',
+        entryDate: new Date(2026, 1, 28), entryType: 'INGRESO', status: 'POSTED',
         lines: [
-          { accountId: acc('1.1.01.003'), description: 'Intereses acreditados por Santander', debit: 3500, credit: 0 },
+          { accountId: acc('1.1.01.003'), description: 'Intereses acreditados por LAFISE', debit: 3500, credit: 0 },
           { accountId: acc('4.2.01.001'), description: 'Ingreso por intereses bancarios', debit: 0, credit: 3500, costCenterId: cc('FIN01') },
         ],
       });
 
-      // ===== MONTH 3 - MARCH 2024 =====
+      // ===== MONTH 3 - MARCH 2026 =====
       const p3 = getPeriodId(3);
 
       // 1. Venta de contado grande
       journalEntries.push({
         periodId: p3, entryNumber: getEntryNumber(), description: 'Venta de contado - Constructora del Pacífico',
-        entryDate: new Date(2024, 2, 8), entryType: 'INGRESO', status: 'POSTED',
+        entryDate: new Date(2026, 2, 8), entryType: 'INGRESO', status: 'POSTED',
         lines: [
-          { accountId: acc('1.1.01.002'), description: 'Pago transferencia BBVA', debit: 287500, credit: 0 },
-          { accountId: acc('4.1.01.001'), description: 'Venta de mercancías de contado', debit: 0, credit: 247844.83, costCenterId: cc('VEN01') },
-          { accountId: acc('2.1.02.001'), description: 'IVA trasladado (16%)', debit: 0, credit: 39655.17 },
+          { accountId: acc('1.1.01.002'), description: 'Pago transferencia BAC', debit: 287500, credit: 0 },
+          { accountId: acc('4.1.01.001'), description: 'Venta de mercancías de contado', debit: 0, credit: 287500 / 1.15, costCenterId: cc('VEN01') },
+          { accountId: acc('2.1.02.001'), description: 'IVA trasladado (15%)', debit: 0, credit: 287500 - (287500 / 1.15) },
         ],
       });
 
       // 2. Compra equipo de cómputo
       journalEntries.push({
         periodId: p3, entryNumber: getEntryNumber(), description: 'Compra de equipo de cómputo - 5 laptops',
-        entryDate: new Date(2024, 2, 10), entryType: 'EGRESO', status: 'POSTED',
+        entryDate: new Date(2026, 2, 10), entryType: 'EGRESO', status: 'POSTED',
         lines: [
           { accountId: acc('1.2.01.003'), description: 'Equipo de cómputo nuevo', debit: 75000, credit: 0 },
           { accountId: acc('2.1.02.001'), description: 'IVA acreditable', debit: 12000, credit: 0 },
-          { accountId: acc('1.1.01.003'), description: 'Pago con Banco Santander', debit: 0, credit: 87000 },
+          { accountId: acc('1.1.01.003'), description: 'Pago con Banco LAFISE', debit: 0, credit: 87000 },
         ],
       });
 
       // 3. Pago servicios profesionales
       journalEntries.push({
         periodId: p3, entryNumber: getEntryNumber(), description: 'Servicios de asesoría fiscal - CFA',
-        entryDate: new Date(2024, 2, 15), entryType: 'EGRESO', status: 'POSTED',
+        entryDate: new Date(2026, 2, 15), entryType: 'EGRESO', status: 'POSTED',
         lines: [
           { accountId: acc('5.1.02.002'), description: 'Honorarios asesoría fiscal', debit: 18000, credit: 0, costCenterId: cc('ADM03') },
-          { accountId: acc('1.1.01.002'), description: 'Pago con Banco BBVA', debit: 0, credit: 18000 },
+          { accountId: acc('1.1.01.002'), description: 'Pago con Banco BAC', debit: 0, credit: 18000 },
         ],
       });
 
       // 4. Cobro de clientes
       journalEntries.push({
         periodId: p3, entryNumber: getEntryNumber(), description: 'Cobro de cliente - Tecnologías Avanzadas',
-        entryDate: new Date(2024, 2, 18), entryType: 'INGRESO', status: 'POSTED',
+        entryDate: new Date(2026, 2, 18), entryType: 'INGRESO', status: 'POSTED',
         lines: [
-          { accountId: acc('1.1.01.002'), description: 'Depósito recibido en BBVA', debit: 185000, credit: 0 },
+          { accountId: acc('1.1.01.002'), description: 'Depósito recibido en BAC', debit: 185000, credit: 0 },
           { accountId: acc('1.1.02.001'), description: 'Liquidación cuenta por cobrar', debit: 0, credit: 185000 },
         ],
       });
@@ -479,65 +480,65 @@ export async function POST(request: NextRequest) {
       // 5. Pago de luz y teléfono
       journalEntries.push({
         periodId: p3, entryNumber: getEntryNumber(), description: 'Pago de servicios CFE y Telmex - Marzo',
-        entryDate: new Date(2024, 2, 20), entryType: 'EGRESO', status: 'POSTED',
+        entryDate: new Date(2026, 2, 20), entryType: 'EGRESO', status: 'POSTED',
         lines: [
           { accountId: acc('5.1.02.004'), description: 'Servicio de energía eléctrica', debit: 12500, credit: 0, costCenterId: cc('ADM01') },
           { accountId: acc('5.1.02.005'), description: 'Servicio de teléfono e internet', debit: 8500, credit: 0, costCenterId: cc('ADM01') },
-          { accountId: acc('1.1.01.002'), description: 'Pago con Banco BBVA', debit: 0, credit: 21000 },
+          { accountId: acc('1.1.01.002'), description: 'Pago con Banco BAC', debit: 0, credit: 21000 },
         ],
       });
 
-      // ===== MONTH 4 - APRIL 2024 =====
+      // ===== MONTH 4 - APRIL 2026 =====
       const p4 = getPeriodId(4);
 
       // 1. Venta de servicios
       journalEntries.push({
         periodId: p4, entryNumber: getEntryNumber(), description: 'Venta servicios consultoría - Servicios Profesionales Gómez',
-        entryDate: new Date(2024, 3, 5), entryType: 'INGRESO', status: 'POSTED',
+        entryDate: new Date(2026, 3, 5), entryType: 'INGRESO', status: 'POSTED',
         lines: [
-          { accountId: acc('1.1.01.002'), description: 'Transferencia recibida BBVA', debit: 95000, credit: 0 },
-          { accountId: acc('4.1.02.001'), description: 'Servicios de consultoría prestados', debit: 0, credit: 81896.55, costCenterId: cc('VEN01') },
-          { accountId: acc('2.1.02.001'), description: 'IVA trasladado (16%)', debit: 0, credit: 13103.45 },
+          { accountId: acc('1.1.01.002'), description: 'Transferencia recibida BAC', debit: 95000, credit: 0 },
+          { accountId: acc('4.1.02.001'), description: 'Servicios de consultoría prestados', debit: 0, credit: 95000 / 1.15, costCenterId: cc('VEN01') },
+          { accountId: acc('2.1.02.001'), description: 'IVA trasladado (15%)', debit: 0, credit: 95000 - (95000 / 1.15) },
         ],
       });
 
-      // 2. Compra materia prima
+      // 2. Compra materia prima (15% IVA)
       journalEntries.push({
         periodId: p4, entryNumber: getEntryNumber(), description: 'Compra materia prima - Proveedor de Materiales del Sur',
-        entryDate: new Date(2024, 3, 8), entryType: 'DIARIO', status: 'POSTED',
+        entryDate: new Date(2026, 3, 8), entryType: 'DIARIO', status: 'POSTED',
         lines: [
           { accountId: acc('1.1.03.002'), description: 'Materia prima para producción', debit: 165000, credit: 0, costCenterId: cc('OPS01') },
-          { accountId: acc('2.1.02.001'), description: 'IVA acreditable', debit: 26400, credit: 0 },
-          { accountId: acc('2.1.01.001'), description: 'Cuenta por pagar a proveedor', debit: 0, credit: 191400 },
+          { accountId: acc('2.1.02.001'), description: 'IVA acreditable (15%)', debit: 165000 * 0.15, credit: 0 },
+          { accountId: acc('2.1.01.001'), description: 'Cuenta por pagar a proveedor', debit: 0, credit: 165000 * 1.15 },
         ],
       });
 
       // 3. Pago de sueldos
       journalEntries.push({
         periodId: p4, entryNumber: getEntryNumber(), description: 'Nómina quincenal - Primera quincena Abril',
-        entryDate: new Date(2024, 3, 15), entryType: 'EGRESO', status: 'POSTED',
+        entryDate: new Date(2026, 3, 15), entryType: 'EGRESO', status: 'POSTED',
         lines: [
           { accountId: acc('5.1.02.001'), description: 'Sueldos personal administrativo', debit: 98000, credit: 0, costCenterId: cc('ADM02') },
           { accountId: acc('5.1.02.001'), description: 'Sueldos personal de ventas', debit: 38000, credit: 0, costCenterId: cc('VEN01') },
           { accountId: acc('5.1.02.001'), description: 'Sueldos personal de operaciones', debit: 42000, credit: 0, costCenterId: cc('OPS01') },
-          { accountId: acc('1.1.01.002'), description: 'Pago nómina BBVA', debit: 0, credit: 178000 },
+          { accountId: acc('1.1.01.002'), description: 'Pago nómina BAC', debit: 0, credit: 178000 },
         ],
       });
 
       // 4. Publicidad
       journalEntries.push({
         periodId: p4, entryNumber: getEntryNumber(), description: 'Campaña publicitaria digital - Google Ads',
-        entryDate: new Date(2024, 3, 10), entryType: 'EGRESO', status: 'POSTED',
+        entryDate: new Date(2026, 3, 10), entryType: 'EGRESO', status: 'POSTED',
         lines: [
           { accountId: acc('5.1.03.002'), description: 'Publicidad y marketing digital', debit: 32000, credit: 0, costCenterId: cc('VEN01') },
-          { accountId: acc('1.1.01.002'), description: 'Cargo a tarjeta BBVA', debit: 0, credit: 32000 },
+          { accountId: acc('1.1.01.002'), description: 'Cargo a tarjeta BAC', debit: 0, credit: 32000 },
         ],
       });
 
       // 5. Depreciación mensual
       journalEntries.push({
-        periodId: p4, entryNumber: getEntryNumber(), description: 'Depreciación mensual - Abril 2024',
-        entryDate: new Date(2024, 3, 28), entryType: 'DIARIO', status: 'POSTED',
+        periodId: p4, entryNumber: getEntryNumber(), description: 'Depreciación mensual - Abril 2026',
+        entryDate: new Date(2026, 3, 28), entryType: 'DIARIO', status: 'POSTED',
         lines: [
           { accountId: acc('5.3.01.001'), description: 'Depreciación edificio', debit: 8333.33, credit: 0, costCenterId: cc('ADM01') },
           { accountId: acc('5.3.01.002'), description: 'Depreciación mobiliario', debit: 2500, credit: 0, costCenterId: cc('ADM01') },
@@ -545,41 +546,41 @@ export async function POST(request: NextRequest) {
           { accountId: acc('5.3.01.004'), description: 'Depreciación vehículos', debit: 4166.67, credit: 0, costCenterId: cc('OPS02') },
           { accountId: acc('1.2.02.001'), description: 'Dep. acumulada edificios', debit: 0, credit: 8333.33 },
           { accountId: acc('1.2.02.002'), description: 'Dep. acumulada mobiliario', debit: 0, credit: 2500 },
-          { accountId: acc('1.1.01.003'), description: 'Dep. acumulada eq. cómputo (contra activo)', debit: 0, credit: 3333.33 },
-          { accountId: acc('1.1.01.003'), description: 'Dep. acumulada vehículos (contra activo)', debit: 0, credit: 4166.67 },
+          { accountId: acc('1.1.01.003'), description: 'Dep. acumulada eq. cómputo', debit: 0, credit: 3333.33 },
+          { accountId: acc('1.1.01.003'), description: 'Dep. acumulada vehículos', debit: 0, credit: 4166.67 },
         ],
       });
 
-      // ===== MONTH 5 - MAY 2024 =====
+      // ===== MONTH 5 - MAY 2026 =====
       const p5 = getPeriodId(5);
 
       // 1. Ventas mixtas (contado + crédito)
       journalEntries.push({
         periodId: p5, entryNumber: getEntryNumber(), description: 'Ventas mixtas - Distribuidora Nacional',
-        entryDate: new Date(2024, 4, 6), entryType: 'DIARIO', status: 'POSTED',
+        entryDate: new Date(2026, 4, 6), entryType: 'DIARIO', status: 'POSTED',
         lines: [
-          { accountId: acc('1.1.01.002'), description: 'Anticipo en efectivo BBVA', debit: 150000, credit: 0 },
+          { accountId: acc('1.1.01.002'), description: 'Anticipo en efectivo BAC', debit: 150000, credit: 0 },
           { accountId: acc('1.1.02.001'), description: 'Saldo a crédito 30 días', debit: 100000, credit: 0 },
-          { accountId: acc('4.1.01.001'), description: 'Parte de venta de contado', debit: 0, credit: 129310.34, costCenterId: cc('VEN01') },
-          { accountId: acc('4.1.01.002'), description: 'Parte de venta a crédito', debit: 0, credit: 86206.90, costCenterId: cc('VEN01') },
-          { accountId: acc('2.1.02.001'), description: 'IVA trasladado total (16%)', debit: 0, credit: 34482.76 },
+          { accountId: acc('4.1.01.001'), description: 'Parte de venta de contado', debit: 0, credit: 150000 / 1.15, costCenterId: cc('VEN01') },
+          { accountId: acc('4.1.01.002'), description: 'Parte de venta a crédito', debit: 0, credit: 100000 / 1.15, costCenterId: cc('VEN01') },
+          { accountId: acc('2.1.02.001'), description: 'IVA trasladado total (15%)', debit: 0, credit: 250000 - (250000 / 1.15) },
         ],
       });
 
       // 2. Pago a proveedores
       journalEntries.push({
         periodId: p5, entryNumber: getEntryNumber(), description: 'Pago parcial a Proveedor de Materiales del Sur',
-        entryDate: new Date(2024, 4, 9), entryType: 'EGRESO', status: 'POSTED',
+        entryDate: new Date(2026, 4, 9), entryType: 'EGRESO', status: 'POSTED',
         lines: [
           { accountId: acc('2.1.01.001'), description: 'Pago parcial a proveedor', debit: 100000, credit: 0 },
-          { accountId: acc('1.1.01.003'), description: 'Transferencia Santander', debit: 0, credit: 100000 },
+          { accountId: acc('1.1.01.003'), description: 'Transferencia LAFISE', debit: 0, credit: 100000 },
         ],
       });
 
       // 3. Gastos de operación varios
       journalEntries.push({
-        periodId: p5, entryNumber: getEntryNumber(), description: 'Gastos operacionales varios - Mayo 2024',
-        entryDate: new Date(2024, 4, 12), entryType: 'EGRESO', status: 'POSTED',
+        periodId: p5, entryNumber: getEntryNumber(), description: 'Gastos operacionales varios - Mayo 2026',
+        entryDate: new Date(2026, 4, 12), entryType: 'EGRESO', status: 'POSTED',
         lines: [
           { accountId: acc('5.1.02.003'), description: 'Renta de oficina', debit: 45000, credit: 0, costCenterId: cc('ADM01') },
           { accountId: acc('5.1.02.002'), description: 'Servicios profesionales (contabilidad)', debit: 22000, credit: 0, costCenterId: cc('ADM03') },
@@ -587,16 +588,16 @@ export async function POST(request: NextRequest) {
           { accountId: acc('5.1.02.004'), description: 'Servicios de luz', debit: 11800, credit: 0, costCenterId: cc('ADM01') },
           { accountId: acc('5.1.02.005'), description: 'Teléfono e internet', debit: 7200, credit: 0, costCenterId: cc('ADM01') },
           { accountId: acc('5.1.03.003'), description: 'Viáticos de ventas', debit: 9500, credit: 0, costCenterId: cc('VEN01') },
-          { accountId: acc('1.1.01.002'), description: 'Pago único BBVA', debit: 0, credit: 101000 },
+          { accountId: acc('1.1.01.002'), description: 'Pago único BAC', debit: 0, credit: 101000 },
         ],
       });
 
       // 4. Ingreso por intereses
       journalEntries.push({
         periodId: p5, entryNumber: getEntryNumber(), description: 'Intereses bancarios - Santander e inversiones',
-        entryDate: new Date(2024, 4, 28), entryType: 'INGRESO', status: 'POSTED',
+        entryDate: new Date(2026, 4, 28), entryType: 'INGRESO', status: 'POSTED',
         lines: [
-          { accountId: acc('1.1.01.003'), description: 'Intereses acreditados Santander', debit: 4200, credit: 0 },
+          { accountId: acc('1.1.01.003'), description: 'Intereses acreditados LAFISE', debit: 4200, credit: 0 },
           { accountId: acc('4.2.01.001'), description: 'Intereses ganados', debit: 0, credit: 4200, costCenterId: cc('FIN01') },
         ],
       });
@@ -604,10 +605,10 @@ export async function POST(request: NextRequest) {
       // 5. Pago ISR
       journalEntries.push({
         periodId: p5, entryNumber: getEntryNumber(), description: 'Pago de ISR provisional - Trimestre 1',
-        entryDate: new Date(2024, 4, 30), entryType: 'EGRESO', status: 'POSTED',
+        entryDate: new Date(2026, 4, 30), entryType: 'EGRESO', status: 'POSTED',
         lines: [
-          { accountId: acc('5.2.02.001'), description: 'ISR del trimestre', debit: 48000, credit: 0, costCenterId: cc('ADM03') },
-          { accountId: acc('1.1.01.002'), description: 'Pago ISR vía BBVA', debit: 0, credit: 48000 },
+          { accountId: acc('5.2.02.001'), description: 'IR del trimestre', debit: 48000, credit: 0, costCenterId: cc('ADM03') },
+          { accountId: acc('1.1.01.002'), description: 'Pago IR vía BAC', debit: 0, credit: 48000 },
         ],
       });
 
@@ -652,44 +653,44 @@ export async function POST(request: NextRequest) {
       // --------------------------------------------------------
       const bankAccounts = await tx.bankAccount.createMany({
         data: [
-          { companyId, bankName: 'Banco BBVA', accountNumber: '0123456789', accountType: 'CHECKING', currency: 'MXN', initialBalance: 500000, currentBalance: 500000 },
-          { companyId, bankName: 'Banco Santander', accountNumber: '9876543210', accountType: 'CHECKING', currency: 'MXN', initialBalance: 200000, currentBalance: 200000 },
+          { companyId, bankName: 'Banco BAC', accountNumber: '0123456789', accountType: 'CHECKING', currency: 'NIO', initialBalance: 500000, currentBalance: 500000 },
+          { companyId, bankName: 'Banco LAFISE', accountNumber: '9876543210', accountType: 'CHECKING', currency: 'NIO', initialBalance: 200000, currentBalance: 200000 },
         ],
       });
 
-      const bbvaAccount = await tx.bankAccount.findFirst({ where: { companyId, bankName: 'Banco BBVA' } });
+      const bbvaAccount = await tx.bankAccount.findFirst({ where: { companyId, bankName: 'Banco BAC' } });
 
       // --------------------------------------------------------
       // 8. BANK MOVEMENTS (BBVA only, last 3 months: Mar-May)
       // --------------------------------------------------------
 
-      // Get journal entry lines for BBVA bank account to partially match
+      // Get journal entry lines for BAC bank account to partially match
       const bbvaAccId = acc('1.1.01.002');
 
       const bankMovementsData = [
-        // March 2024
-        { movementDate: new Date(2024, 2, 5), description: 'Traspaso desde otra cuenta', reference: 'TRA-2024-0301', amount: 15000, movementType: 'CREDIT' },
-        { movementDate: new Date(2024, 2, 8), description: 'Venta Constructora del Pacífico', reference: 'TRA-2024-0302', amount: 287500, movementType: 'CREDIT' },
-        { movementDate: new Date(2024, 2, 10), description: 'Pago CFE Marzo 2024', reference: 'CLI-2024-0301', amount: 12500, movementType: 'DEBIT' },
-        { movementDate: new Date(2024, 2, 15), description: 'Asesoría fiscal CFA', reference: 'TRA-2024-0303', amount: 18000, movementType: 'DEBIT' },
-        { movementDate: new Date(2024, 2, 18), description: 'Depósito cliente Tec. Avanzadas', reference: 'TRA-2024-0304', amount: 185000, movementType: 'CREDIT' },
-        { movementDate: new Date(2024, 2, 20), description: 'CFE + Telmex', reference: 'CLI-2024-0302', amount: 21000, movementType: 'DEBIT' },
-        { movementDate: new Date(2024, 2, 22), description: 'Comisión bancaria mensual', reference: 'COM-2024-0301', amount: 850, movementType: 'DEBIT' },
-        // April 2024
-        { movementDate: new Date(2024, 3, 2), description: 'Renta de oficina abril', reference: 'TRA-2024-0401', amount: 45000, movementType: 'DEBIT' },
-        { movementDate: new Date(2024, 3, 5), description: 'Pago SP Gómez - Consultoría', reference: 'TRA-2024-0402', amount: 95000, movementType: 'CREDIT' },
-        { movementDate: new Date(2024, 3, 10), description: 'Google Ads', reference: 'TAR-2024-0401', amount: 32000, movementType: 'DEBIT' },
-        { movementDate: new Date(2024, 3, 15), description: 'Nómina abril quincena 1', reference: 'NOM-2024-0401', amount: 178000, movementType: 'DEBIT' },
-        { movementDate: new Date(2024, 3, 20), description: 'Cobro parcial Industrias Metálicas', reference: 'TRA-2024-0403', amount: 65000, movementType: 'CREDIT' },
-        { movementDate: new Date(2024, 3, 25), description: 'Comisión bancaria mensual', reference: 'COM-2024-0401', amount: 850, movementType: 'DEBIT' },
-        // May 2024
-        { movementDate: new Date(2024, 4, 3), description: 'Anticipo Distribuidora Nacional', reference: 'TRA-2024-0501', amount: 150000, movementType: 'CREDIT' },
-        { movementDate: new Date(2024, 4, 6), description: 'Pago por servicios de limpieza', reference: 'TRA-2024-0502', amount: 12000, movementType: 'DEBIT' },
-        { movementDate: new Date(2024, 4, 12), description: 'Gastos operacionales varios', reference: 'TRA-2024-0503', amount: 101000, movementType: 'DEBIT' },
-        { movementDate: new Date(2024, 4, 18), description: 'Depósito de cliente internacional', reference: 'TRA-2024-0504', amount: 42000, movementType: 'CREDIT' },
-        { movementDate: new Date(2024, 4, 25), description: 'Comisión bancaria mensual', reference: 'COM-2024-0501', amount: 850, movementType: 'DEBIT' },
-        { movementDate: new Date(2024, 4, 28), description: 'Traspaso a Santander', reference: 'TRA-2024-0505', amount: 50000, movementType: 'DEBIT' },
-        { movementDate: new Date(2024, 4, 30), description: 'ISR provisional', reference: 'SPE-2024-0501', amount: 48000, movementType: 'DEBIT' },
+        // March 2026
+        { movementDate: new Date(2026, 2, 5), description: 'Traspaso desde otra cuenta', reference: 'TRA-2026-0301', amount: 15000, movementType: 'CREDIT' },
+        { movementDate: new Date(2026, 2, 8), description: 'Venta Constructora del Pacífico', reference: 'TRA-2026-0302', amount: 287500, movementType: 'CREDIT' },
+        { movementDate: new Date(2026, 2, 10), description: 'Pago CFE Marzo 2026', reference: 'CLI-2026-0301', amount: 12500, movementType: 'DEBIT' },
+        { movementDate: new Date(2026, 2, 15), description: 'Asesoría fiscal CFA', reference: 'TRA-2026-0303', amount: 18000, movementType: 'DEBIT' },
+        { movementDate: new Date(2026, 2, 18), description: 'Depósito cliente Tec. Avanzadas', reference: 'TRA-2026-0304', amount: 185000, movementType: 'CREDIT' },
+        { movementDate: new Date(2026, 2, 20), description: 'CFE + Telmex', reference: 'CLI-2026-0302', amount: 21000, movementType: 'DEBIT' },
+        { movementDate: new Date(2026, 2, 22), description: 'Comisión bancaria mensual', reference: 'COM-2026-0301', amount: 850, movementType: 'DEBIT' },
+        // April 2026
+        { movementDate: new Date(2026, 3, 2), description: 'Renta de oficina abril', reference: 'TRA-2026-0401', amount: 45000, movementType: 'DEBIT' },
+        { movementDate: new Date(2026, 3, 5), description: 'Pago SP Gómez - Consultoría', reference: 'TRA-2026-0402', amount: 95000, movementType: 'CREDIT' },
+        { movementDate: new Date(2026, 3, 10), description: 'Google Ads', reference: 'TAR-2026-0401', amount: 32000, movementType: 'DEBIT' },
+        { movementDate: new Date(2026, 3, 15), description: 'Nómina abril quincena 1', reference: 'NOM-2026-0401', amount: 178000, movementType: 'DEBIT' },
+        { movementDate: new Date(2026, 3, 20), description: 'Cobro parcial Industrias Metálicas', reference: 'TRA-2026-0403', amount: 65000, movementType: 'CREDIT' },
+        { movementDate: new Date(2026, 3, 25), description: 'Comisión bancaria mensual', reference: 'COM-2026-0401', amount: 850, movementType: 'DEBIT' },
+        // May 2026
+        { movementDate: new Date(2026, 4, 3), description: 'Anticipo Distribuidora Nacional', reference: 'TRA-2026-0501', amount: 150000, movementType: 'CREDIT' },
+        { movementDate: new Date(2026, 4, 6), description: 'Pago por servicios de limpieza', reference: 'TRA-2026-0502', amount: 12000, movementType: 'DEBIT' },
+        { movementDate: new Date(2026, 4, 12), description: 'Gastos operacionales varios', reference: 'TRA-2026-0503', amount: 101000, movementType: 'DEBIT' },
+        { movementDate: new Date(2026, 4, 18), description: 'Depósito de cliente internacional', reference: 'TRA-2026-0504', amount: 42000, movementType: 'CREDIT' },
+        { movementDate: new Date(2026, 4, 25), description: 'Comisión bancaria mensual', reference: 'COM-2026-0501', amount: 850, movementType: 'DEBIT' },
+        { movementDate: new Date(2026, 4, 28), description: 'Traspaso a LAFISE', reference: 'TRA-2026-0505', amount: 50000, movementType: 'DEBIT' },
+        { movementDate: new Date(2026, 4, 30), description: 'IR provisional', reference: 'SPE-2026-0501', amount: 48000, movementType: 'DEBIT' },
       ];
 
       await tx.bankMovement.createMany({
@@ -708,27 +709,27 @@ export async function POST(request: NextRequest) {
 
       const invoicesData = [
         // PAID invoices (5)
-        { thirdPartyId: customerTPs[0].id, invoiceType: 'SALE' as const, number: 'FC-2024-0015', issueDate: new Date(2024, 2, 1), dueDate: new Date(2024, 2, 31), totalAmount: 118750, balanceDue: 0, status: 'PAID', description: 'Venta equipo tecnológico' },
-        { thirdPartyId: supplierTPs[0].id, invoiceType: 'PURCHASE' as const, number: 'FP-2024-0008', issueDate: new Date(2024, 2, 5), dueDate: new Date(2024, 2, 20), totalAmount: 98600, balanceDue: 0, status: 'PAID', description: 'Materia prima' },
-        { thirdPartyId: customerTPs[1].id, invoiceType: 'SALE' as const, number: 'FC-2024-0016', issueDate: new Date(2024, 2, 8), dueDate: new Date(2024, 2, 22), totalAmount: 247844.83, balanceDue: 0, status: 'PAID', description: 'Proyecto construcción' },
-        { thirdPartyId: customerTPs[2].id, invoiceType: 'SALE' as const, number: 'FC-2024-0017', issueDate: new Date(2024, 3, 2), dueDate: new Date(2024, 3, 16), totalAmount: 81896.55, balanceDue: 0, status: 'PAID', description: 'Servicios de consultoría' },
-        { thirdPartyId: supplierTPs[1].id, invoiceType: 'PURCHASE' as const, number: 'FP-2024-0010', issueDate: new Date(2024, 3, 5), dueDate: new Date(2024, 3, 19), totalAmount: 25000, balanceDue: 0, status: 'PAID', description: 'Servicios de limpieza marzo' },
+        { thirdPartyId: customerTPs[0].id, invoiceType: 'SALE' as const, number: 'FC-2026-0015', issueDate: new Date(2026, 2, 1), dueDate: new Date(2026, 2, 31), totalAmount: 118750, balanceDue: 0, status: 'PAID', description: 'Venta equipo tecnológico' },
+        { thirdPartyId: supplierTPs[0].id, invoiceType: 'PURCHASE' as const, number: 'FP-2026-0008', issueDate: new Date(2026, 2, 5), dueDate: new Date(2026, 2, 20), totalAmount: 98600, balanceDue: 0, status: 'PAID', description: 'Materia prima' },
+        { thirdPartyId: customerTPs[1].id, invoiceType: 'SALE' as const, number: 'FC-2026-0016', issueDate: new Date(2026, 2, 8), dueDate: new Date(2026, 2, 22), totalAmount: 247844.83, balanceDue: 0, status: 'PAID', description: 'Proyecto construcción' },
+        { thirdPartyId: customerTPs[2].id, invoiceType: 'SALE' as const, number: 'FC-2026-0017', issueDate: new Date(2026, 3, 2), dueDate: new Date(2026, 3, 16), totalAmount: 81896.55, balanceDue: 0, status: 'PAID', description: 'Servicios de consultoría' },
+        { thirdPartyId: supplierTPs[1].id, invoiceType: 'PURCHASE' as const, number: 'FP-2026-0010', issueDate: new Date(2026, 3, 5), dueDate: new Date(2026, 3, 19), totalAmount: 25000, balanceDue: 0, status: 'PAID', description: 'Servicios de limpieza marzo' },
 
         // PARTIAL invoices (5)
-        { thirdPartyId: customerTPs[2].id, invoiceType: 'SALE' as const, number: 'FC-2024-0018', issueDate: new Date(2024, 3, 10), dueDate: new Date(2024, 4, 10), totalAmount: 165000, balanceDue: 82500, status: 'PARTIAL', description: 'Suministro industrial' },
-        { thirdPartyId: customerTPs[3].id, invoiceType: 'SALE' as const, number: 'FC-2024-0019', issueDate: new Date(2024, 3, 15), dueDate: new Date(2024, 4, 15), totalAmount: 55000, balanceDue: 27500, status: 'PARTIAL', description: 'Servicios profesionales' },
-        { thirdPartyId: supplierTPs[3].id, invoiceType: 'PURCHASE' as const, number: 'FP-2024-0011', issueDate: new Date(2024, 4, 3), dueDate: new Date(2024, 4, 17), totalAmount: 45000, balanceDue: 22500, status: 'PARTIAL', description: 'Renta mayo' },
-        { thirdPartyId: supplierTPs[4].id, invoiceType: 'PURCHASE' as const, number: 'FP-2024-0012', issueDate: new Date(2024, 4, 8), dueDate: new Date(2024, 4, 22), totalAmount: 22000, balanceDue: 11000, status: 'PARTIAL', description: 'Honorarios contables mayo' },
-        { thirdPartyId: customerTPs[4].id, invoiceType: 'SALE' as const, number: 'FC-2024-0020', issueDate: new Date(2024, 4, 10), dueDate: new Date(2024, 4, 25), totalAmount: 250000, balanceDue: 125000, status: 'PARTIAL', description: 'Suministro metalúrgico' },
+        { thirdPartyId: customerTPs[2].id, invoiceType: 'SALE' as const, number: 'FC-2026-0018', issueDate: new Date(2026, 3, 10), dueDate: new Date(2026, 4, 10), totalAmount: 165000, balanceDue: 82500, status: 'PARTIAL', description: 'Suministro industrial' },
+        { thirdPartyId: customerTPs[3].id, invoiceType: 'SALE' as const, number: 'FC-2026-0019', issueDate: new Date(2026, 3, 15), dueDate: new Date(2026, 4, 15), totalAmount: 55000, balanceDue: 27500, status: 'PARTIAL', description: 'Servicios profesionales' },
+        { thirdPartyId: supplierTPs[3].id, invoiceType: 'PURCHASE' as const, number: 'FP-2026-0011', issueDate: new Date(2026, 4, 3), dueDate: new Date(2026, 4, 17), totalAmount: 45000, balanceDue: 22500, status: 'PARTIAL', description: 'Renta mayo' },
+        { thirdPartyId: supplierTPs[4].id, invoiceType: 'PURCHASE' as const, number: 'FP-2026-0012', issueDate: new Date(2026, 4, 8), dueDate: new Date(2026, 4, 22), totalAmount: 22000, balanceDue: 11000, status: 'PARTIAL', description: 'Honorarios contables mayo' },
+        { thirdPartyId: customerTPs[4].id, invoiceType: 'SALE' as const, number: 'FC-2026-0020', issueDate: new Date(2026, 4, 10), dueDate: new Date(2026, 4, 25), totalAmount: 250000, balanceDue: 125000, status: 'PARTIAL', description: 'Suministro metalúrgico' },
 
         // PENDING invoices (3)
-        { thirdPartyId: customerTPs[0].id, invoiceType: 'SALE' as const, number: 'FC-2024-0021', issueDate: new Date(2024, 4, 15), dueDate: new Date(2024, 5, 15), totalAmount: 95000, balanceDue: 95000, status: 'PENDING', description: 'Equipo tecnológico v2' },
-        { thirdPartyId: supplierTPs[4].id, invoiceType: 'PURCHASE' as const, number: 'FP-2024-0013', issueDate: new Date(2024, 4, 18), dueDate: new Date(2024, 5, 2), totalAmount: 15800, balanceDue: 15800, status: 'PENDING', description: 'Papelería y útiles mayo' },
-        { thirdPartyId: customerTPs[1].id, invoiceType: 'SALE' as const, number: 'FC-2024-0022', issueDate: new Date(2024, 4, 20), dueDate: new Date(2024, 5, 20), totalAmount: 310000, balanceDue: 310000, status: 'PENDING', description: 'Obra civil fase II' },
+        { thirdPartyId: customerTPs[0].id, invoiceType: 'SALE' as const, number: 'FC-2026-0021', issueDate: new Date(2026, 4, 15), dueDate: new Date(2026, 5, 15), totalAmount: 95000, balanceDue: 95000, status: 'PENDING', description: 'Equipo tecnológico v2' },
+        { thirdPartyId: supplierTPs[4].id, invoiceType: 'PURCHASE' as const, number: 'FP-2026-0013', issueDate: new Date(2026, 4, 18), dueDate: new Date(2026, 5, 2), totalAmount: 15800, balanceDue: 15800, status: 'PENDING', description: 'Papelería y útiles mayo' },
+        { thirdPartyId: customerTPs[1].id, invoiceType: 'SALE' as const, number: 'FC-2026-0022', issueDate: new Date(2026, 4, 20), dueDate: new Date(2026, 5, 20), totalAmount: 310000, balanceDue: 310000, status: 'PENDING', description: 'Obra civil fase II' },
 
         // Overdue invoices (2)
-        { thirdPartyId: customerTPs[3].id, invoiceType: 'SALE' as const, number: 'FC-2024-0014', issueDate: new Date(2024, 2, 1), dueDate: new Date(2024, 2, 28), totalAmount: 72000, balanceDue: 72000, status: 'PARTIAL', description: 'Servicios profesionales feb' },
-        { thirdPartyId: customerTPs[4].id, invoiceType: 'SALE' as const, number: 'FC-2024-0013', issueDate: new Date(2024, 2, 15), dueDate: new Date(2024, 3, 15), totalAmount: 45000, balanceDue: 45000, status: 'PENDING', description: 'Material industrial feb' },
+        { thirdPartyId: customerTPs[3].id, invoiceType: 'SALE' as const, number: 'FC-2026-0014', issueDate: new Date(2026, 2, 1), dueDate: new Date(2026, 2, 28), totalAmount: 72000, balanceDue: 72000, status: 'PARTIAL', description: 'Servicios profesionales feb' },
+        { thirdPartyId: customerTPs[4].id, invoiceType: 'SALE' as const, number: 'FC-2026-0013', issueDate: new Date(2026, 2, 15), dueDate: new Date(2026, 3, 15), totalAmount: 45000, balanceDue: 45000, status: 'PENDING', description: 'Material industrial feb' },
       ];
 
       const invoices = await tx.invoice.createMany({
@@ -742,9 +743,9 @@ export async function POST(request: NextRequest) {
       // 10. USERS (3 system users)
       // --------------------------------------------------------
       const usersData = [
-        { email: 'admin@gea.com.mx', name: 'Carlos Mendoza', role: 'ADMIN' as const, password: Buffer.from('Admin123!').toString('base64') },
-        { email: 'contador@gea.com.mx', name: 'María García', role: 'ACCOUNTANT' as const, password: Buffer.from('Contador123!').toString('base64') },
-        { email: 'gerente@gea.com.mx', name: 'Roberto López', role: 'MANAGER' as const, password: Buffer.from('Gerente123!').toString('base64') },
+        { email: 'admin@alpha.com.ni', name: 'Carlos Mendoza', role: 'ADMIN' as const, password: Buffer.from('Admin123!').toString('base64') },
+        { email: 'contador@alpha.com.ni', name: 'María García', role: 'ACCOUNTANT' as const, password: Buffer.from('Contador123!').toString('base64') },
+        { email: 'gerente@alpha.com.ni', name: 'Roberto López', role: 'MANAGER' as const, password: Buffer.from('Gerente123!').toString('base64') },
       ];
 
       const createdUsers: any[] = [];
@@ -756,7 +757,7 @@ export async function POST(request: NextRequest) {
             name: u.name,
             role: u.role,
             password: u.password,
-            lastLoginAt: new Date(2024, 5, 1, 9, 0, 0),
+            lastLoginAt: new Date(2026, 5, 1, 9, 0, 0),
           },
         });
         createdUsers.push(user);
@@ -775,10 +776,10 @@ export async function POST(request: NextRequest) {
             entityId: companyId,
             entityLabel: 'Grupo Empresarial Alpha S.A. de C.V.',
             oldValues: null,
-            newValues: JSON.stringify({ name: 'Grupo Empresarial Alpha S.A. de C.V.', taxId: 'GEA200101ABC' }),
+            newValues: JSON.stringify({ name: 'Grupo Alpha S.A.', taxId: 'J0310000000001' }),
             ipAddress: '192.168.1.100',
             userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-            createdAt: new Date(2024, 0, 1, 8, 0, 0),
+            createdAt: new Date(2026, 0, 1, 8, 0, 0),
           },
           {
             companyId,
@@ -786,12 +787,12 @@ export async function POST(request: NextRequest) {
             action: 'CLOSE',
             entityType: 'AccountingPeriod',
             entityId: periods[0].id,
-            entityLabel: 'Enero 2024',
+            entityLabel: 'Enero 2026',
             oldValues: JSON.stringify({ status: 'OPEN' }),
             newValues: JSON.stringify({ status: 'CLOSED' }),
             ipAddress: '192.168.1.100',
             userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-            createdAt: new Date(2024, 0, 31, 18, 0, 0),
+            createdAt: new Date(2026, 0, 31, 18, 0, 0),
           },
           {
             companyId,
@@ -804,20 +805,20 @@ export async function POST(request: NextRequest) {
             newValues: JSON.stringify({ entryNumber: '0002', totalDebit: 125000, totalCredit: 125000 }),
             ipAddress: '192.168.1.101',
             userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-            createdAt: new Date(2024, 0, 10, 10, 30, 0),
+            createdAt: new Date(2026, 0, 10, 10, 30, 0),
           },
           {
             companyId,
             userId: createdUsers[1].id,
             action: 'UPDATE',
             entityType: 'Invoice',
-            entityId: 'inv-fc-2024-0016',
-            entityLabel: 'FC-2024-0016',
+            entityId: 'inv-fc-2026-0016',
+            entityLabel: 'FC-2026-0016',
             oldValues: JSON.stringify({ status: 'PENDING', balanceDue: 247844.83 }),
             newValues: JSON.stringify({ status: 'PAID', balanceDue: 0 }),
             ipAddress: '192.168.1.101',
             userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-            createdAt: new Date(2024, 2, 22, 14, 15, 0),
+            createdAt: new Date(2026, 2, 22, 14, 15, 0),
           },
           {
             companyId,
@@ -827,24 +828,24 @@ export async function POST(request: NextRequest) {
             entityId: createdUsers[2].id,
             entityLabel: 'Roberto López',
             oldValues: null,
-            newValues: JSON.stringify({ lastLoginAt: '2024-06-01T09:00:00Z' }),
+            newValues: JSON.stringify({ lastLoginAt: '2026-06-01T09:00:00Z' }),
             ipAddress: '192.168.1.102',
             userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-            createdAt: new Date(2024, 5, 1, 9, 0, 0),
+            createdAt: new Date(2026, 5, 1, 9, 0, 0),
           },
         ],
       });
 
       // --------------------------------------------------------
-      // 12. EXCHANGE RATES (6 months USD/MXN for 2024)
+      // 12. EXCHANGE RATES (6 months USD/MXN for 2026)
       // --------------------------------------------------------
       const exchangeRatesData = [
-        { fromCurrency: 'USD', toCurrency: 'MXN', rate: 17.15, date: new Date(2024, 0, 1), source: 'BANXICO' },
-        { fromCurrency: 'USD', toCurrency: 'MXN', rate: 17.25, date: new Date(2024, 1, 1), source: 'BANXICO' },
-        { fromCurrency: 'USD', toCurrency: 'MXN', rate: 17.10, date: new Date(2024, 2, 1), source: 'BANXICO' },
-        { fromCurrency: 'USD', toCurrency: 'MXN', rate: 16.95, date: new Date(2024, 3, 1), source: 'BANXICO' },
-        { fromCurrency: 'USD', toCurrency: 'MXN', rate: 17.05, date: new Date(2024, 4, 1), source: 'BANXICO' },
-        { fromCurrency: 'USD', toCurrency: 'MXN', rate: 17.20, date: new Date(2024, 5, 1), source: 'BANXICO' },
+        { fromCurrency: 'USD', toCurrency: 'NIO', rate: 36.65, date: new Date(2026, 0, 1), source: 'BCN' },
+        { fromCurrency: 'USD', toCurrency: 'NIO', rate: 36.72, date: new Date(2026, 1, 1), source: 'BCN' },
+        { fromCurrency: 'USD', toCurrency: 'NIO', rate: 36.78, date: new Date(2026, 2, 1), source: 'BCN' },
+        { fromCurrency: 'USD', toCurrency: 'NIO', rate: 36.85, date: new Date(2026, 3, 1), source: 'BCN' },
+        { fromCurrency: 'USD', toCurrency: 'NIO', rate: 36.91, date: new Date(2026, 4, 1), source: 'BCN' },
+        { fromCurrency: 'USD', toCurrency: 'NIO', rate: 36.98, date: new Date(2026, 5, 1), source: 'BCN' },
       ];
 
       await tx.exchangeRate.createMany({
@@ -861,7 +862,7 @@ export async function POST(request: NextRequest) {
           usefulLifeMonths: 240, depreciationMethod: 'STRAIGHT_LINE',
           currentBookValue: 2000000 - (2000000 - 200000) / 240 * 52, // ~52 months of depreciation
           accumulatedDepreciation: Math.round((2000000 - 200000) / 240 * 52 * 100) / 100,
-          status: 'ACTIVE', location: 'Av. Reforma 250, CDMX', accountId: acc('1.2.01.001'),
+          status: 'ACTIVE', location: 'Pista Jean Paul Genie, Managua', accountId: acc('1.2.01.001'),
         },
         {
           code: 'AF-002', name: 'Mobiliario de Oficina', assetType: 'FURNITURE',
@@ -869,7 +870,7 @@ export async function POST(request: NextRequest) {
           usefulLifeMonths: 120, depreciationMethod: 'STRAIGHT_LINE',
           currentBookValue: 150000 - (150000 / 120 * 35), // ~35 months
           accumulatedDepreciation: Math.round(150000 / 120 * 35 * 100) / 100,
-          status: 'ACTIVE', location: 'Av. Reforma 250, Piso 3', accountId: acc('1.2.01.002'),
+          status: 'ACTIVE', location: 'Pista Jean Paul Genie, Piso 3', accountId: acc('1.2.01.002'),
         },
         {
           code: 'AF-003', name: 'Servidor Principal', assetType: 'COMPUTER',
@@ -877,7 +878,7 @@ export async function POST(request: NextRequest) {
           usefulLifeMonths: 60, depreciationMethod: 'STRAIGHT_LINE',
           currentBookValue: 80000 - ((80000 - 5000) / 60 * 27), // ~27 months
           accumulatedDepreciation: Math.round((80000 - 5000) / 60 * 27 * 100) / 100,
-          status: 'ACTIVE', location: 'Av. Reforma 250, Sala de Servidores', accountId: acc('1.2.01.003'),
+          status: 'ACTIVE', location: 'Pista Jean Paul Genie, Sala de Servidores', accountId: acc('1.2.01.003'),
         },
         {
           code: 'AF-004', name: 'Camioneta Reparto', assetType: 'VEHICLE',
@@ -885,7 +886,7 @@ export async function POST(request: NextRequest) {
           usefulLifeMonths: 60, depreciationMethod: 'STRAIGHT_LINE',
           currentBookValue: 350000 - ((350000 - 35000) / 60 * 17), // ~17 months
           accumulatedDepreciation: Math.round((350000 - 35000) / 60 * 17 * 100) / 100,
-          status: 'ACTIVE', location: 'Av. Reforma 250, Estacionamiento',
+          status: 'ACTIVE', location: 'Pista Jean Paul Genie, Estacionamiento',
         },
       ];
 
@@ -913,7 +914,7 @@ export async function POST(request: NextRequest) {
       }
 
       // --------------------------------------------------------
-      // 14. BUDGETS (5 budgets for January 2024)
+      // 14. BUDGETS (5 budgets for January 2026)
       // --------------------------------------------------------
       const budgetsData = [
         { accountId: acc('5.1.02.001'), costCenterId: cc('ADM02'), budgetedAmount: 120000, actualAmount: 95000, description: 'Sueldos y Salarios - Recursos Humanos' },
@@ -926,7 +927,7 @@ export async function POST(request: NextRequest) {
       await tx.budget.createMany({
         data: budgetsData.map(b => ({
           companyId,
-          year: 2024,
+          year: 2026,
           accountId: b.accountId,
           costCenterId: b.costCenterId,
           month: 1,
@@ -947,11 +948,11 @@ export async function POST(request: NextRequest) {
             userId: createdUsers[0].id,
             type: 'SYSTEM',
             title: 'Período Cerrado',
-            message: 'Período Enero 2024 cerrado correctamente',
+            message: 'Período Enero 2026 cerrado correctamente',
             entityType: 'AccountingPeriod',
             entityId: periods[0].id,
             isRead: true,
-            readAt: new Date(2024, 0, 31, 18, 5, 0),
+            readAt: new Date(2026, 0, 31, 18, 5, 0),
             priority: 'NORMAL',
           },
           {
@@ -975,7 +976,7 @@ export async function POST(request: NextRequest) {
             entityType: 'AccountingPeriod',
             entityId: periods[0].id,
             isRead: true,
-            readAt: new Date(2024, 1, 1, 9, 0, 0),
+            readAt: new Date(2026, 1, 1, 9, 0, 0),
             priority: 'LOW',
           },
         ],
@@ -985,7 +986,7 @@ export async function POST(request: NextRequest) {
       // 16. FILE ATTACHMENTS (2 sample files)
       // --------------------------------------------------------
       // Look up an invoice for the first attachment
-      const sampleInvoice = await tx.invoice.findFirst({ where: { companyId, number: 'FC-2024-0015' } });
+      const sampleInvoice = await tx.invoice.findFirst({ where: { companyId, number: 'FC-2026-0015' } });
 
       await tx.fileAttachment.createMany({
         data: [
@@ -993,8 +994,8 @@ export async function POST(request: NextRequest) {
             companyId,
             entityType: 'Invoice',
             entityId: sampleInvoice?.id || 'placeholder-invoice-id',
-            fileName: 'Factura_FC-2024-0001.pdf',
-            fileUrl: '/uploads/invoices/Factura_FC-2024-0001.pdf',
+            fileName: 'Factura_FC-2026-0001.pdf',
+            fileUrl: '/uploads/invoices/Factura_FC-2026-0001.pdf',
             fileSize: 245760,
             mimeType: 'application/pdf',
             description: 'Factura de venta a Tecnologías Avanzadas S.A.',
@@ -1004,11 +1005,11 @@ export async function POST(request: NextRequest) {
             companyId,
             entityType: 'BankAccount',
             entityId: bbvaAccount?.id || 'placeholder-bank-id',
-            fileName: 'Estado_de_Cuenta_BBVA_Ene2024.pdf',
-            fileUrl: '/uploads/bank-statements/Estado_de_Cuenta_BBVA_Ene2024.pdf',
+            fileName: 'Estado_de_Cuenta_BAC_Ene2026.pdf',
+            fileUrl: '/uploads/bank-statements/Estado_de_Cuenta_BAC_Ene2026.pdf',
             fileSize: 512000,
             mimeType: 'application/pdf',
-            description: 'Estado de cuenta bancario BBVA Enero 2024',
+            description: 'Estado de cuenta bancario BAC Enero 2026',
             uploadedBy: createdUsers[1].id,
           },
         ],

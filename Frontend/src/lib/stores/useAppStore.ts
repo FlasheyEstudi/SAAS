@@ -1,8 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User, Company, Notification } from '@/lib/api/types';
+import type { Company, AppNotification } from '@/lib/api/types';
 
-// Navigation view type
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  companyId: string | null;
+  availableCompanies: { id: string, name: string, role: string }[];
+}
+
 export type AppView =
   | 'login'
   | 'register'
@@ -29,7 +37,11 @@ export type AppView =
   | 'search'
   | 'data-mgmt'
   | 'system'
-  | 'ai-chat';
+  | 'ai-chat'
+  | 'taxes'
+  | 'closing-entries'
+  | 'financial-concepts'
+  | 'payment-terms';
 
 interface AppState {
   // Auth
@@ -46,9 +58,10 @@ interface AppState {
   // Company
   currentCompany: Company | null;
   companyId: string | null;
+  availableCompanies: { id: string, name: string, role: string }[];
 
   // Notifications
-  notifications: Notification[];
+  notifications: AppNotification[];
   unreadCount: number;
 
   // UI State
@@ -56,9 +69,10 @@ interface AppState {
   globalSearch: string;
 
   // Actions
-  login: (user: User, token: string, companyId: string) => void;
+  login: (user: User, token: string, companyId: string, company?: Company | null) => void;
   logout: () => void;
   setUser: (user: User) => void;
+  setAvailableCompanies: (companies: { id: string, name: string, role: string }[]) => void;
 
   navigate: (view: AppView, params?: Record<string, string>) => void;
   goBack: () => void;
@@ -69,9 +83,9 @@ interface AppState {
   setCurrentCompany: (company: Company) => void;
   setCompanyId: (id: string) => void;
 
-  setNotifications: (notifications: Notification[]) => void;
+  setNotifications: (notifications: AppNotification[]) => void;
   setUnreadCount: (count: number) => void;
-  addNotification: (notification: Notification) => void;
+  addNotification: (notification: AppNotification) => void;
   markAsRead: (id: string) => void;
 
   setLoading: (loading: boolean) => void;
@@ -95,6 +109,7 @@ export const useAppStore = create<AppState>()(
       // Company defaults
       currentCompany: null,
       companyId: null,
+      availableCompanies: [],
 
       // Notifications defaults
       notifications: [],
@@ -105,7 +120,7 @@ export const useAppStore = create<AppState>()(
       globalSearch: '',
 
       // Auth actions
-      login: (user, token, companyId) => {
+      login: (user, token, companyId, company = null) => {
         localStorage.setItem('auth_token', token);
         localStorage.setItem('current_company_id', companyId);
         localStorage.setItem('user', JSON.stringify(user));
@@ -114,6 +129,8 @@ export const useAppStore = create<AppState>()(
           user,
           token,
           companyId,
+          currentCompany: company,
+          availableCompanies: user.availableCompanies || [],
           currentView: 'dashboard',
         });
       },
@@ -128,6 +145,7 @@ export const useAppStore = create<AppState>()(
           token: null,
           companyId: null,
           currentCompany: null,
+          availableCompanies: [],
           currentView: 'login',
           notifications: [],
           unreadCount: 0,
@@ -168,6 +186,8 @@ export const useAppStore = create<AppState>()(
         set({ companyId: id });
       },
 
+      setAvailableCompanies: (companies) => set({ availableCompanies: companies }),
+
       // Notification actions
       setNotifications: (notifications) => {
         const unreadCount = notifications.filter((n) => !n.isRead).length;
@@ -202,6 +222,10 @@ export const useAppStore = create<AppState>()(
         isAuthenticated: state.isAuthenticated,
         token: state.token,
         companyId: state.companyId,
+        availableCompanies: state.availableCompanies,
+        currentView: state.currentView,
+        user: state.user,
+        currentCompany: state.currentCompany,
         sidebarCollapsed: state.sidebarCollapsed,
       }),
     }

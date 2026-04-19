@@ -172,28 +172,28 @@ export function InvoiceListView() {
             <TrendingUp className="w-4 h-4 text-vintage-500" />
             <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Facturado</p>
           </div>
-          <p className="text-xl font-playfair text-vintage-800">{formatCurrency(totalInvoiced, 'MXN')}</p>
+          <p className="text-xl font-playfair text-vintage-800">{formatCurrency(totalInvoiced, 'NIO')}</p>
         </VintageCard>
         <VintageCard hover={false} className="p-4">
           <div className="flex items-center gap-2 mb-1">
             <Clock className="w-4 h-4 text-warning" />
             <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Pendiente Cobro</p>
           </div>
-          <p className="text-xl font-playfair text-warning">{formatCurrency(pendingAmount, 'MXN')}</p>
+          <p className="text-xl font-playfair text-warning">{formatCurrency(pendingAmount, 'NIO')}</p>
         </VintageCard>
         <VintageCard hover={false} className="p-4">
           <div className="flex items-center gap-2 mb-1">
             <AlertTriangle className="w-4 h-4 text-error" />
             <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Vencidas</p>
           </div>
-          <p className="text-xl font-playfair text-error">{formatCurrency(overdueAmount, 'MXN')}</p>
+          <p className="text-xl font-playfair text-error">{formatCurrency(overdueAmount, 'NIO')}</p>
         </VintageCard>
         <VintageCard hover={false} className="p-4">
           <div className="flex items-center gap-2 mb-1">
             <CheckCircle2 className="w-4 h-4 text-success" />
             <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Pagadas</p>
           </div>
-          <p className="text-xl font-playfair text-success">{formatCurrency(paidAmount, 'MXN')}</p>
+          <p className="text-xl font-playfair text-success">{formatCurrency(paidAmount, 'NIO')}</p>
         </VintageCard>
       </motion.div>
 
@@ -224,11 +224,11 @@ export function InvoiceListView() {
                 </span>
               </td>
               <td className="px-4 py-3 text-right">
-                <span className="text-sm font-mono text-vintage-700">{formatCurrency(row.totalAmount, 'MXN')}</span>
+                <span className="text-sm font-mono text-vintage-700">{formatCurrency(row.totalAmount, 'NIO')}</span>
               </td>
               <td className="px-4 py-3 text-right">
                 <span className={cn('text-sm font-mono', row.balanceDue > 0 ? 'text-warning font-semibold' : 'text-vintage-500')}>
-                  {formatCurrency(row.balanceDue, 'MXN')}
+                  {formatCurrency(row.balanceDue, 'NIO')}
                 </span>
               </td>
               <td className="px-4 py-3 text-center">

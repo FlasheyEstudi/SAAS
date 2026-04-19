@@ -30,7 +30,7 @@ interface LineRow {
   taxRate: number;
 }
 
-const emptyLine: LineRow = { description: '', quantity: 1, unitPrice: 0, taxRate: 16 };
+const emptyLine: LineRow = { description: '', quantity: 1, unitPrice: 0, taxRate: 15 };
 
 export function InvoiceForm() {
   const navigate = useAppStore((s) => s.navigate);
@@ -251,15 +251,15 @@ export function InvoiceForm() {
                           className="w-full px-2 py-1.5 text-sm bg-transparent border border-vintage-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-vintage-400"
                         >
                           <option value={0}>0%</option>
-                          <option value={8}>8%</option>
-                          <option value={16}>16%</option>
+                          <option value={5}>5%</option>
+                          <option value={15}>15%</option>
                         </select>
                       </td>
                       <td className="px-4 py-2 text-right text-sm font-mono text-vintage-600">
-                        {formatCurrency(lSubtotal, 'MXN')}
+                        {formatCurrency(lSubtotal, 'NIO')}
                       </td>
                       <td className="px-4 py-2 text-right text-sm font-mono text-vintage-800 font-semibold">
-                        {formatCurrency(lTotal, 'MXN')}
+                        {formatCurrency(lTotal, 'NIO')}
                       </td>
                       <td className="px-4 py-2 text-right">
                         {lines.length > 1 && (
@@ -289,15 +289,15 @@ export function InvoiceForm() {
             <div className="flex flex-col items-end gap-1 text-sm">
               <div className="flex items-center gap-6">
                 <span className="text-vintage-600">Subtotal:</span>
-                <span className="font-mono text-vintage-700 w-36 text-right">{formatCurrency(subtotal, 'MXN')}</span>
+                <span className="font-mono text-vintage-700 w-36 text-right">{formatCurrency(subtotal, 'NIO')}</span>
               </div>
               <div className="flex items-center gap-6">
-                <span className="text-vintage-600">IVA ({formatCurrency(taxAmount, 'MXN')}):</span>
-                <span className="font-mono text-vintage-700 w-36 text-right">{formatCurrency(taxAmount, 'MXN')}</span>
+                <span className="text-vintage-600">IVA ({formatCurrency(taxAmount, 'NIO')}):</span>
+                <span className="font-mono text-vintage-700 w-36 text-right">{formatCurrency(taxAmount, 'NIO')}</span>
               </div>
               <div className="flex items-center gap-6 border-t border-vintage-300 pt-1 mt-1">
                 <span className="text-vintage-800 font-semibold text-base">Total:</span>
-                <span className="font-mono text-vintage-800 font-bold text-lg w-36 text-right">{formatCurrency(totalAmount, 'MXN')}</span>
+                <span className="font-mono text-vintage-800 font-bold text-lg w-36 text-right">{formatCurrency(totalAmount, 'NIO')}</span>
               </div>
             </div>
           </div>

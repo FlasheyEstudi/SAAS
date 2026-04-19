@@ -26,8 +26,10 @@ export async function GET(request: Request) {
     const previousMonthMovements = await db.bankMovement.findMany({
       where: {
         bankAccount: { companyId },
-        movementDate: { gte: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1) },
-        lt: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+        movementDate: { 
+          gte: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1),
+          lt: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+        },
       },
     });
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   BarChart3,
@@ -21,7 +21,11 @@ import { AnimatedTable } from '@/components/tables/animated-table';
 import { formatCurrency } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { exportTrialBalanceExcel, exportBalanceSheetExcel, exportIncomeStatementExcel } from '@/lib/utils/export';
+import { 
+  exportTrialBalanceExcel, exportTrialBalancePDF,
+  exportBalanceSheetExcel, exportBalanceSheetPDF,
+  exportIncomeStatementExcel, exportIncomeStatementPDF 
+} from '@/lib/utils/export';
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
@@ -55,11 +59,34 @@ function VintageTooltip({ active, payload, label }: any) {
 
 export function ReportsView() {
   const { periods: dynamicPeriods = [] } = usePeriods();
+  const [year, setYear] = useState(new Date().getFullYear().toString());
+  const [period, setPeriod] = useState(`${new Date().getFullYear()}-${(new Date().getMonth() + 1).toString().padStart(2, '0')}`);
+
   const {
-    isLoading, period, setPeriod, year, setYear,
-    trialBalance = [], balanceSheet = { totalAssets: 0, totalLiabilities: 0, totalEquity: 0, assets: [], liabilities: [], equity: [] }, incomeStatement = { totalIncome: 0, totalExpenses: 0, netIncome: 0, grossProfit: 0, incomeDetails: [], expenseDetails: [] },
-    totalDebit = 0, totalCredit = 0,
-  } = useReports() as any;
+    isLoading,
+    trialBalance: trialBalanceData,
+    balanceSheet: balanceSheetData,
+    incomeStatement: incomeStatementData,
+  } = useReports(year, period.split('-')[1]) as any;
+
+  // Auto-select latest period if data is empty and periods are available
+  useEffect(() => {
+    if (dynamicPeriods.length > 0 && (!trialBalanceData || trialBalanceData.accounts?.length === 0)) {
+      const latest = dynamicPeriods[dynamicPeriods.length - 1]; // Assuming sorted
+      if (latest && (latest.year.toString() !== year || `${latest.year}-${latest.month.toString().padStart(2, '0')}` !== period)) {
+        setYear(latest.year.toString());
+        setPeriod(`${latest.year}-${latest.month.toString().padStart(2, '0')}`);
+      }
+    }
+  }, [dynamicPeriods, trialBalanceData, year, period]);
+
+  const trialBalance = trialBalanceData?.accounts || [];
+  const totals = trialBalanceData?.totals || { totalDebit: 0, totalCredit: 0 };
+  const totalDebit = totals.totalDebit;
+  const totalCredit = totals.totalCredit;
+
+  const balanceSheet = balanceSheetData || { totalAssets: 0, totalLiabilities: 0, totalEquity: 0, assets: [], liabilities: [], equity: [] };
+  const incomeStatement = incomeStatementData || { totalIncome: 0, totalExpenses: 0, netIncome: 0, grossProfit: 0, incomeDetails: [], expenseDetails: [] };
 
   // Extract unique years from dynamic periods
   const years = Array.from(new Set(dynamicPeriods.map(p => p.year.toString()))).sort().reverse();
@@ -70,21 +97,32 @@ export function ReportsView() {
   const [activeTab, setActiveTab] = useState('trial-balance');
 
   const handleExport = async (format: string) => {
-    if (format !== 'excel') {
-      toast.info(`La generación de PDFs está en desarrollo. Descargando en Excel.`);
-    }
-    
     try {
       toast.loading('Generando reporte...');
+      const companyName = 'GANESHA Compañía Demo';
+      
       if (activeTab === 'trial-balance') {
-        await exportTrialBalanceExcel(trialBalance, 'GANESHA Compañía Demo', period, { totalDebit, totalCredit, totalBalance: totalDebit - totalCredit });
+        if (format === 'excel') {
+          await exportTrialBalanceExcel(trialBalance, companyName, period, { totalDebit, totalCredit, totalBalance: totalDebit - totalCredit });
+        } else {
+          await exportTrialBalancePDF(trialBalance, companyName, period, { totalDebit, totalCredit, totalBalance: totalDebit - totalCredit });
+        }
       } else if (activeTab === 'balance-sheet') {
-        await exportBalanceSheetExcel(balanceSheet.assets || [], balanceSheet.liabilities || [], balanceSheet.equity || [], 'GANESHA Compañía Demo', period);
+        if (format === 'excel') {
+          await exportBalanceSheetExcel(balanceSheet.assets || [], balanceSheet.liabilities || [], balanceSheet.equity || [], companyName, period);
+        } else {
+          await exportBalanceSheetPDF(balanceSheet.assets || [], balanceSheet.liabilities || [], balanceSheet.equity || [], companyName, period);
+        }
       } else if (activeTab === 'income-statement') {
-        await exportIncomeStatementExcel(incomeStatement.incomeDetails || [], incomeStatement.expenseDetails || [], incomeStatement.netIncome || 0, 'GANESHA Compañía Demo', period);
+        if (format === 'excel') {
+          await exportIncomeStatementExcel(incomeStatement.incomeDetails || [], incomeStatement.expenseDetails || [], incomeStatement.netIncome || 0, companyName, period);
+        } else {
+          await exportIncomeStatementPDF(incomeStatement.incomeDetails || [], incomeStatement.expenseDetails || [], incomeStatement.netIncome || 0, companyName, period);
+        }
       }
+      
       toast.dismiss();
-      toast.success('Reporte exportado correctamente');
+      toast.success(`Reporte ${format.toUpperCase()} exportado correctamente`);
     } catch (e) {
       toast.dismiss();
       toast.error('Error al exportar el reporte');
@@ -347,11 +385,11 @@ export function ReportsView() {
                     Activos ({formatCurrency(balanceSheet.totalAssets, 'NIO')})
                   </h4>
                   <div className="space-y-2">
-                    {(balanceSheet.assets || []).map((section: any) => (
-                      <div key={section.name}>
+                    {(balanceSheet.assets || []).map((section: any, sIdx: number) => (
+                      <div key={`asset-section-${section.name}-${sIdx}`}>
                         <p className="text-sm font-medium text-vintage-700">{section.name}: {formatCurrency(section.amount, 'NIO')}</p>
-                        {section.subItems?.map((sub) => (
-                          <p key={sub.name} className="text-xs text-vintage-500 pl-4">
+                        {section.subItems?.map((sub, ssIdx) => (
+                          <p key={`asset-sub-${sub.name}-${ssIdx}`} className="text-xs text-vintage-500 pl-4">
                             {sub.name}: {formatCurrency(sub.amount, 'NIO')}
                           </p>
                         ))}
@@ -367,11 +405,11 @@ export function ReportsView() {
                     Pasivos ({formatCurrency(balanceSheet.totalLiabilities, 'NIO')})
                   </h4>
                   <div className="space-y-2">
-                    {(balanceSheet.liabilities || []).map((section: any) => (
-                      <div key={section.name}>
+                    {(balanceSheet.liabilities || []).map((section: any, sIdx: number) => (
+                      <div key={`liability-section-${section.name}-${sIdx}`}>
                         <p className="text-sm font-medium text-vintage-700">{section.name}: {formatCurrency(section.amount, 'NIO')}</p>
-                        {section.subItems?.map((sub) => (
-                          <p key={sub.name} className="text-xs text-vintage-500 pl-4">
+                        {section.subItems?.map((sub, ssIdx) => (
+                          <p key={`liability-sub-${sub.name}-${ssIdx}`} className="text-xs text-vintage-500 pl-4">
                             {sub.name}: {formatCurrency(sub.amount, 'NIO')}
                           </p>
                         ))}
@@ -387,11 +425,11 @@ export function ReportsView() {
                     Patrimonio ({formatCurrency(balanceSheet.totalEquity, 'NIO')})
                   </h4>
                   <div className="space-y-2">
-                    {(balanceSheet.equity || []).map((section: any) => (
-                      <div key={section.name}>
+                    {(balanceSheet.equity || []).map((section: any, sIdx: number) => (
+                      <div key={`equity-section-${section.name}-${sIdx}`}>
                         <p className="text-sm font-medium text-vintage-700">{section.name}: {formatCurrency(section.amount, 'NIO')}</p>
-                        {section.subItems?.map((sub) => (
-                          <p key={sub.name} className="text-xs text-vintage-500 pl-4">
+                        {section.subItems?.map((sub, ssIdx) => (
+                          <p key={`equity-sub-${sub.name}-${ssIdx}`} className="text-xs text-vintage-500 pl-4">
                             {sub.name}: {formatCurrency(sub.amount, 'NIO')}
                           </p>
                         ))}

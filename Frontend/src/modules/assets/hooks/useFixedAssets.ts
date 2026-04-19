@@ -74,10 +74,10 @@ export function useFixedAssets() {
     }
   }, [fetchAssets, fetchSummary]);
 
-  const bulkDepreciate = useCallback(async () => {
+  const bulkDepreciate = useCallback(async (params: { companyId: string, year: number, month: number }) => {
     try {
       setDepreciating(true);
-      await apiClient.post(ASSETS.bulkDepreciate);
+      await apiClient.post(ASSETS.bulkDepreciate, params);
       toast.success('Depreciación masiva aplicada correctamente');
       fetchAssets();
       fetchSummary();

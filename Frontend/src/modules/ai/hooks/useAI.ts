@@ -9,6 +9,13 @@ export interface ChatMessage {
   content: string;
   timestamp?: Date;
   isError?: boolean;
+  metadata?: {
+    downloadConfig?: {
+      url: string;
+      type: string;
+      format: string;
+    }
+  };
 }
 
 export interface AIModel {
@@ -71,10 +78,19 @@ export function useAI() {
           : JSON.stringify(response.data.message, null, 2);
       }
 
+      const metadata = response?.downloadUrl ? {
+        downloadConfig: {
+          url: response.downloadUrl,
+          type: response.reportType || 'report',
+          format: response.format || 'pdf'
+        }
+      } : undefined;
+
       const aiMessage: ChatMessage = {
         role: 'assistant',
         content: aiResponse || 'El asistente no obtuvo una respuesta válida.',
         timestamp: new Date(),
+        metadata
       };
       setMessages(prev => [...prev, aiMessage]);
       

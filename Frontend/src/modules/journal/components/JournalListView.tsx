@@ -9,7 +9,10 @@ import {
   Send,
   Trash2,
   BookOpen,
+  FileSpreadsheet,
+  Download,
 } from 'lucide-react';
+import { exportJournalEntriesExcel, exportJournalEntriesPDF } from '@/lib/utils/export';
 import { useJournalEntries } from '../hooks/useJournalEntries';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { VintageCard } from '@/components/ui/vintage-card';
@@ -59,6 +62,23 @@ export function JournalListView() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [postingId, setPostingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleExport = async (format: 'excel' | 'pdf') => {
+    try {
+      toast.loading('Generando exportación...');
+      const companyName = 'GANESHA Compañía Demo';
+      if (format === 'excel') {
+        await exportJournalEntriesExcel(entries, companyName);
+      } else {
+        await exportJournalEntriesPDF(entries, companyName);
+      }
+      toast.dismiss();
+      toast.success(`Pólizas exportadas en ${format.toUpperCase()}`);
+    } catch {
+      toast.dismiss();
+      toast.error('Error al exportar pólizas');
+    }
+  };
 
   const handleView = useCallback(
     (id: string) => {
@@ -157,10 +177,20 @@ export function JournalListView() {
             <p className="text-sm text-vintage-500">Registro de pólizas contables</p>
           </div>
         </div>
-        <PastelButton onClick={handleCreate} className="gap-2">
-          <Plus className="w-4 h-4" />
-          Nueva Póliza
-        </PastelButton>
+        <div className="flex gap-2">
+          <PastelButton variant="outline" onClick={() => handleExport('pdf')} className="gap-2">
+            <Download className="w-4 h-4" />
+            PDF
+          </PastelButton>
+          <PastelButton variant="outline" onClick={() => handleExport('excel')} className="gap-2">
+            <FileSpreadsheet className="w-4 h-4" />
+            Excel
+          </PastelButton>
+          <PastelButton onClick={handleCreate} className="gap-2">
+            <Plus className="w-4 h-4" />
+            Nueva Póliza
+          </PastelButton>
+        </div>
       </motion.div>
 
       {/* Filter bar */}

@@ -33,14 +33,33 @@ function roundTwo(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-export async function resolvePeriod(companyId: string, periodId: string | null, year: number | null, month: number | null) {
+export async function resolvePeriod(
+  companyId: string,
+  periodId?: string | null,
+  year?: any | null,
+  month?: any | null
+) {
+  const y = year && !isNaN(Number(year)) ? Number(year) : null;
+  const m = month && !isNaN(Number(month)) ? Number(month) : null;
+
   if (periodId) {
-    return db.accountingPeriod.findFirst({ where: { id: periodId, companyId } });
+    return await db.accountingPeriod.findUnique({ where: { id: periodId } });
   }
-  if (year && month) {
-    return db.accountingPeriod.findFirst({ where: { companyId, year, month } });
+
+  if (y && m) {
+    return await db.accountingPeriod.findFirst({
+      where: { companyId, year: y, month: m },
+    });
   }
-  return null;
+
+  // Fallback: Get most recent period for this company
+  return await db.accountingPeriod.findFirst({
+    where: { companyId },
+    orderBy: [
+      { year: 'desc' },
+      { month: 'desc' },
+    ],
+  });
 }
 
 export async function getTrialBalance(companyId: string, periodId: string, consolidated = false) {

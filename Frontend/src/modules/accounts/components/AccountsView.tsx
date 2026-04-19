@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, ChevronRight, ChevronDown, Plus, Search, Edit2, Trash2 } from 'lucide-react';
+import { BookOpen, ChevronRight, ChevronDown, Plus, Search, Edit2, Trash2, FileSpreadsheet, Download } from 'lucide-react';
+import { exportAccountsExcel, exportAccountsPDF } from '@/lib/utils/export';
 import { toast } from 'sonner';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
@@ -66,6 +67,36 @@ export function AccountsView() {
   const [editing, setEditing] = useState<Account | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  const flattenAccounts = (list: any[]): any[] => {
+    let result: any[] = [];
+    list.forEach(acc => {
+      result.push(acc);
+      if (acc.children && acc.children.length > 0) {
+        result = [...result, ...flattenAccounts(acc.children)];
+      }
+    });
+    return result;
+  };
+
+  const handleExport = async (format: 'excel' | 'pdf') => {
+    try {
+      toast.loading('Generando exportación...');
+      const companyName = 'GANESHA Compañía Demo';
+      const flatList = flattenAccounts(accounts);
+      
+      if (format === 'excel') {
+        await exportAccountsExcel(flatList, companyName);
+      } else {
+        await exportAccountsPDF(flatList, companyName);
+      }
+      toast.dismiss();
+      toast.success(`Plan de cuentas exportado en ${format.toUpperCase()}`);
+    } catch {
+      toast.dismiss();
+      toast.error('Error al exportar plan de cuentas');
+    }
+  };
+
   const [formData, setFormData] = useState({
     code: '',
     name: '',
@@ -123,7 +154,17 @@ export function AccountsView() {
           <h2 className="text-2xl font-playfair font-bold text-vintage-900">Plan de Cuentas</h2>
           <p className="text-sm text-vintage-600 mt-1">Catálogo de cuentas contables</p>
         </div>
-        <PastelButton onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Nueva Cuenta</PastelButton>
+        <div className="flex gap-2">
+          <PastelButton variant="outline" onClick={() => handleExport('pdf')} className="gap-2">
+            <Download className="w-4 h-4" />
+            PDF
+          </PastelButton>
+          <PastelButton variant="outline" onClick={() => handleExport('excel')} className="gap-2">
+            <FileSpreadsheet className="w-4 h-4" />
+            Excel
+          </PastelButton>
+          <PastelButton onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Nueva Cuenta</PastelButton>
+        </div>
       </div>
 
       <div className="relative max-w-md">

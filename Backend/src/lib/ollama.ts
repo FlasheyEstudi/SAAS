@@ -133,6 +133,7 @@ async function callOllamaAPI(messages: OllamaMessage[]): Promise<OllamaResponse>
 
   if (!res.ok) {
     const body = await res.text();
+    console.error(`[AI] Ollama API Error (${res.status}):`, body);
     throw new Error(`Ollama error: ${res.status} ${body}`);
   }
 
@@ -247,6 +248,21 @@ async function listModels(): Promise<string[]> {
 }
 
 
+/**
+ * Sanitizador de objetos para JSON - maneja BigInt y Referencias Circulares
+ */
+function safeJsonStringify(obj: any): string {
+  const cache = new Set();
+  return JSON.stringify(obj, (key, value) => {
+    if (typeof value === 'bigint') return value.toString();
+    if (typeof value === 'object' && value !== null) {
+      if (cache.has(value)) return '[Circular]';
+      cache.add(value);
+    }
+    return value;
+  });
+}
+
 // ============================================================
 // MAIN CHAT FUNCTION
 // ============================================================
@@ -299,17 +315,25 @@ async function chatWithOllama(
             });
 
             for (const tool of toolCalls) {
-              console.log(`[AI] Executing tool: ${tool.function.name}`);
-              const result = await executeAiTool(
-                tool.function.name,
-                tool.function.arguments,
-                companyId
-              );
+              try {
+                console.log(`[AI] Executing tool: ${tool.function.name}`);
+                const result = await executeAiTool(
+                  tool.function.name,
+                  tool.function.arguments,
+                  companyId
+                );
 
-              messages.push({
-                role: 'tool',
-                content: JSON.stringify(result)
-              });
+                messages.push({
+                  role: 'tool',
+                  content: safeJsonStringify(result)
+                });
+              } catch (toolErr) {
+                console.error(`[AI] Error in tool ${tool.function.name}:`, toolErr);
+                messages.push({
+                  role: 'tool',
+                  content: JSON.stringify({ error: 'Error interno ejecutando herramienta' })
+                });
+              }
             }
 
             iterations++;

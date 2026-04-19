@@ -12,7 +12,10 @@ import {
   Clock,
   AlertTriangle,
   CheckCircle2,
+  FileSpreadsheet,
+  Download,
 } from 'lucide-react';
+import { exportInvoicesExcel, exportInvoicesPDF } from '@/lib/utils/export';
 import { useInvoices } from '../hooks/useInvoices';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { VintageCard } from '@/components/ui/vintage-card';
@@ -75,6 +78,34 @@ export function InvoiceListView() {
 
   const [cancelDialogId, setCancelDialogId] = useState<string | null>(null);
   const [payingId, setPayingId] = useState<string | null>(null);
+
+  const handleExport = async (format: 'excel' | 'pdf') => {
+    try {
+      toast.loading('Generando reporte de facturas...');
+      const companyName = 'GANESHA Compañía Demo';
+      
+      const exportData = invoices.map((inv: any) => ({
+        invoiceNumber: inv.invoiceNumber,
+        date: inv.invoiceDate,
+        thirdParty: { name: getThirdPartyName(inv.thirdPartyId) },
+        subtotal: inv.subtotalAmount || (inv.totalAmount / 1.15),
+        taxAmount: inv.taxAmount || (inv.totalAmount - (inv.totalAmount / 1.15)),
+        total: inv.totalAmount,
+        status: inv.status
+      }));
+
+      if (format === 'excel') {
+        await exportInvoicesExcel(exportData, companyName);
+      } else {
+        await exportInvoicesPDF(exportData, companyName);
+      }
+      toast.dismiss();
+      toast.success(`Facturas exportadas en ${format.toUpperCase()}`);
+    } catch {
+      toast.dismiss();
+      toast.error('Error al exportar facturas');
+    }
+  };
 
   const getThirdPartyName = useCallback((tpId: string) => {
     const tp = thirdParties.find((t) => t.id === tpId);
@@ -140,10 +171,20 @@ export function InvoiceListView() {
             <p className="text-sm text-vintage-500">Gestión de facturas de venta y compra</p>
           </div>
         </div>
-        <PastelButton onClick={handleCreate} className="gap-2">
-          <Plus className="w-4 h-4" />
-          Nueva Factura
-        </PastelButton>
+        <div className="flex gap-2">
+          <PastelButton variant="outline" onClick={() => handleExport('pdf')} className="gap-2">
+            <Download className="w-4 h-4" />
+            PDF
+          </PastelButton>
+          <PastelButton variant="outline" onClick={() => handleExport('excel')} className="gap-2">
+            <FileSpreadsheet className="w-4 h-4" />
+            Excel
+          </PastelButton>
+          <PastelButton onClick={handleCreate} className="gap-2">
+            <Plus className="w-4 h-4" />
+            Nueva Factura
+          </PastelButton>
+        </div>
       </motion.div>
 
       {/* Filter bar */}

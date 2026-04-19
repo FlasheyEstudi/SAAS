@@ -329,7 +329,10 @@ function TopClientRow({ client, index }: { client: any; index: number }) {
 // ─── Main Dashboard View ───────────────────────────────────────────
 export function DashboardView() {
   const [isConsolidated, setIsConsolidated] = useState(false);
-  const { data, isLoading, error } = useDashboard(isConsolidated);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+
+  const { data, isLoading, error } = useDashboard(isConsolidated, selectedYear, selectedMonth);
   const navigate = useAppStore((s) => s.navigate);
   const user = useAppStore((s) => s.user);
   const companyId = useAppStore((s) => s.companyId);
@@ -412,6 +415,25 @@ export function DashboardView() {
                   {isConsolidated ? 'Vista Consolidada' : 'Vista Individual'}
                 </button>
               )}
+            </div>
+
+            <div className="flex items-center gap-2 mt-2">
+              <select 
+                value={selectedYear} 
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="bg-white border border-vintage-200 rounded-lg px-2 py-1 text-xs text-vintage-700 outline-none focus:border-vintage-400"
+              >
+                {[2023, 2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+              <select 
+                value={selectedMonth} 
+                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                className="bg-white border border-vintage-200 rounded-lg px-2 py-1 text-xs text-vintage-700 outline-none focus:border-vintage-400"
+              >
+                {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'].map((m, i) => (
+                  <option key={i+1} value={i+1}>{m}</option>
+                ))}
+              </select>
             </div>
             <p className="text-sm text-vintage-500 mt-1">
               {isConsolidated 

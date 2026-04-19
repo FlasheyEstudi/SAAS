@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Plus, Edit2, Trash2, Search } from 'lucide-react';
+import { Users, Plus, Edit2, Trash2, Search, FileSpreadsheet, Download } from 'lucide-react';
+import { exportThirdPartiesExcel, exportThirdPartiesPDF } from '@/lib/utils/export';
 import { toast } from 'sonner';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
@@ -24,6 +25,23 @@ export function ThirdPartiesView() {
   const [editing, setEditing] = useState<ThirdParty | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', taxId: '', type: 'CLIENT' as ThirdParty['type'], email: '', phone: '' });
+
+  const handleExport = async (format: 'excel' | 'pdf') => {
+    try {
+      toast.loading('Generando exportación...');
+      const companyName = 'GANESHA Compañía Demo';
+      if (format === 'excel') {
+        await exportThirdPartiesExcel(parties, companyName);
+      } else {
+        await exportThirdPartiesPDF(parties, companyName);
+      }
+      toast.dismiss();
+      toast.success(`Catálogo exportado en ${format.toUpperCase()}`);
+    } catch {
+      toast.dismiss();
+      toast.error('Error al exportar catálogo');
+    }
+  };
 
   const filtered = parties.filter(p => {
     const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.taxId.toLowerCase().includes(search.toLowerCase());
@@ -68,7 +86,17 @@ export function ThirdPartiesView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div><h2 className="text-2xl font-playfair font-bold text-vintage-900">Terceros</h2><p className="text-sm text-vintage-600 mt-1">Clientes, proveedores y acreedores</p></div>
-        <PastelButton onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Nuevo Tercero</PastelButton>
+        <div className="flex gap-2">
+          <PastelButton variant="outline" onClick={() => handleExport('pdf')} className="gap-2">
+            <Download className="w-4 h-4" />
+            PDF
+          </PastelButton>
+          <PastelButton variant="outline" onClick={() => handleExport('excel')} className="gap-2">
+            <FileSpreadsheet className="w-4 h-4" />
+            Excel
+          </PastelButton>
+          <PastelButton onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Nuevo Tercero</PastelButton>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

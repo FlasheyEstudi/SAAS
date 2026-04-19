@@ -40,11 +40,17 @@ export interface DashboardData {
 /**
  * Dashboard hook - consumes real Backend APIs
  */
-export function useDashboard(consolidated = false) {
+export function useDashboard(consolidated = false, year?: number, month?: number) {
+  const queryParams = { 
+    consolidated,
+    ...(year ? { year } : {}),
+    ...(month ? { month } : {})
+  };
+
   // Fetch KPIs from backend
   const { data: kpisData, isLoading: kpisLoading, error: kpisError } = useQuery<DashboardKPIs>({
-    queryKey: ['dashboard', 'kpis', { consolidated }],
-    queryFn: () => apiClient.get<DashboardKPIs>(DASHBOARD.kpis, { consolidated }),
+    queryKey: ['dashboard', 'kpis', queryParams],
+    queryFn: () => apiClient.get<DashboardKPIs>(DASHBOARD.kpis, queryParams),
     retry: false,
   });
 

@@ -15,7 +15,10 @@ import {
   Edit2,
   Trash2,
   Settings,
+  FileSpreadsheet,
+  Download,
 } from 'lucide-react';
+import { exportBanksExcel, exportBanksPDF } from '@/lib/utils/export';
 import { useBanks } from '../hooks/useBanks';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
@@ -85,6 +88,28 @@ export function BanksView() {
   const [formDate, setFormDate] = useState(new Date().toISOString().split('T')[0]);
   const [formReference, setFormReference] = useState('');
   const [saving, setSaving] = useState(false);
+
+  const handleExport = async (format: 'excel' | 'pdf') => {
+    try {
+      toast.loading('Generando estado de cuenta...');
+      const companyName = 'GANESHA Compañía Demo';
+      
+      // Find the name of the filtered account if any
+      const selectedAcc = accounts.find((a: any) => a.id === accountFilter);
+      const accName = selectedAcc ? `${selectedAcc.bankName} - ${selectedAcc.accountNumber}` : 'Todas las Cuentas';
+
+      if (format === 'excel') {
+        await exportBanksExcel(movements, companyName, accName);
+      } else {
+        await exportBanksPDF(movements, companyName, accName);
+      }
+      toast.dismiss();
+      toast.success(`Movimientos exportados en ${format.toUpperCase()}`);
+    } catch {
+      toast.dismiss();
+      toast.error('Error al exportar movimientos');
+    }
+  };
 
   const handleCreate = useCallback(async () => {
     if (!formAccountId) { toast.error('Selecciona una cuenta'); return; }
@@ -210,6 +235,14 @@ export function BanksView() {
           </div>
         </div>
         <div className="flex gap-2">
+          <PastelButton variant="outline" onClick={() => handleExport('pdf')} className="gap-2">
+            <Download className="w-4 h-4" />
+            PDF
+          </PastelButton>
+          <PastelButton variant="outline" onClick={() => handleExport('excel')} className="gap-2">
+            <FileSpreadsheet className="w-4 h-4" />
+            Excel
+          </PastelButton>
           <PastelButton variant="outline" onClick={() => { resetAccountForm(); setShowAccountForm(true); }}>
             <Landmark className="w-4 h-4 mr-2" />
             Gestionar Cuentas

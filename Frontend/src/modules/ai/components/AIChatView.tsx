@@ -2,10 +2,19 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, Send, User, Sparkles, AlertTriangle, Loader2, Lightbulb, RefreshCw } from 'lucide-react';
+import { Bot, Send, User, Sparkles, AlertTriangle, Loader2, Lightbulb, RefreshCw, FileText, FileSpreadsheet, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { VintageCard } from '@/components/ui/vintage-card';
+import { PastelButton } from '@/components/ui/pastel-button';
 import { useAI } from '../hooks/useAI';
+import { 
+  exportBalanceSheetPDF, exportBalanceSheetExcel,
+  exportIncomeStatementPDF, exportIncomeStatementExcel,
+  exportTrialBalancePDF, exportTrialBalanceExcel,
+  exportInvoicesPDF, exportInvoicesExcel,
+  exportBanksPDF, exportBanksExcel
+} from '@/lib/utils/export';
+import { formatCurrency } from '@/lib/utils/format';
 
 const quickPrompts = [
   '¿Cuál fue la utilidad del último trimestre?',
@@ -36,6 +45,34 @@ export function AIChatView() {
     if (!input.trim() || isTyping) return;
     await sendMessage(input.trim());
     setInput('');
+  };
+
+  const handleDownload = async (msg: any) => {
+    const { type, format } = msg.metadata.downloadConfig;
+    const companyName = 'GANESHA Compañía Demo';
+    
+    try {
+      toast.loading('Generando archivo...');
+      const data = msg.rawData || msg.metadata.downloadConfig.data || {}; 
+
+      if (type === 'balance_sheet') {
+        if (format === 'pdf') await exportBalanceSheetPDF(data, companyName);
+        else await exportBalanceSheetExcel(data, companyName);
+      } else if (type === 'income_statement') {
+        if (format === 'pdf') await exportIncomeStatementPDF(data, companyName);
+        else await exportIncomeStatementExcel(data, companyName);
+      } else if (type === 'trial_balance') {
+        if (format === 'pdf') await exportTrialBalancePDF(data, companyName);
+        else await exportTrialBalanceExcel(data, companyName);
+      } else {
+        toast.error('Tipo de reporte no soportado para descarga directa');
+      }
+      toast.dismiss();
+    } catch (err) {
+      toast.dismiss();
+      toast.error('Error al generar el archivo');
+      console.error(err);
+    }
   };
 
   return (
@@ -77,6 +114,36 @@ export function AIChatView() {
               <div className={`max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user' ? 'bg-vintage-400 text-white rounded-br-md shadow-sm' : 'bg-card border border-vintage-200 text-vintage-800 rounded-bl-md shadow-sm'}`}>
                 {(msg as any).isError && <AlertTriangle className="w-4 h-4 inline mr-1 text-warning" />}
                 {msg.content}
+                
+                {msg.metadata?.downloadConfig && (
+                  <div className="mt-4 pt-3 border-t border-vintage-100">
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-vintage-50 border border-vintage-200 shadow-sm">
+                      <div className="w-10 h-10 rounded-lg bg-white border border-vintage-200 flex items-center justify-center">
+                        {msg.metadata.downloadConfig.format === 'pdf' ? (
+                          <FileText className="w-5 h-5 text-error" />
+                        ) : (
+                          <FileSpreadsheet className="w-5 h-5 text-success" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-vintage-800 truncate">
+                          Reporte: {msg.metadata.downloadConfig.type.replace('_', ' ').toUpperCase()}
+                        </p>
+                        <p className="text-[10px] text-vintage-500 uppercase tracking-tighter">
+                          Formato {msg.metadata.downloadConfig.format.toUpperCase()} • Generado por AI
+                        </p>
+                      </div>
+                      <PastelButton 
+                        size="sm" 
+                        className="gap-1.5 h-8 text-xs" 
+                        onClick={() => handleDownload(msg)}
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Descargar
+                      </PastelButton>
+                    </div>
+                  </div>
+                )}
               </div>
               {msg.role === 'user' && (<div className="w-8 h-8 rounded-xl bg-vintage-700 flex items-center justify-center ml-2 flex-shrink-0 mt-1"><User className="w-4 h-4 text-white" /></div>)}
             </motion.div>

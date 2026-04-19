@@ -61,7 +61,7 @@ export function AnimatedTable({
           </thead>
           <tbody className="divide-y divide-vintage-100">
             <AnimatePresence>
-              {data.length === 0 ? (
+              {!Array.isArray(data) || data.length === 0 ? (
                 <tr>
                   <td colSpan={headers.length} className="py-12 text-center">
                     <div className="flex flex-col items-center gap-2">

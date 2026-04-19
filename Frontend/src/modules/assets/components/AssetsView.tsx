@@ -11,9 +11,11 @@ import { StatusBadge, ConfirmDialog } from '@/components/ui/vintage-ui';
 import { formatCurrency, formatDate, getStatusLabel } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 import { useFixedAssets, FixedAsset } from '../hooks/useFixedAssets';
+import { useAppStore } from '@/lib/stores/useAppStore';
 
 export function AssetsView() {
   const { assets, summary, loading, depreciating, refreshAssets, depreciateAsset, bulkDepreciate, getAssetHistory, createAsset, updateAsset, deleteAsset } = useFixedAssets();
+  const companyId = useAppStore((state) => state.companyId);
   const [viewingHistory, setViewingHistory] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<FixedAsset | null>(null);
@@ -32,8 +34,22 @@ export function AssetsView() {
   });
 
   const handleBulkDepreciate = async () => {
-    if (!confirm('¿Está seguro de calcular la depreciación para todos los activos activos?')) return;
-    await bulkDepreciate();
+    if (!companyId) {
+      toast.error('Seleccione una empresa primero');
+      return;
+    }
+    const year = prompt('Ingrese el año (ej: 2024)', new Date().getFullYear().toString());
+    const month = prompt('Ingrese el mes (1-12)', (new Date().getMonth() + 1).toString());
+
+    if (!year || !month) return;
+
+    if (!confirm(`¿Está seguro de calcular la depreciación de ${month}/${year} para todos los activos?`)) return;
+    
+    await bulkDepreciate({ 
+      companyId, 
+      year: parseInt(year), 
+      month: parseInt(month) 
+    });
   };
 
   const handleShowHistory = async (assetId: string) => {

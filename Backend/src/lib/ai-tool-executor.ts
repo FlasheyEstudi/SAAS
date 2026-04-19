@@ -41,22 +41,28 @@ export async function executeAiTool(toolName: string, args: any, companyId: stri
 async function handleQueryFinancialData(args: any, companyId: string) {
   const { target_view, period_id, year, month, consolidated } = args;
 
+  // Localized name mapping
+  const viewMap: Record<string, string> = {
+    'balance general': 'balance_sheet',
+    'balance_general': 'balance_sheet',
+    'estado de resultados': 'income_statement',
+    'estado_resultados': 'income_statement',
+    'balanza de comprobación': 'trial_balance',
+    'balanza_comprobacion': 'trial_balance',
+    'flujo de caja': 'cash_flow',
+    'flujo_caja': 'cash_flow'
+  };
+
+  const normalizedView = target_view ? (viewMap[target_view.toLowerCase()] || target_view) : target_view;
+
   // Resolve period if needed
   let resolvedPeriodId = period_id;
-  if (!resolvedPeriodId && (year || month)) {
-    const period = await resolvePeriod(companyId, null, year || new Date().getFullYear(), month || 1);
+  if (!resolvedPeriodId) {
+    const period = await resolvePeriod(companyId, null, year, month);
     resolvedPeriodId = period?.id;
   }
 
-  // Fallback to most recent period if still not found? 
-  // For now, if no period, we might need to ask the user or use a default.
-  // But let's try to be smart.
-  if (!resolvedPeriodId && target_view !== 'ar_aging' && target_view !== 'ap_aging') {
-    // Attempt to get the latest period
-    // (This would be better in the service, but let's keep it here for now or add to service later)
-  }
-
-  switch (target_view) {
+  switch (normalizedView) {
     case 'trial_balance':
       if (!resolvedPeriodId) return { error: 'Se requiere un período para la Balanza de Comprobación' };
       return await getTrialBalance(companyId, resolvedPeriodId, consolidated || false);
@@ -79,7 +85,7 @@ async function handleQueryFinancialData(args: any, companyId: string) {
       return await getCashFlow(companyId, resolvedPeriodId, year);
 
     default:
-      return { error: `Vista ${target_view} no soportada` };
+      return { error: `Vista ${normalizedView} no soportada` };
   }
 }
 

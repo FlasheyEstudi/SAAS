@@ -8,6 +8,8 @@ import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
 import { formatDate, formatRelativeTime } from '@/lib/utils/format';
 import { useAudit } from '../hooks/useAudit';
+import { useAppStore } from '@/lib/stores/useAppStore';
+import { exportAuditExcel, exportAuditPDF } from '@/lib/utils/export';
 import { cn } from '@/lib/utils';
 
 const actionColors: Record<string, string> = { 
@@ -25,9 +27,27 @@ const actionColors: Record<string, string> = {
 };
 
 export function AuditView() {
-  const { logs = [], stats, loading, exporting, refreshLogs, exportLogs } = useAudit();
+  const { logs = [], stats, loading, refreshLogs } = useAudit();
+  const companyId = useAppStore((state) => state.companyId);
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('');
+
+  const handleExport = async (format: 'excel' | 'pdf') => {
+    try {
+      toast.loading('Generando exportación...');
+      const companyName = 'GANESHA Compañía Demo';
+      if (format === 'excel') {
+        await exportAuditExcel(filtered, companyName);
+      } else {
+        await exportAuditPDF(filtered, companyName);
+      }
+      toast.dismiss();
+      toast.success(`Bitácora exportada en ${format.toUpperCase()}`);
+    } catch {
+      toast.dismiss();
+      toast.error('Error al exportar bitácora');
+    }
+  };
 
   const filtered = (logs || []).filter(l => {
     if (!l) return false;
@@ -48,8 +68,8 @@ export function AuditView() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div><h2 className="text-2xl font-playfair font-bold text-vintage-900">Bitácora de Auditoría</h2><p className="text-sm text-vintage-600 mt-1">Registro de actividades del sistema</p></div>
         <div className="flex gap-2">
-          <PastelButton variant="outline" onClick={() => exportLogs('csv')} disabled={exporting}><FileDown className="w-4 h-4 mr-2" />CSV</PastelButton>
-          <PastelButton variant="outline" onClick={() => exportLogs('pdf')} disabled={exporting}><Download className="w-4 h-4 mr-2" />PDF</PastelButton>
+          <PastelButton variant="outline" onClick={() => handleExport('excel')}><FileDown className="w-4 h-4 mr-2" />Excel</PastelButton>
+          <PastelButton variant="outline" onClick={() => handleExport('pdf')}><Download className="w-4 h-4 mr-2" />PDF</PastelButton>
         </div>
       </div>
 

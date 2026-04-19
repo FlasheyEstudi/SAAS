@@ -29,10 +29,25 @@ const entityToModel: Record<string, { model: any; companyIdField: string }> = {
   FileAttachment: { model: db.fileAttachment, companyIdField: 'companyId' },
 };
 
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const entityType = searchParams.get('entityType');
+  const companyId = searchParams.get('companyId');
+  return handleExport(entityType, companyId, {});
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { entityType, companyId, filters } = body;
+    return handleExport(entityType, companyId, filters);
+  } catch {
+    return error('Cuerpo de solicitud inválido');
+  }
+}
+
+async function handleExport(entityType: string | null, companyId: string | null, filters: any) {
+  try {
 
     if (!entityType || !VALID_ENTITIES.includes(entityType)) {
       return error(`entityType inválido. Valores permitidos: ${VALID_ENTITIES.join(', ')}`);

@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { PiggyBank, BarChart3, Plus } from 'lucide-react';
+import { PiggyBank, BarChart3, Plus, Edit2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { VintageCard } from '@/components/ui/vintage-card';
-import { StatusBadge } from '@/components/ui/vintage-ui';
+import { StatusBadge, ConfirmDialog, EmptyState } from '@/components/ui/vintage-ui';
 import { PastelButton } from '@/components/ui/pastel-button';
 import { AnimatePresence } from 'framer-motion';
 import { formatCurrency } from '@/lib/utils/format';
@@ -18,9 +18,11 @@ const statusColors: Record<string, string> = { DRAFT: 'neutral', APPROVED: 'info
 const statusLabels: Record<string, string> = { DRAFT: 'Borrador', APPROVED: 'Aprobado', ACTIVE: 'Activo', CLOSED: 'Cerrado' };
 
 export function BudgetsView() {
-  const { budgets, isLoading: loading, createBudget, isCreating } = useBudgets();
+  const { budgets, isLoading: loading, createBudget, updateBudget, deleteBudget, isCreating, isUpdating, isDeleting } = useBudgets();
   const [selected, setSelected] = useState<any | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', description: '', totalBudgeted: 0 });
 
 
@@ -46,6 +48,29 @@ export function BudgetsView() {
     );
   }
 
+  function handleSave() {
+    if (!formData.name) { toast.error('Ingresa un nombre'); return; }
+    if (isEditing && selected) {
+      updateBudget({ id: selected.id, data: formData }, {
+        onSuccess: () => setShowModal(false)
+      });
+    } else {
+      createBudget(formData, {
+        onSuccess: () => setShowModal(false)
+      });
+    }
+  }
+
+  function handleDelete() {
+    if (!deleteId) return;
+    deleteBudget(deleteId, {
+      onSuccess: () => {
+        setDeleteId(null);
+        if (selected?.id === deleteId) setSelected(null);
+      }
+    });
+  }
+
   function renderModal() {
     return (
       <AnimatePresence>
@@ -53,17 +78,26 @@ export function BudgetsView() {
           <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <motion.div className="bg-card w-full max-w-md rounded-2xl shadow-2xl border border-vintage-200" initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}>
               <div className="p-6 border-b border-vintage-100 flex items-center justify-between">
-                <h3 className="text-lg font-playfair font-bold text-vintage-800">Nuevo Presupuesto</h3>
-                <button onClick={() => setShowModal(false)} className="text-vintage-400">×</button>
+                <h3 className="text-lg font-playfair font-bold text-vintage-800">{isEditing ? 'Editar Presupuesto' : 'Nuevo Presupuesto'}</h3>
+                <button onClick={() => setShowModal(false)} className="text-vintage-400 p-1 hover:bg-vintage-50 rounded-lg">×</button>
               </div>
               <div className="p-6 space-y-4">
-                <div className="space-y-1.5"><label className="text-xs font-semibold text-vintage-600 ml-1">Nombre</label><input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full px-3 py-2 text-sm bg-vintage-50 border border-vintage-200 rounded-xl" /></div>
-                <div className="space-y-1.5"><label className="text-xs font-semibold text-vintage-600 ml-1">Monto Total</label><input type="number" value={formData.totalBudgeted} onChange={e => setFormData({ ...formData, totalBudgeted: parseFloat(e.target.value) })} className="w-full px-3 py-2 text-sm bg-vintage-50 border border-vintage-200 rounded-xl" /></div>
-                <div className="space-y-1.5"><label className="text-xs font-semibold text-vintage-600 ml-1">Descripción</label><textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full px-3 py-2 text-sm bg-vintage-50 border border-vintage-200 rounded-xl min-h-[80px]" /></div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-vintage-600 ml-1">Nombre</label>
+                  <input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-vintage-600 ml-1">Monto Total (NIO)</label>
+                  <input type="number" value={formData.totalBudgeted} onChange={e => setFormData({ ...formData, totalBudgeted: parseFloat(e.target.value) })} className="w-full px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-vintage-600 ml-1">Descripción</label>
+                  <textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl min-h-[100px] focus:outline-none focus:ring-2 focus:ring-vintage-400" />
+                </div>
               </div>
-              <div className="p-6 bg-vintage-50 flex justify-end gap-3">
-                <button onClick={() => setShowModal(false)} className="text-sm font-semibold text-vintage-600 px-4">Cancelar</button>
-                <PastelButton onClick={() => createBudget(formData, { onSuccess: () => setShowModal(false) })} loading={isCreating}>Crear</PastelButton>
+              <div className="p-6 bg-vintage-50/50 flex justify-end gap-3 rounded-b-2xl">
+                <PastelButton variant="outline" onClick={() => setShowModal(false)}>Cancelar</PastelButton>
+                <PastelButton onClick={handleSave} loading={isCreating || isUpdating}>{isEditing ? 'Guardar Cambios' : 'Crear'}</PastelButton>
               </div>
             </motion.div>
           </motion.div>
@@ -82,7 +116,29 @@ export function BudgetsView() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div><h2 className="text-2xl font-playfair font-bold text-vintage-900">Presupuestos</h2><p className="text-sm text-vintage-600 mt-1">Comparación presupuesto vs real</p></div>
-        <PastelButton onClick={() => setShowModal(true)}><Plus className="w-4 h-4 mr-2" />Nuevo Presupuesto</PastelButton>
+        <div className="flex gap-2">
+          <PastelButton variant="outline" size="sm" onClick={() => {
+            if (!budget) return;
+            setFormData({ name: budget.name, description: budget.description || '', totalBudgeted: budget.totalBudgeted });
+            setIsEditing(true);
+            setShowModal(true);
+          }}>
+            <Edit2 className="w-3.5 h-3.5 mr-2" />
+            Editar
+          </PastelButton>
+          <PastelButton variant="secondary" size="sm" onClick={() => setDeleteId(budget?.id)}>
+            <Trash2 className="w-3.5 h-3.5 mr-2" />
+            Eliminar
+          </PastelButton>
+          <PastelButton onClick={() => {
+            setFormData({ name: '', description: '', totalBudgeted: 0 });
+            setIsEditing(false);
+            setShowModal(true);
+          }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nuevo Presupuesto
+          </PastelButton>
+        </div>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-2">
@@ -142,6 +198,14 @@ export function BudgetsView() {
         </VintageCard>
       </div>
       {renderModal()}
+      <ConfirmDialog
+        open={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDelete}
+        title="Eliminar Presupuesto"
+        description="¿Estás seguro de que deseas eliminar este presupuesto? Esta acción no se puede deshacer."
+        loading={isDeleting}
+      />
     </div>
   );
 }

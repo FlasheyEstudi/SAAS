@@ -9,7 +9,7 @@ import {
   FileText, Users, Receipt, Landmark, BarChart3, Package,
   PiggyBank, ArrowLeftRight, UserCog, Shield, Bell, Search,
   Database, Activity, Bot, X, ChevronLeft, LogOut,
-  FileDown, ChevronRight, Menu
+  FileDown, ChevronRight, Menu, Percent, Lock, Clock
 } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/vintage-ui';
 

@@ -15,19 +15,31 @@ import { usePeriods } from '../hooks/usePeriods';
 const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 export function PeriodsView() {
-  const { periods, isLoading: loading } = usePeriods();
+  const { periods, isLoading: loading, closePeriod, reopenPeriod, isClosing, isReopening } = usePeriods();
   const [confirmAction, setConfirmAction] = useState<{ id: string; action: 'close' | 'reopen' } | null>(null);
 
-  const handleClose = () => {
+  const handleClose = async () => {
     if (!confirmAction) return;
-    toast.message('Función pendiente de API POST /close');
-    setConfirmAction(null);
+    try {
+      await closePeriod(confirmAction.id);
+      toast.success('Período cerrado exitosamente');
+    } catch (err: any) {
+      toast.error(err.error || 'Error al cerrar el período');
+    } finally {
+      setConfirmAction(null);
+    }
   };
 
-  const handleReopen = () => {
+  const handleReopen = async () => {
     if (!confirmAction) return;
-    toast.message('Función pendiente de API POST /reopen');
-    setConfirmAction(null);
+    try {
+      await reopenPeriod(confirmAction.id);
+      toast.success('Período reabierto exitosamente');
+    } catch (err: any) {
+      toast.error(err.error || 'Error al reabrir el período');
+    } finally {
+      setConfirmAction(null);
+    }
   };
 
   const openPeriods = (periods || []).filter(p => p.status === 'OPEN');

@@ -16,7 +16,7 @@ export function ExchangeView() {
   const { exchangeRates: rates, isLoading: loading } = useExchangeRates();
   const [amount, setAmount] = useState('1000');
   const [fromCurrency, setFromCurrency] = useState('USD');
-  const [toCurrency, setToCurrency] = useState('MXN');
+  const [toCurrency, setToCurrency] = useState('NIO');
   const [convertedAmount, setConvertedAmount] = useState<string | null>(null);
 
   const getRate = (from: string, to: string): number => {
@@ -25,10 +25,21 @@ export function ExchangeView() {
     if (direct) return direct.rate;
     const reverse = (rates || []).find(r => r.fromCurrency === to && r.toCurrency === from);
     if (reverse) return 1 / reverse.rate;
+
+    // Fallback static rates if API doesn't have them
+    const fallbackRates: Record<string, Record<string, number>> = {
+      'USD': { 'NIO': 36.62, 'MXN': 17.05, 'EUR': 0.92 },
+      'NIO': { 'USD': 1 / 36.62 },
+      'MXN': { 'USD': 1 / 17.05 },
+    };
+
+    if (fallbackRates[from]?.[to]) return fallbackRates[from][to];
+
     // Try via USD
-    const toUsd = (rates || []).find(r => r.fromCurrency === from && r.toCurrency === 'USD');
-    const usdTo = (rates || []).find(r => r.fromCurrency === 'USD' && r.toCurrency === to);
-    if (toUsd && usdTo) return toUsd.rate * usdTo.rate;
+    const toUsd = getRate(from, 'USD');
+    const usdTo = getRate('USD', to);
+    if (toUsd && usdTo) return toUsd * usdTo;
+
     return 0;
   };
 
@@ -36,13 +47,16 @@ export function ExchangeView() {
     const val = parseFloat(amount);
     if (isNaN(val)) { toast.error('Ingresa un monto válido'); return; }
     const rate = getRate(fromCurrency, toCurrency);
-    if (rate === 0) { toast.error('No se encontró tipo de cambio'); return; }
+    if (rate === 0) { 
+      toast.error(`No hay tasa disponible para ${fromCurrency}/${toCurrency}`);
+      return; 
+    }
     const result = val * rate;
-    setConvertedAmount(result.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
-    toast.success(`${fromCurrency} → ${toCurrency}: ${rate.toFixed(4)}`);
+    setConvertedAmount(result.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
+    toast.success(`Tasa aplicada: ${rate.toFixed(4)}`);
   };
 
-  const currencies = ['USD', 'MXN', 'NIO', 'EUR', 'GBP', 'CAD', 'JPY'];
+  const currencies = ['USD', 'NIO', 'MXN', 'EUR', 'GBP', 'CAD', 'JPY'];
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 

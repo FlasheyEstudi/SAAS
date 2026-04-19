@@ -15,6 +15,15 @@ export function useAccounts() {
     retry: false,
   });
 
+  const createMutation = useMutation({
+    mutationFn: (data: Partial<Account>) => apiClient.post(ACCOUNTS.list, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['accounts', 'tree'] });
+      toast.success('Cuenta creada correctamente');
+    },
+    onError: (err: any) => toast.error(err.error || 'Error al crear la cuenta'),
+  });
+
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string, data: Partial<Account> }) => 
       apiClient.put(ACCOUNTS.update(id), data),

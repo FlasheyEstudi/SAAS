@@ -12,12 +12,15 @@ import {
   Save,
   CheckCircle2,
   Circle,
+  Edit2,
+  Trash2,
+  Settings,
 } from 'lucide-react';
 import { useBanks } from '../hooks/useBanks';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
 import { AnimatedTable, Pagination, FilterBar } from '@/components/tables/animated-table';
-import { AnimatedCounter } from '@/components/ui/vintage-ui';
+import { AnimatedCounter, ConfirmDialog } from '@/components/ui/vintage-ui';
 import { formatCurrency, formatDate, getStatusLabel } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -58,10 +61,23 @@ export function BanksView() {
     search = '', accountFilter = '', typeFilter = '',
     setSearch, setAccountFilter, setTypeFilter, setPage, clearFilters,
     createMovement, reconcileMovement,
+    createAccount, updateAccount, deleteAccount,
     totalBalance = 0, totalDeposits = 0, totalWithdrawals = 0,
+    isCreatingAccount, isUpdatingAccount, isDeletingAccount,
   } = useBanks() as any;
 
   const [showForm, setShowForm] = useState(false);
+  const [showAccountForm, setShowAccountForm] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<any>(null);
+  const [deleteAccountId, setDeleteAccountId] = useState<string | null>(null);
+
+  // Account form state
+  const [accName, setAccName] = useState('');
+  const [accBankName, setAccBankName] = useState('');
+  const [accNumber, setAccNumber] = useState('');
+  const [accType, setAccType] = useState('CHECKING');
+  const [accInitialBalance, setAccInitialBalance] = useState('0');
+
   const [formAccountId, setFormAccountId] = useState(accounts?.[0]?.id || '');
   const [formType, setFormType] = useState<'DEPOSIT' | 'WITHDRAWAL' | 'TRANSFER'>('DEPOSIT');
   const [formDescription, setFormDescription] = useState('');
@@ -109,6 +125,55 @@ export function BanksView() {
     setFormReference('');
   };
 
+  const handleCreateAccount = useCallback(async () => {
+    if (!accName.trim()) { toast.error('Ingresa un nombre'); return; }
+    if (!accBankName.trim()) { toast.error('Ingresa el nombre del banco'); return; }
+    if (!accNumber.trim()) { toast.error('Ingresa el número de cuenta'); return; }
+
+    const data = {
+      name: accName,
+      bankName: accBankName,
+      accountNumber: accNumber,
+      accountType: accType,
+      initialBalance: parseFloat(accInitialBalance),
+      currency: 'NIO',
+    };
+
+    try {
+      if (editingAccount) {
+        await updateAccount({ id: editingAccount.id, data });
+        toast.success('Cuenta actualizada');
+      } else {
+        await createAccount(data);
+        toast.success('Cuenta creada');
+      }
+      setShowAccountForm(false);
+      resetAccountForm();
+    } catch {
+      toast.error('Error al guardar la cuenta');
+    }
+  }, [accName, accBankName, accNumber, accType, accInitialBalance, editingAccount, createAccount, updateAccount]);
+
+  const handleDeleteAccount = useCallback(async () => {
+    if (!deleteAccountId) return;
+    try {
+      await deleteAccount(deleteAccountId);
+      toast.success('Cuenta eliminada');
+      setDeleteAccountId(null);
+    } catch {
+      toast.error('No se pudo eliminar la cuenta');
+    }
+  }, [deleteAccountId, deleteAccount]);
+
+  const resetAccountForm = () => {
+    setAccName('');
+    setAccBankName('');
+    setAccNumber('');
+    setAccType('CHECKING');
+    setAccInitialBalance('0');
+    setEditingAccount(null);
+  };
+
   const handleReconcile = useCallback(async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const ok = await reconcileMovement(id);
@@ -144,10 +209,16 @@ export function BanksView() {
             <p className="text-sm text-vintage-500">Gestión de cuentas bancarias y movimientos</p>
           </div>
         </div>
-        <PastelButton onClick={() => setShowForm(true)} className="gap-2">
-          <Plus className="w-4 h-4" />
-          Nuevo Movimiento
-        </PastelButton>
+        <div className="flex gap-2">
+          <PastelButton variant="outline" onClick={() => { resetAccountForm(); setShowAccountForm(true); }}>
+            <Landmark className="w-4 h-4 mr-2" />
+            Gestionar Cuentas
+          </PastelButton>
+          <PastelButton onClick={() => setShowForm(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            Nuevo Movimiento
+          </PastelButton>
+        </div>
       </motion.div>
 
       {/* Account cards */}
@@ -161,7 +232,29 @@ export function BanksView() {
             .filter((m) => m.bankAccountId === acc.id && m.movementType === 'WITHDRAWAL')
             .reduce((s, m) => s + Math.abs(m.amount), 0);
           return (
-            <VintageCard key={acc.id} className="p-4">
+            <VintageCard key={acc.id} className="p-4 relative group">
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                <button
+                  onClick={() => {
+                    setEditingAccount(acc);
+                    setAccName(acc.name);
+                    setAccBankName(acc.bankName);
+                    setAccNumber(acc.accountNumber);
+                    setAccType(acc.accountType);
+                    setAccInitialBalance(acc.initialBalance.toString());
+                    setShowAccountForm(true);
+                  }}
+                  className="p-1 hover:bg-vintage-100 rounded text-vintage-500"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setDeleteAccountId(acc.id)}
+                  className="p-1 hover:bg-vintage-100 rounded text-error"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
               <div className="flex items-center gap-2 mb-3">
                 <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center', colors.bg)}>
                   <Landmark className={cn('w-4 h-4', colors.icon)} />
@@ -177,15 +270,15 @@ export function BanksView() {
                   'text-lg font-playfair font-bold',
                   acc.currentBalance >= 0 ? 'text-vintage-800' : 'text-error',
                 )}>
-                  {formatCurrency(acc.currentBalance, 'MXN')}
+                  {formatCurrency(acc.currentBalance, 'NIO')}
                 </span>
               </div>
               <div className="flex gap-3 text-xs">
                 <span className="text-success">
-                  +{formatCurrency(depositTotal, 'MXN')}
+                  +{formatCurrency(depositTotal, 'NIO')}
                 </span>
                 <span className="text-error">
-                  -{formatCurrency(withdrawalTotal, 'MXN')}
+                  -{formatCurrency(withdrawalTotal, 'NIO')}
                 </span>
               </div>
             </VintageCard>
@@ -198,7 +291,7 @@ export function BanksView() {
         <VintageCard hover={false} className="p-4">
           <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Saldo Total Consolidado</p>
           <p className={cn('text-xl font-playfair font-bold mt-1', totalBalance >= 0 ? 'text-vintage-800' : 'text-error')}>
-            {formatCurrency(totalBalance, 'MXN')}
+            {formatCurrency(totalBalance, 'NIO')}
           </p>
         </VintageCard>
         <VintageCard hover={false} className="p-4">
@@ -206,14 +299,14 @@ export function BanksView() {
             <ArrowDownCircle className="w-4 h-4 text-success" />
             <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Depósitos</p>
           </div>
-          <p className="text-xl font-playfair text-success mt-1">{formatCurrency(totalDeposits, 'MXN')}</p>
+          <p className="text-xl font-playfair text-success mt-1">{formatCurrency(totalDeposits, 'NIO')}</p>
         </VintageCard>
         <VintageCard hover={false} className="p-4">
           <div className="flex items-center gap-2 mb-1">
             <ArrowUpCircle className="w-4 h-4 text-error" />
             <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Retiros</p>
           </div>
-          <p className="text-xl font-playfair text-error mt-1">{formatCurrency(totalWithdrawals, 'MXN')}</p>
+          <p className="text-xl font-playfair text-error mt-1">{formatCurrency(totalWithdrawals, 'NIO')}</p>
         </VintageCard>
       </motion.div>
 
@@ -264,7 +357,7 @@ export function BanksView() {
                     'text-sm font-mono font-semibold',
                     row.amount >= 0 ? 'text-success' : 'text-error',
                   )}>
-                    {row.amount >= 0 ? '+' : ''}{formatCurrency(row.amount, 'MXN')}
+                    {row.amount >= 0 ? '+' : ''}{formatCurrency(row.amount, 'NIO')}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-center">
@@ -374,7 +467,7 @@ export function BanksView() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-vintage-600 mb-1.5">Monto (MXN)</label>
+                    <label className="block text-xs font-medium text-vintage-600 mb-1.5">Monto (NIO)</label>
                     <input
                       type="number"
                       min="0"
@@ -419,6 +512,67 @@ export function BanksView() {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Bank Account Modal */}
+      <AnimatePresence>
+        {showAccountForm && (
+          <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div className="bg-card w-full max-w-md rounded-2xl shadow-xl border border-vintage-200 overflow-hidden" initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}>
+              <div className="p-6 border-b border-vintage-100 flex items-center justify-between">
+                <h3 className="text-lg font-playfair font-bold text-vintage-800">{editingAccount ? 'Editar Cuenta' : 'Nueva Cuenta Bancaria'}</h3>
+                <button onClick={() => setShowAccountForm(false)} className="text-vintage-400 hover:bg-vintage-50 p-1 rounded-lg transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-vintage-600 mb-1.5 ml-1">Nombre Identificador</label>
+                    <input value={accName} onChange={e => setAccName(e.target.value)} placeholder="Ej. Principal" className="w-full px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-vintage-600 mb-1.5 ml-1">Banco</label>
+                    <input value={accBankName} onChange={e => setAccBankName(e.target.value)} placeholder="Ej. BANPRO" className="w-full px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-vintage-600 mb-1.5 ml-1">Número de Cuenta</label>
+                  <input value={accNumber} onChange={e => setAccNumber(e.target.value)} placeholder="000-000-0000" className="w-full px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400 font-mono" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-vintage-600 mb-1.5 ml-1">Tipo</label>
+                    <select value={accType} onChange={e => setAccType(e.target.value)} className="w-full px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400">
+                      <option value="CHECKING">Corriente</option>
+                      <option value="SAVINGS">Ahorros</option>
+                      <option value="CREDIT">Tarjeta de Crédito</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-vintage-600 mb-1.5 ml-1">Saldo Inicial (NIO)</label>
+                    <input type="number" value={accInitialBalance} onChange={e => setAccInitialBalance(e.target.value)} disabled={!!editingAccount} className="w-full px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400" />
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 bg-vintage-50/50 flex justify-end gap-3">
+                <PastelButton variant="outline" onClick={() => setShowAccountForm(false)}>Cancelar</PastelButton>
+                <PastelButton onClick={handleCreateAccount} loading={isCreatingAccount || isUpdatingAccount}>
+                  <Save className="w-4 h-4 mr-2" />
+                  {editingAccount ? 'Guardar Cambios' : 'Crear Cuenta'}
+                </PastelButton>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <ConfirmDialog
+        open={!!deleteAccountId}
+        onClose={() => setDeleteAccountId(null)}
+        onConfirm={handleDeleteAccount}
+        title="Eliminar Cuenta Bancaria"
+        description="¿Estás seguro de que deseas eliminar esta cuenta? Se eliminarán todos los movimientos asociados."
+        loading={isDeletingAccount}
+      />
     </motion.div>
   );
 }

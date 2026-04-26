@@ -11,6 +11,8 @@ export interface User {
   availableCompanies: { id: string, name: string, role: string }[];
 }
 
+export type ThemeType = 'vintage' | 'modern' | 'minimal' | 'glass' | 'onyx' | 'ivory' | 'copper' | 'amethyst' | 'ocean' | 'frost';
+
 export type AppView =
   | 'landing'
   | 'login'
@@ -37,12 +39,14 @@ export type AppView =
   | 'notifications'
   | 'search'
   | 'data-mgmt'
+  | 'data-management'
   | 'system'
   | 'ai-chat'
   | 'taxes'
   | 'closing-entries'
   | 'financial-concepts'
-  | 'payment-terms';
+  | 'payment-terms'
+  | 'company-settings';
 
 interface AppState {
   // Auth
@@ -70,7 +74,7 @@ interface AppState {
   globalSearch: string;
   isDarkMode: boolean;
   accentColor: string; // Hex color
-  theme: 'vintage' | 'modern' | 'minimal' | 'glass';
+  theme: ThemeType;
 
   // Actions
   login: (user: User, token: string, companyId: string, company?: Company | null) => void;
@@ -84,7 +88,7 @@ interface AppState {
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
 
-  setCurrentCompany: (company: Company) => void;
+  setCurrentCompany: (company: Company | any) => void;
   setCompanyId: (id: string) => void;
 
   setNotifications: (notifications: AppNotification[]) => void;
@@ -96,7 +100,7 @@ interface AppState {
   setGlobalSearch: (search: string) => void;
   toggleDarkMode: () => void;
   setAccentColor: (color: string) => void;
-  setTheme: (theme: 'vintage' | 'modern' | 'minimal' | 'glass') => void;
+  setTheme: (theme: ThemeType) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -125,9 +129,9 @@ export const useAppStore = create<AppState>()(
       // UI defaults
       isLoading: false,
       globalSearch: '',
-      isDarkMode: false,
-      accentColor: '#A8B5A2', // Classic vintage green default
-      theme: 'vintage',
+      isDarkMode: true,
+      accentColor: '#F59E0B', 
+      theme: 'onyx',
 
       // Auth actions
       login: (user, token, companyId, company = null) => {
@@ -225,9 +229,15 @@ export const useAppStore = create<AppState>()(
       // UI actions
       setLoading: (loading) => set({ isLoading: loading }),
       setGlobalSearch: (search) => set({ globalSearch: search }),
-      toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
+      toggleDarkMode: () => {
+        const mode = get().isDarkMode;
+        set({ isDarkMode: !mode, theme: !mode ? 'onyx' : 'ivory' });
+      },
       setAccentColor: (color) => set({ accentColor: color }),
-      setTheme: (theme) => set({ theme }),
+      setTheme: (theme) => set({ 
+        theme, 
+        isDarkMode: ['onyx', 'ocean', 'copper', 'amethyst'].includes(theme) 
+      }),
     }),
     {
       name: 'erp-app-store',

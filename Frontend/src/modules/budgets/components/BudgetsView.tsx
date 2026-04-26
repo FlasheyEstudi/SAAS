@@ -18,17 +18,18 @@ const statusColors: Record<string, string> = { DRAFT: 'neutral', APPROVED: 'info
 const statusLabels: Record<string, string> = { DRAFT: 'Borrador', APPROVED: 'Aprobado', ACTIVE: 'Activo', CLOSED: 'Cerrado' };
 
 export function BudgetsView() {
-  const { budgets, isLoading: loading, createBudget, updateBudget, deleteBudget, isCreating, isUpdating, isDeleting } = useBudgets();
+  const { budgets = [], isLoading: loading, createBudget, updateBudget, deleteBudget, isCreating, isUpdating, isDeleting } = useBudgets() as any;
   const [selected, setSelected] = useState<any | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', description: '', totalBudgeted: 0 });
 
-
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
   const budget = selected || budgets[0];
+
+
 
   if (!budget && !loading) {
     return (

@@ -6,18 +6,19 @@ import { toast } from 'sonner';
 export interface AuditLog {
   id: string;
   userId: string;
+  companyId: string;
   user: {
     id: string;
     name: string;
     email: string;
   };
-
   action: string;
-  entity: string;
+  entityType: string;
   entityId: string;
-  details: string;
-  timestamp: string;
-  ipAddress?: string;
+  entityLabel?: string;
+  changes?: any;
+  previousData?: any;
+  createdAt: string;
 }
 
 export interface AuditStats {
@@ -31,13 +32,16 @@ export function useAudit() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [stats, setStats] = useState<AuditStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
+  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const fetchLogs = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get<{ data: AuditLog[] }>(AUDIT.list);
-      setLogs(response.data || []);
+      const response = await apiClient.get<any>(AUDIT.list);
+      // Handle paginated response: { data: [...], pagination: {...} }
+      const data = response?.data || response || [];
+      setLogs(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching audit logs:', error);
       toast.error('No se pudieron cargar los registros de auditoría');
@@ -48,38 +52,25 @@ export function useAudit() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const response = await apiClient.get(AUDIT.stats);
-      setStats(response.data);
+      const response = await apiClient.get<any>(AUDIT.stats);
+      setStats(response?.data || response || null);
     } catch (error) {
       console.error('Error fetching audit stats:', error);
     }
   }, []);
 
-  const exportLogs = useCallback(async (format: 'csv' | 'pdf' = 'csv') => {
+  const fetchLogDetail = useCallback(async (id: string) => {
     try {
-      setExporting(true);
-      const response = await apiClient.get(`${AUDIT.export}?format=${format}`, {
-        responseType: 'blob',
-      });
-      
-      const blob = new Blob([response.data || response], { 
-        type: format === 'pdf' ? 'application/pdf' : 'text/csv' 
-      });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `audit-logs-${new Date().toISOString().split('T')[0]}.${format}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      toast.success(`Registros exportados correctamente`);
+      setDetailLoading(true);
+      const response = await apiClient.get<AuditLog>(AUDIT.get(id));
+      setSelectedLog(response as AuditLog);
+      return response;
     } catch (error) {
-      console.error('Error exporting audit logs:', error);
-      toast.error('No se pudieron exportar los registros');
+      console.error('Error fetching audit detail:', error);
+      toast.error('No se pudo cargar el detalle');
+      return null;
     } finally {
-      setExporting(false);
+      setDetailLoading(false);
     }
   }, []);
 
@@ -92,8 +83,10 @@ export function useAudit() {
     logs,
     stats,
     loading,
-    exporting,
+    selectedLog,
+    detailLoading,
     refreshLogs: fetchLogs,
-    exportLogs,
+    fetchLogDetail,
+    setSelectedLog,
   };
 }

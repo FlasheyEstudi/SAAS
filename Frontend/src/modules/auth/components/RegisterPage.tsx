@@ -1,243 +1,216 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod/v4';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, BookOpen, Sparkles, User, Building2, Phone, CheckCircle, Shield, Key } from 'lucide-react';
-import { toast } from 'sonner';
-import { apiClient } from '@/lib/api/client';
-import { AUTH } from '@/lib/api/endpoints';
-import { cn } from '@/lib/utils';
-import { VintageCard } from '@/components/ui/vintage-card';
-import { PastelButton } from '@/components/ui/pastel-button';
-import { FloatingInput } from '@/components/ui/floating-input';
+import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/stores/useAppStore';
-import { AuthLayout } from './AuthLayout';
-
-// ─── Validation schema ───────────────────────────────────────
-const registerSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'El nombre es obligatorio')
-    .min(3, 'El nombre debe tener al menos 3 caracteres'),
-  email: z
-    .string()
-    .min(1, 'El correo electrónico es obligatorio')
-    .email('Ingresa un correo electrónico válido'),
-  company: z
-    .string()
-    .min(1, 'El nombre de la empresa es obligatorio')
-    .min(3, 'El nombre de la empresa debe tener al menos 3 caracteres'),
-  phone: z
-    .string()
-    .min(1, 'El teléfono es obligatorio')
-    .regex(/^[0-9+\-\s()]{8,}$/, 'Ingresa un teléfono válido'),
-  password: z
-    .string()
-    .min(1, 'La contraseña es obligatoria')
-    .min(8, 'La contraseña debe tener al menos 8 caracteres')
-    .regex(/[A-Z]/, 'Debe incluir al menos una mayúscula')
-    .regex(/[a-z]/, 'Debe incluir al menos una minúscula')
-    .regex(/[0-9]/, 'Debe incluir al menos un número')
-    .regex(/[^A-Za-z0-9]/, 'Debe incluir al menos un carácter especial'),
-  confirmPassword: z
-    .string()
-    .min(1, 'Confirma tu contraseña'),
-  terms: z
-    .boolean()
-    .refine(val => val === true, 'Debes aceptar los términos'),
-}).refine(data => data.password === data.confirmPassword, {
-  message: 'Las contraseñas no coinciden',
-  path: ['confirmPassword'],
-});
-
-type RegisterFormData = z.infer<typeof registerSchema>;
-
-// ─── Animation variants ──────────────────────────────────────
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 15 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as any },
-  },
-};
-
-const blobVariants = {
-  animate: (i: number) => ({
-    y: [0, -15, 0, 10, 0],
-    x: [0, 8, -5, 0, 0],
-    rotate: [0, 5, -3, 2, 0],
-    scale: [1, 1.03, 0.98, 1.01, 1],
-    transition: {
-      duration: 8 + i * 2,
-      repeat: Infinity,
-      ease: 'easeInOut' as any,
-    },
-  }),
-};
-function getPasswordStrength(password: string): { score: number; label: string; color: string } {
-  let score = 0;
-  if (password.length >= 8) score++;
-  if (password.length >= 12) score++;
-  if (/[A-Z]/.test(password)) score++;
-  if (/[0-9]/.test(password)) score++;
-  if (/[^A-Za-z0-9]/.test(password)) score++;
-
-  if (score <= 1) return { score: 1, label: 'Débil', color: 'bg-destructive' };
-  if (score <= 3) return { score: 2, label: 'Media', color: 'bg-warning' };
-  return { score: 3, label: 'Fuerte', color: 'bg-success' };
-}
+import { Bot, UserPlus, Sparkles, ArrowRight, ArrowLeft, Zap, ShieldCheck, Globe } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { PastelButton } from '@/components/ui/pastel-button';
+import { VintageCard } from '@/components/ui/vintage-card';
+import { toast } from 'sonner';
 
 export function RegisterPage() {
-  const navigate = useAppStore((s) => s.navigate);
-  const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors },
-  } = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: { terms: false },
+  const { navigate } = useAppStore();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({ 
+    name: '', 
+    email: '', 
+    company: '', 
+    phone: '',
+    password: '' 
   });
 
-  const passwordValue = watch('password');
-  const strength = getPasswordStrength(passwordValue || '');
-
-  const onSubmit = async (data: RegisterFormData) => {
-    setIsSubmitting(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
     try {
-      await apiClient.post(AUTH.register, {
-        name: data.name,
-        email: data.email,
-        company: data.company,
-        phone: data.phone,
-        password: data.password
+      const response = await fetch('http://192.168.0.110:3001/api/users/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       });
-      setSuccess(true);
-      toast.success('¡Cuenta creada! Revisa tu correo.');
-    } catch (error: any) {
-      toast.error(error?.error || 'Error al registrarse');
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success('El camino está despejado: Cuenta creada exitosamente. Bienvenido a la abundancia.');
+        navigate('login');
+      } else {
+        toast.error(result.message || 'Error en el ritual de registro');
+      }
+    } catch (err) {
+      console.error('Register Error:', err);
+      toast.error('Obstáculo de red: El servidor sagrado no responde.');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
-  if (success) {
-    return (
-      <AuthLayout>
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full max-w-md mx-auto px-4">
-          <VintageCard variant="glass" className="p-10 text-center">
-            <div className="w-20 h-20 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="w-10 h-10 text-success" />
-            </div>
-            <h2 className="text-3xl font-playfair font-black text-foreground mb-4">¡Casi listo!</h2>
-            <p className="text-muted-foreground mb-8">Hemos enviado un enlace de activación a tu correo electrónico. Por favor verifícalo para comenzar.</p>
-            <PastelButton className="w-full h-12" onClick={() => navigate('login')}>Ir al Inicio</PastelButton>
-          </VintageCard>
-        </motion.div>
-      </AuthLayout>
-    );
-  }
-
   return (
-    <AuthLayout>
-      <motion.div
-        className="w-full max-w-2xl mx-auto px-4"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Ganesha subtle */}
+      <div className="absolute inset-0 z-0 opacity-15 pointer-events-none scale-110">
+         <img 
+            src="/images/ganesha_hero.png" 
+            className="w-full h-full object-cover blur-md"
+            alt="fondo"
+         />
+         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
+      </div>
+
+      <motion.button
+        onClick={() => navigate('landing')}
+        className="absolute top-8 left-8 flex items-center gap-2 text-zinc-600 hover:text-white transition-colors z-10"
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
       >
-        <VintageCard
-          variant="glass"
-          className="p-8 md:p-10 shadow-2xl border-white/20 dark:border-zinc-800/50 backdrop-blur-2xl"
+        <ArrowLeft className="w-4 h-4" />
+        <span className="text-[10px] font-black uppercase tracking-widest">Regresar</span>
+      </motion.button>
+
+      <div className="w-full max-w-6xl z-10 flex flex-col-reverse lg:flex-row gap-12 items-center">
+        {/* Formulario de Registro */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6 }}
+          className="w-full lg:w-3/5"
         >
-          <motion.div variants={itemVariants} className="flex flex-col items-center mb-8">
-            <h1 className="font-playfair text-3xl font-black text-foreground tracking-tight">Crea tu Cuenta</h1>
-            <p className="text-sm text-muted-foreground mt-1">Únete a la nueva generación contable</p>
-          </motion.div>
-
-          <motion.form variants={itemVariants} onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <FloatingInput label="Tu Nombre" icon={<User className="w-4 h-4" />} error={errors.name?.message} {...register('name')} />
-              <FloatingInput label="Nombre de Empresa" icon={<Building2 className="w-4 h-4" />} error={errors.company?.message} {...register('company')} />
+          <VintageCard variant="premium" className="p-10 bg-zinc-950/60 border border-white/5 backdrop-blur-3xl shadow-2xl">
+            <div className="flex flex-col items-center mb-10 text-center">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-purple-600 via-amber-500 to-orange-600 flex items-center justify-center shadow-2xl shadow-purple-500/20 mb-6 p-1">
+                <div className="w-full h-full rounded-full bg-black flex items-center justify-center">
+                  <Sparkles className="w-8 h-8 text-amber-500" />
+                </div>
+              </div>
+              <h1 className="text-4xl font-playfair font-bold text-white mb-2 uppercase tracking-tighter">Inicia tu Prosperidad</h1>
+              <p className="text-[10px] text-amber-500/80 uppercase tracking-[0.4em] font-black">Registro maestro de Ganesha ERP</p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              <FloatingInput label="Correo" type="email" icon={<Mail className="w-4 h-4" />} error={errors.email?.message} {...register('email')} />
-              <FloatingInput label="Teléfono" type="tel" icon={<Phone className="w-4 h-4" />} error={errors.phone?.message} {...register('phone')} />
-            </div>
-
-            <div className="space-y-4">
-              <div className="relative">
-                <FloatingInput
-                  label="Contraseña"
-                  type={showPassword ? 'text' : 'password'}
-                  icon={<Lock className="w-4 h-4" />}
-                  error={errors.password?.message}
-                  {...register('password')}
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-1">Tu Nombre Completo</label>
+                <Input
+                  placeholder="Ej: Juan Pérez"
+                  variant="premium"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-zinc-800"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors p-1">
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-1">Nombre de Empresa / Razón Social</label>
+                <Input
+                  placeholder="Empresa Alfa S.A."
+                  variant="premium"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-zinc-800"
+                  value={formData.company}
+                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-1">Portal (Email)</label>
+                <Input
+                  type="email"
+                  placeholder="hola@ganesha.dev"
+                  variant="premium"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-zinc-800"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-1">Contacto (Teléfono)</label>
+                <Input
+                  placeholder="+505 1234 5678"
+                  variant="premium"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-zinc-800"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
+              </div>
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-1">Palabra de Poder (Clave)</label>
+                <Input
+                  type="password"
+                  placeholder="••••••••"
+                  variant="premium"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-zinc-800"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required
+                />
               </div>
 
-              {passwordValue && (
-                <div className="px-1 space-y-1.5">
-                  <div className="flex gap-1.5">
-                    {[1, 2, 3].map((lvl) => (
-                      <div key={lvl} className={cn('h-1.5 flex-1 rounded-full transition-all', lvl <= strength.score ? strength.color : 'bg-muted')} />
-                    ))}
-                  </div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Seguridad: <span className={cn(strength.score === 3 ? 'text-success' : 'text-foreground')}>{strength.label}</span></p>
-                </div>
-              )}
+              <div className="md:col-span-2 mt-4">
+                <PastelButton
+                  type="submit"
+                  className="w-full h-16 bg-white text-black font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl shadow-white/5 hover:bg-amber-400 hover:scale-[1.01] transition-all border-none"
+                  disabled={loading}
+                >
+                  {loading ? 'Preparando Terreno...' : (
+                    <div className="flex items-center gap-3">
+                      <span>Solicitar Acceso a Ganesha</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
+                  )}
+                </PastelButton>
+              </div>
+            </form>
 
-              <FloatingInput
-                label="Confirmar Contraseña"
-                type="password"
-                icon={<Lock className="w-4 h-4" />}
-                error={errors.confirmPassword?.message}
-                {...register('confirmPassword')}
-              />
-            </div>
+            <p className="mt-8 text-center text-[10px] text-zinc-700 font-bold uppercase tracking-widest">
+              ¿Ya eres sabio?{' '}
+              <button
+                onClick={() => navigate('login')}
+                className="text-amber-500 hover:text-amber-400 transition-colors"
+              >
+                Inicia Sesión aquí
+              </button>
+            </p>
+          </VintageCard>
+        </motion.div>
 
-            <div className="flex items-start gap-3 p-2">
-              <input type="checkbox" id="terms" {...register('terms')} className="mt-1 w-4 h-4 rounded border-border text-primary focus:ring-primary" />
-              <label htmlFor="terms" className="text-xs text-muted-foreground leading-relaxed">
-                Acepto los <button type="button" className="text-primary font-bold hover:underline">términos de servicio</button> y la <button type="button" className="text-primary font-bold hover:underline">política de datos</button>.
-              </label>
-            </div>
+        {/* Sidebar de Beneficios en Registro */}
+        <motion.div 
+          initial={{ opacity: 0, x: 30 }} 
+          animate={{ opacity: 1, x: 0 }} 
+          className="hidden lg:flex flex-col gap-10 lg:w-2/5 pl-12 border-l border-white/5"
+        >
+          <div className="space-y-4">
+            <h3 className="text-white text-4xl font-playfair font-bold leading-tight">Inicia una nueva etapa corporativa</h3>
+            <p className="text-zinc-500 text-sm font-medium">Ganesha escala contigo, desde un pequeño emprendimiento hasta una corporación global.</p>
+          </div>
+          
+          <div className="grid gap-8">
+            {[
+              { icon: <Globe className="w-5 h-5 text-amber-500" />, t: 'Multi-Tenant Nativo', d: 'Gestiona subsidiarias o múltiples empresas con una sola mente.' },
+              { icon: <ShieldCheck className="w-5 h-5 text-amber-500" />, t: 'Nube Inmutable', d: 'Tus auditorías nunca se pierden. Registro histórico eterno y protegido.' },
+              { icon: <Zap className="w-5 h-5 text-amber-500" />, t: 'Alta Velocidad', d: 'De 1 a 10,000 agentes. Ganesha crece sin perder rendimiento.' }
+            ].map((item, idx) => (
+              <div key={idx} className="relative p-6 rounded-2xl bg-gradient-to-br from-white/5 to-transparent border border-white/5 group hover:border-amber-500/20 transition-all">
+                 <div className="mb-4">{item.icon}</div>
+                 <h4 className="text-amber-500 font-bold text-sm uppercase tracking-widest mb-2">{item.t}</h4>
+                 <p className="text-zinc-500 text-xs leading-relaxed">{item.d}</p>
+              </div>
+            ))}
+          </div>
 
-            <PastelButton type="submit" loading={isSubmitting} className="w-full h-12 text-sm font-bold shadow-lg shadow-primary/20">
-              Registrar mi Cuenta
-            </PastelButton>
-          </motion.form>
-
-          <motion.p variants={itemVariants} className="mt-8 text-center text-sm text-muted-foreground">
-            ¿Ya tienes cuenta? <button type="button" onClick={() => navigate('login')} className="font-bold text-primary hover:underline underline-offset-4">Inicia Sesión</button>
-          </motion.p>
-        </VintageCard>
-      </motion.div>
-    </AuthLayout>
+          <div className="mt-auto pt-8 border-t border-white/5">
+               <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center">
+                         <Bot className="w-6 h-6 text-orange-500" />
+                    </div>
+                    <div>
+                         <div className="text-white font-bold text-sm tracking-tight">Activación Inmediata</div>
+                         <div className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest">Tu primer período configurado en segundos</div>
+                    </div>
+               </div>
+          </div>
+        </motion.div>
+      </div>
+    </div>
   );
 }
-
-export default RegisterPage;

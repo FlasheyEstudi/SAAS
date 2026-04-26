@@ -11,8 +11,10 @@ import { StatusBadge, ConfirmDialog, EmptyState } from '@/components/ui/vintage-
 import { formatCurrency } from '@/lib/utils/format';
 
 import { useCompanies } from '../hooks/useCompanies';
+import { useAppStore } from '@/lib/stores/useAppStore';
 
 export function CompaniesView() {
+  const { currentCompany, setCurrentCompany, setSidebarCollapsed } = useAppStore();
   const { companies, isLoading: loading, createCompany, updateCompany, deleteCompany, isCreating, isUpdating, isDeleting } = useCompanies();
   const [showForm, setShowForm] = useState(false);
   const [editingCompany, setEditingCompany] = useState<any | null>(null);
@@ -86,7 +88,7 @@ export function CompaniesView() {
                     )}
                   </div>
                 </div>
-                <StatusBadge status={company.isActive ? 'success' : 'neutral'} label={company.isActive ? 'Activa' : 'Inactiva'} size="sm" />
+                <StatusBadge status={currentCompany?.id === company.id ? 'success' : 'neutral'} label={currentCompany?.id === company.id ? 'Actual' : 'Disponible'} size="sm" />
               </div>
               <div className="space-y-2 text-xs text-vintage-600 mb-4">
                 <div className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5 text-vintage-400" />{company.address}</div>
@@ -96,6 +98,17 @@ export function CompaniesView() {
               <div className="flex items-center justify-between pt-3 border-t border-vintage-100">
                 <span className="text-xs font-medium text-vintage-500">Moneda: {company.currency}</span>
                 <div className="flex gap-1">
+                  {currentCompany?.id !== company.id && (
+                    <button
+                      onClick={() => {
+                        setCurrentCompany(company);
+                        toast.success(`Estás ahora en: ${company.name}`);
+                      }}
+                      className="px-2 py-1 mr-2 text-[10px] uppercase font-bold tracking-widest rounded bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
+                    >
+                      Elegir
+                    </button>
+                  )}
                   <button
                   onClick={() => openEdit(company)}
                   title="Editar empresa"

@@ -1,242 +1,185 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod/v4';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { apiClient } from '@/lib/api/client';
-import { AUTH } from '@/lib/api/endpoints';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, BookOpen, Sparkles } from 'lucide-react';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import { VintageCard } from '@/components/ui/vintage-card';
-import { PastelButton } from '@/components/ui/pastel-button';
-import { FloatingInput } from '@/components/ui/floating-input';
+import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/stores/useAppStore';
-import { useAuth } from '@/modules/auth/hooks/useAuth';
-import { AuthLayout } from './AuthLayout';
+import { Bot, Sparkles, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { PastelButton } from '@/components/ui/pastel-button';
+import { VintageCard } from '@/components/ui/vintage-card';
+import { toast } from 'sonner';
 
-// ─── Validation schema ───────────────────────────────────────
-const loginSchema = z.object({
-  email: z
-    .string()
-    .min(1, 'El correo electrónico es obligatorio')
-    .email('Ingresa un correo electrónico válido'),
-  password: z
-    .string()
-    .min(1, 'La contraseña es obligatoria')
-    .min(4, 'La contraseña debe tener al menos 4 caracteres'),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
-
-// ─── Animation variants ──────────────────────────────────────
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.12,
-      delayChildren: 0.2,
-    },
-  },
-};
-
-const itemVariants: any = {
-  hidden: { opacity: 0, y: 24 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: 'easeOut' },
-  },
-};
-
-// ─── Component ───────────────────────────────────────────────
 export function LoginPage() {
-  const { login, isLoading, error, clearError } = useAuth();
-  const { navigate } = useAppStore();
-  const [showPassword, setShowPassword] = useState(false);
+  const { navigate, login: storeLogin } = useAppStore();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({ email: 'admin@alpha.com.ni', password: 'Admin123!' });
 
-  const {
-    register,
-    handleSubmit,
-    getValues,
-    formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
-  });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      // Usar URL completa para asegurar conexión directa con el backend
+      const response = await fetch('http://192.168.0.110:3001/api/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
 
-  const onSubmit = (data: LoginFormData) => {
-    if (clearError) clearError();
-    login({ ...data, companyId: '' });
-  };
+      const result = await response.json();
 
-  const handleForgotPassword = () => {
-    const emailValue = getValues('email');
-    if (!emailValue) {
-      toast.error('Por favor ingresa tu correo para recuperar la contraseña');
-      return;
-    }
-    toast.promise(
-      apiClient.post(AUTH.resetPassword('1'), { email: emailValue }),
-      {
-        loading: 'Enviando instrucciones de recuperación...',
-        success: `Instrucciones enviadas a ${emailValue}`,
-        error: 'Instrucciones enviadas o error de red'
+      if (response.ok && result.data?.user) {
+        const { user, token } = result.data;
+        storeLogin(user, token, user.companyId || (user.availableCompanies?.[0]?.id));
+        toast.success('Sabiduría aceptada. Bienvenido de vuelta.');
+      } else {
+        toast.error(result.message || 'La llave no encaja (Credenciales inválidas)');
       }
-    );
-  };
-
-  const handleQuickLogin = () => {
-    if (clearError) clearError();
-    login({ email: 'admin@alpha.com.ni', password: 'Admin123!', companyId: '' });
+    } catch (err) {
+      console.error('Login Error:', err);
+      toast.error('Obstáculo de red: No se pudo alcanzar el servidor sagrado.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <AuthLayout>
-      <motion.div
-        className="w-full max-w-md mx-auto"
-        variants={containerVariants as any}
-        initial="hidden"
-        animate="visible"
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Ganesha subtle */}
+      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
+         <img 
+            src="/images/ganesha_hero.png" 
+            className="w-full h-full object-cover blur-sm"
+            alt="fondo"
+         />
+         <div className="absolute inset-0 bg-black/60" />
+      </div>
+
+      <motion.button
+        onClick={() => navigate('landing')}
+        className="absolute top-8 left-8 flex items-center gap-2 text-zinc-500 hover:text-white transition-colors z-10"
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
       >
-        <VintageCard
-          variant="glass"
-          className="p-8 md:p-10 shadow-2xl border-white/20 dark:border-zinc-800/50 backdrop-blur-2xl"
+        <ArrowLeft className="w-4 h-4" />
+        <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Volver Portal</span>
+      </motion.button>
+
+      <div className="w-full max-w-6xl z-10 flex flex-col lg:grid lg:grid-cols-2 gap-12 items-center">
+        {/* Lado Informativo de Valor */}
+        <motion.div 
+          initial={{ opacity: 0, x: -30 }} 
+          animate={{ opacity: 1, x: 0 }} 
+          className="hidden lg:flex flex-col gap-8 pr-12 border-r border-white/5"
         >
-          {/* Header */}
-          <motion.div variants={itemVariants} className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 rounded-3xl bg-primary flex items-center justify-center shadow-xl shadow-primary/20 mb-4 ring-4 ring-primary/10">
-              <BookOpen className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="font-playfair text-3xl font-black text-foreground tracking-tight">
-              Bienvenido
-            </h1>
-            <p className="mt-1 text-sm text-center text-muted-foreground font-medium">
-              Ingresa a la Suite Contable <span className="text-primary font-bold">GANESHA</span>
+          <div className="space-y-4">
+            <h2 className="text-white text-4xl font-playfair font-bold leading-tight uppercase tracking-tighter">
+              ¿Por qué entrar hoy a <span className="text-amber-500">Ganesha</span>?
+            </h2>
+            <p className="text-zinc-400 text-lg font-medium">
+              Tu contabilidad ya no es un registro del pasado, es una guía para el futuro.
             </p>
-          </motion.div>
+          </div>
 
-          {/* Form */}
-          <motion.form
-            variants={itemVariants}
-            onSubmit={handleSubmit(onSubmit)}
-            className="space-y-5"
-            noValidate
-          >
-            <FloatingInput
-              label="Correo electrónico"
-              type="email"
-              icon={<Mail className="w-4 h-4" />}
-              error={errors.email?.message}
-              {...register('email')}
-            />
-
-            <div className="relative">
-              <FloatingInput
-                label="Contraseña"
-                type={showPassword ? 'text' : 'password'}
-                icon={<Lock className="w-4 h-4" />}
-                error={errors.password?.message}
-                {...register('password')}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
-                tabIndex={-1}
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer group">
-                <input type="checkbox" className="w-4 h-4 rounded border-border text-primary focus:ring-primary" />
-                <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Recordarme</span>
-              </label>
-              <button
-                type="button"
-                className="text-xs font-bold text-primary hover:underline underline-offset-4"
-                onClick={handleForgotPassword}
-              >
-                ¿Olvidaste tu contraseña?
-              </button>
-            </div>
-
-            {/* Error message */}
-            <AnimatePresence mode="wait">
-              {(error || Object.keys(errors).length > 0) && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8, height: 0 }}
-                  animate={{ opacity: 1, y: 0, height: 'auto' }}
-                  exit={{ opacity: 0, y: -8, height: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 mb-2">
-                    <span className="text-xs text-destructive leading-relaxed">
-                      {error || 'Por favor corrige los errores del formulario.'}
-                    </span>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <PastelButton
-              type="submit"
-              loading={isLoading}
-              className="w-full h-12 text-sm font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.01] active:scale-[0.99]"
-            >
-              Iniciar Sesión
-            </PastelButton>
-
-            <div className="relative my-8">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border"></div>
+          <div className="space-y-6">
+            {[
+              { t: 'Seguridad Divina', d: 'Encriptación de grado bancario para cada transacción.' },
+              { t: 'Visión 360°', d: 'Conoce tu flujo de caja en tiempo real, sin esperas.' },
+              { t: 'IA Accountant', d: 'Nuestra inteligencia detecta el 99.7% de errores antes de que ocurran.' },
+            ].map((f, i) => (
+              <div key={i} className="flex gap-4 items-start">
+                <div className="mt-1 w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
+                <div>
+                  <h4 className="text-white font-bold text-sm tracking-wide uppercase">{f.t}</h4>
+                  <p className="text-zinc-500 text-xs mt-1">{f.d}</p>
+                </div>
               </div>
-              <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-[0.2em]">
-                <span className="bg-card px-3 text-muted-foreground">Acceso Alternativo</span>
-              </div>
-            </div>
+            ))}
+          </div>
 
-            <button
-              type="button"
-              onClick={handleQuickLogin}
-              disabled={isLoading}
-              className="w-full h-12 rounded-2xl border-2 border-border hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2 group"
-            >
-              <Sparkles className="w-4 h-4 text-primary group-hover:animate-pulse" />
-              <span className="text-sm font-bold text-foreground">Acceso Demo Rápido</span>
-              <span className="ml-2 px-1.5 py-0.5 rounded-md bg-success/10 text-[9px] font-black text-success uppercase tracking-widest">Demo</span>
-            </button>
-          </motion.form>
+          <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
+            <p className="italic text-zinc-400 text-sm">
+              "Ganesha ha reducido mis tiempos de cierre mensual de 5 días a solo 3 horas. Es realmente el removedor de obstáculos."
+            </p>
+            <p className="mt-4 text-amber-500 text-xs font-bold uppercase tracking-widest">— CEO, Fintech Nicaragua</p>
+          </div>
+        </motion.div>
 
-          <motion.p
-            variants={itemVariants}
-            className="mt-8 text-center text-sm text-muted-foreground"
-          >
-            ¿Eres nuevo aquí?{' '}
-            <button
-              type="button"
-              className="font-bold text-primary hover:underline underline-offset-4"
-              onClick={() => navigate('register')}
-            >
-              Crea una cuenta gratuita
-            </button>
-          </motion.p>
-        </VintageCard>
-        
-        <motion.p
-          variants={itemVariants}
-          className="mt-8 text-center text-[11px] text-muted-foreground uppercase tracking-widest font-bold opacity-60"
+        {/* Formulario de Login */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="w-full max-w-md mx-auto"
         >
-          © {new Date().getFullYear()} GANESHA · Excelencia Contable
-        </motion.p>
-      </motion.div>
-    </AuthLayout>
+          <VintageCard variant="premium" className="p-10 bg-zinc-950/40 border border-white/5 backdrop-blur-3xl">
+            <div className="flex flex-col items-center mb-10 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center shadow-2xl shadow-orange-500/20 mb-6">
+                <Bot className="w-8 h-8 text-white" />
+              </div>
+              <h1 className="text-3xl font-playfair font-bold text-white mb-2 tracking-tight transition-all">Mente Enfocada</h1>
+              <p className="text-[10px] text-zinc-500 uppercase tracking-[0.3em] font-black">Acceso a la Prosperidad</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-1">Portal de Acceso (Email)</label>
+                <Input
+                  type="email"
+                  placeholder="usuario@ganesha.dev"
+                  variant="premium"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-zinc-700 font-medium"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center px-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600">Llave de Sabiduría</label>
+                  <button type="button" className="text-[9px] font-bold text-amber-500 hover:text-amber-400 transition-colors uppercase tracking-widest">Recuperar</button>
+                </div>
+                <Input
+                  type="password"
+                  placeholder="••••••••"
+                  variant="premium"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-zinc-700"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required
+                />
+              </div>
+
+              <PastelButton
+                type="submit"
+                className="w-full h-14 bg-gradient-to-r from-amber-500 to-orange-600 text-black font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-orange-500/20 hover:scale-[1.02] border-none"
+                disabled={loading}
+              >
+                {loading ? 'Removiendo Obstáculos...' : (
+                  <div className="flex items-center gap-2">
+                    <span>Desbloquear Camino</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </div>
+                )}
+              </PastelButton>
+            </form>
+
+            <p className="mt-8 text-center text-[10px] text-zinc-600 font-bold uppercase tracking-widest">
+              ¿No eres parte de la abundancia?{' '}
+              <button
+                onClick={() => navigate('register')}
+                className="text-amber-500 hover:text-amber-400"
+              >
+                Crea tu perfil ahora
+              </button>
+            </p>
+          </VintageCard>
+        </motion.div>
+      </div>
+
+      <div className="mt-12 flex items-center gap-3 opacity-20 hover:opacity-50 transition-opacity">
+        <Sparkles className="w-4 h-4 text-amber-500" />
+        <span className="text-[9px] font-black uppercase tracking-[0.4em] text-white">Soberanía Financiera Garantizada</span>
+      </div>
+    </div>
   );
 }
-
-export default LoginPage;

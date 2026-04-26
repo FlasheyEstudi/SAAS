@@ -14,7 +14,8 @@ export interface ChatMessage {
       url: string;
       type: string;
       format: string;
-    }
+    };
+    isDataOnly?: boolean;
   };
 }
 
@@ -78,13 +79,16 @@ export function useAI() {
           : JSON.stringify(response.data.message, null, 2);
       }
 
-      const metadata = response?.downloadUrl ? {
-        downloadConfig: {
+      const isDataOnly = !response?.response && (response?.toolCalls || response?.data);
+
+      const metadata = {
+        isDataOnly: !!isDataOnly,
+        downloadConfig: response?.downloadUrl ? {
           url: response.downloadUrl,
           type: response.reportType || 'report',
           format: response.format || 'pdf'
-        }
-      } : undefined;
+        } : undefined
+      };
 
       const aiMessage: ChatMessage = {
         role: 'assistant',

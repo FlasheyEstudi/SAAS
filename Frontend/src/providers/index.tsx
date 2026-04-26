@@ -1,7 +1,7 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppStore } from '@/lib/stores/useAppStore';
 
 const queryClient = new QueryClient({
@@ -32,19 +32,22 @@ export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const root = document.documentElement;
     
-    // Dark mode
+    // Dark mode logic
     if (isDarkMode) root.classList.add('dark');
     else root.classList.remove('dark');
     
-    // Theme classes
-    const themes = ['theme-vintage', 'theme-modern', 'theme-minimal', 'theme-glass'];
+    // Theme classes - Full list updated
+    const themes = [
+      'theme-vintage', 'theme-modern', 'theme-minimal', 'theme-glass', 
+      'theme-onyx', 'theme-ivory', 'theme-ocean', 'theme-frost', 
+      'theme-copper', 'theme-amethyst'
+    ];
     root.classList.remove(...themes);
     root.classList.add(`theme-${theme}`);
     
     // Accent color
     root.style.setProperty('--primary-custom', accentColor);
-    // Rough approximation for secondary (lighter) and tertiary
-    root.style.setProperty('--primary-custom-soft', `${accentColor}20`); // 20% opacity
+    root.style.setProperty('--primary-custom-soft', `${accentColor}20`); 
     root.style.setProperty('--primary-custom-bold', `${accentColor}dd`); 
   }, [isDarkMode, theme, accentColor]);
 
@@ -59,10 +62,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-vintage-50">
-        <div className="animate-pulse-soft">
-          <div className="text-4xl mb-2">📒</div>
-          <p className="text-vintage-600 text-sm font-playfair">Cargando...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#050505] overflow-hidden">
+        <div className="relative">
+          {/* Spiritual-tech Golden Pulse */}
+          <div className="absolute inset-0 bg-amber-500/20 blur-3xl rounded-full animate-pulse scale-150" />
+          <div className="relative flex flex-col items-center">
+             <div className="w-16 h-16 border-4 border-amber-500/10 border-t-amber-500 rounded-full animate-spin mb-6" />
+             <h1 className="text-2xl font-black text-white tracking-[0.5em] animate-pulse">
+               GANESHA
+             </h1>
+          </div>
         </div>
       </div>
     );

@@ -68,13 +68,20 @@ export function InvoiceListView() {
   const {
     invoices = [], thirdParties = [], isLoading,
     payInvoice, cancelInvoice,
-    summary = { totalInvoiced: 0, pendingAmount: 0, overdueAmount: 0, paidAmount: 0 },
-    total = 0, totalPages = 1, page = 1, limit = 20,
+    summary: rawSummary,
+    total: rawTotal = 0, totalPages = 1, page = 1, limit = 20,
     search = '', typeFilter = '', statusFilter = '',
     setSearch, setTypeFilter, setStatusFilter, setPage, clearFilters,
   } = useInvoices() as any;
 
-  const { totalInvoiced = 0, pendingAmount = 0, overdueAmount = 0, paidAmount = 0 } = summary || {};
+  // Compute summary from real data — the backend summary returns { totalAmount, totalBalanceDue }
+  // but we also compute from invoices array as a reliable fallback
+  const totalInvoiced = rawSummary?.totalAmount || invoices.reduce((s: number, i: any) => s + (i.totalAmount || 0), 0);
+  const pendingAmount = invoices.filter((i: any) => i.status === 'PENDING' || i.status === 'PARTIAL').reduce((s: number, i: any) => s + (i.balanceDue || 0), 0);
+  const overdueAmount = invoices.filter((i: any) => i.status === 'OVERDUE').reduce((s: number, i: any) => s + (i.balanceDue || 0), 0);
+  const paidAmount = invoices.filter((i: any) => i.status === 'PAID').reduce((s: number, i: any) => s + (i.totalAmount || 0), 0);
+  const total = rawTotal || invoices.length;
+
 
   const [cancelDialogId, setCancelDialogId] = useState<string | null>(null);
   const [payingId, setPayingId] = useState<string | null>(null);

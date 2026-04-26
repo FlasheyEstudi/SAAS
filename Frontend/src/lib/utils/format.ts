@@ -3,13 +3,14 @@ import { format, formatDistanceToNow, parseISO, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 // Currency formatting
-export function formatCurrency(amount: number, currency: string = 'NIO', decimals: number = 2): string {
+export function formatCurrency(amount: number | null | undefined, currency: string = 'NIO', decimals: number = 2): string {
+  const value = (amount == null || Number.isNaN(amount)) ? 0 : amount;
   return new Intl.NumberFormat('es-NI', {
     style: 'currency',
     currency,
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
-  }).format(amount);
+  }).format(value);
 }
 
 // Number formatting with thousands separator

@@ -3,7 +3,7 @@
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Palette, Check, X, Sparkles, Monitor, Layout, Type, Plus } from 'lucide-react';
+import { Palette, Check, X, Sparkles, Monitor, Layout, Type, Plus, Moon, Shield } from 'lucide-react';
 import { useState } from 'react';
 
 const PRESET_COLORS = [
@@ -24,6 +24,8 @@ const THEMES = [
   { id: 'modern', label: 'Modern', icon: <Monitor className="w-4 h-4" />, desc: 'Clean and cool' },
   { id: 'minimal', label: 'Minimal', icon: <Layout className="w-4 h-4" />, desc: 'High contrast' },
   { id: 'glass', label: 'Glass', icon: <Type className="w-4 h-4" />, desc: 'Translucent and airy' },
+  { id: 'onyx', label: 'Onyx', icon: <Moon className="w-4 h-4" />, desc: 'Pure black & violet' },
+  { id: 'midnight', label: 'Midnight', icon: <Shield className="w-4 h-4" />, desc: 'Professional navy' },
 ];
 
 export function ThemePicker({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {

@@ -26,6 +26,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
     const periodId = searchParams.get('periodId');
+    const yearParam = searchParams.get('year');
+    const monthParam = searchParams.get('month');
     const consolidated = searchParams.get('consolidated') === 'true';
 
     if (!companyId) return error('El parámetro companyId es obligatorio');
@@ -41,6 +43,14 @@ export async function GET(request: Request) {
     let currentPeriod;
     if (periodId) {
       currentPeriod = await db.accountingPeriod.findFirst({ where: { id: periodId } });
+    } else if (yearParam && monthParam) {
+      currentPeriod = await db.accountingPeriod.findFirst({
+        where: { 
+          companyId, 
+          year: parseInt(yearParam), 
+          month: parseInt(monthParam) 
+        },
+      });
     } else {
       // Get the most recent period for the main company
       currentPeriod = await db.accountingPeriod.findFirst({

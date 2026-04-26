@@ -22,11 +22,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ERP Contable Enterprise",
-  description: "Sistema contable profesional con estética vintage pastel",
-  keywords: ["ERP", "Contable", "Accounting", "Enterprise"],
+  title: "GANESHA",
+  description: "Advanced Intelligent Accounting Intelligence",
+  keywords: ["Accounting", "Intelligence", "Ganesha", "Enterprise"],
   icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📒</text></svg>",
+    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕉️</text></svg>",
   },
 };
 
@@ -38,20 +38,12 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body
-        className={`${playfair.variable} ${inter.variable} ${geistMono.variable} font-sans antialiased bg-vintage-50 text-vintage-900`}
+        className={`${playfair.variable} ${inter.variable} ${geistMono.variable} font-sans antialiased`}
       >
         <Providers>
           {children}
           <Toaster
             position="top-right"
-            toastOptions={{
-              style: {
-                fontFamily: 'var(--font-inter)',
-                background: '#FFFFFF',
-                border: '1px solid #FFE4E8',
-                color: '#5C4A3D',
-              },
-            }}
           />
         </Providers>
       </body>

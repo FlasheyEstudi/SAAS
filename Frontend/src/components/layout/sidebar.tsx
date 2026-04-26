@@ -1,228 +1,193 @@
 'use client';
 
-import { cn } from '@/lib/utils';
-import { useAppStore, type AppView } from '@/lib/stores/useAppStore';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useCompanies } from '@/modules/companies/hooks/useCompanies';
-import {
-  LayoutDashboard, Building2, CalendarDays, BookOpen, Target,
-  FileText, Users, Receipt, Landmark, BarChart3, Package,
-  PiggyBank, ArrowLeftRight, UserCog, Shield, Bell, Search,
-  Database, Activity, Bot, X, ChevronLeft, LogOut,
-  FileDown, ChevronRight, Menu, Percent, Lock, Clock
+import { 
+  BarChart3, 
+  BookOpen, 
+  Briefcase, 
+  ChevronLeft, 
+  ChevronRight, 
+  CreditCard, 
+  Database, 
+  FileBox, 
+  FileSpreadsheet, 
+  FileText, 
+  Home, 
+  LayoutDashboard, 
+  Users, 
+  Settings, 
+  LogOut, 
+  ShieldCheck,
+  Zap,
+  Globe,
+  Calculator,
+  GanttChartSquare,
+  Network
 } from 'lucide-react';
-import { StatusBadge } from '@/components/ui/vintage-ui';
+import { useAppStore, type AppView } from '@/lib/stores/useAppStore';
+import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
-interface NavItem {
-  id: AppView;
-  label: string;
+interface MenuItem {
+  title: string;
   icon: React.ReactNode;
-  badge?: string;
-  children?: { id: AppView; label: string }[];
+  view: AppView;
+  category?: string;
 }
 
-const navItems: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
-  { id: 'journal', label: 'Pólizas', icon: <FileText className="w-5 h-5" /> },
-  { id: 'invoices', label: 'Facturación', icon: <Receipt className="w-5 h-5" /> },
-  { id: 'taxes', label: 'Impuestos', icon: <Percent className="w-5 h-5" /> },
-  { id: 'accounts', label: 'Plan de Cuentas', icon: <BookOpen className="w-5 h-5" /> },
-  { id: 'cost-centers', label: 'Centros de Costo', icon: <Target className="w-5 h-5" /> },
-  { id: 'third-parties', label: 'Terceros', icon: <Users className="w-5 h-5" /> },
-  { id: 'banks', label: 'Bancos', icon: <Landmark className="w-5 h-5" /> },
-  { id: 'periods', label: 'Períodos', icon: <CalendarDays className="w-5 h-5" /> },
-  { id: 'closing-entries', label: 'Cierres', icon: <Lock className="w-5 h-5" /> },
-  { id: 'reports', label: 'Reportes', icon: <BarChart3 className="w-5 h-5" /> },
-  { id: 'assets', label: 'Activos Fijos', icon: <Package className="w-5 h-5" /> },
-  { id: 'budgets', label: 'Presupuestos', icon: <PiggyBank className="w-5 h-5" /> },
-  { id: 'exchange', label: 'Tipos de Cambio', icon: <ArrowLeftRight className="w-5 h-5" /> },
-  { id: 'financial-concepts', label: 'Conceptos', icon: <BookOpen className="w-5 h-5" /> },
-  { id: 'payment-terms', label: 'Términos', icon: <Clock className="w-5 h-5" /> },
-  { id: 'ai-chat', label: 'IA GANESHA', icon: <Bot className="w-5 h-5" />, badge: 'IA' },
+const menuItems: MenuItem[] = [
+  // Principal
+  { title: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" />, view: 'dashboard', category: 'General' },
+  
+  // Contabilidad
+  { title: 'Pólizas', icon: <FileSpreadsheet className="w-5 h-5" />, view: 'journal', category: 'Contabilidad' },
+  { title: 'Catálogo de Cuentas', icon: <BookOpen className="w-5 h-5" />, view: 'accounts', category: 'Contabilidad' },
+  { title: 'Periodos Fiscales', icon: <Calculator className="w-5 h-5" />, view: 'periods', category: 'Contabilidad' },
+  { title: 'Centros de Costo', icon: <Network className="w-5 h-5" />, view: 'cost-centers', category: 'Contabilidad' },
+  
+  // Facturación
+  { title: 'Facturas', icon: <FileText className="w-5 h-5" />, view: 'invoices', category: 'Tesorería' },
+  { title: 'Terceros / Clientes', icon: <Users className="w-5 h-5" />, view: 'third-parties', category: 'Tesorería' },
+  { title: 'Bancos / Cuentas', icon: <CreditCard className="w-5 h-5" />, view: 'banks', category: 'Tesorería' },
+  
+  // Avanzado
+  { title: 'Activos Fijos', icon: <FileBox className="w-5 h-5" />, view: 'assets', category: 'Avanzado' },
+  { title: 'Presupuestos', icon: <GanttChartSquare className="w-5 h-5" />, view: 'budgets', category: 'Avanzado' },
+  { title: 'Tipo de Cambio', icon: <Globe className="w-5 h-5" />, view: 'exchange', category: 'Avanzado' },
+  
+  // Reportes
+  { title: 'Reportes', icon: <BarChart3 className="w-5 h-5" />, view: 'reports', category: 'Reportes' },
+  { title: 'Impuestos', icon: <Briefcase className="w-5 h-5" />, view: 'taxes', category: 'Reportes' },
+  
+  // Sistema
+  { title: 'Auditoría', icon: <ShieldCheck className="w-5 h-5" />, view: 'audit', category: 'Sistema' },
+  { title: 'Gestión de Datos', icon: <Database className="w-5 h-5" />, view: 'data-management', category: 'Sistema' },
+  { title: 'Configuración', icon: <Settings className="w-5 h-5" />, view: 'system', category: 'Sistema' },
 ];
 
 export function Sidebar() {
-  const { currentView, navigate, sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed, user, logout, unreadCount, currentCompany, setCurrentCompany } = useAppStore();
-  const { companies, isLoading: companiesLoading } = useCompanies();
+  const { 
+    currentView, 
+    navigate, 
+    sidebarCollapsed, 
+    setSidebarCollapsed,
+    isDarkMode,
+    theme 
+  } = useAppStore();
 
-  const handleCompanyChange = (companyId: string) => {
-    const selected = companies.find((company) => company.id === companyId);
-    if (selected) {
-      setCurrentCompany(selected);
-    }
-  };
+  const toggleSidebar = () => setSidebarCollapsed(!sidebarCollapsed);
+
+  // Group items by category
+  const categories = Array.from(new Set(menuItems.map(item => item.category)));
 
   return (
-    <>
-      {/* Mobile overlay */}
-      <AnimatePresence>
-        {sidebarOpen && (
-          <motion.div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          'fixed top-0 left-0 h-full z-40 flex flex-col transition-all duration-300 bg-sidebar border-r border-sidebar-border',
-          sidebarCollapsed ? 'w-[70px]' : 'w-[260px]',
-          // Mobile: off-screen by default
-          'lg:translate-x-0',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full',
-          'lg:translate-x-0'
-        )}
-      >
-        {/* Logo area */}
-        <div className="flex items-center justify-between p-4 border-b border-sidebar-border min-h-[65px]">
+    <aside
+      className={cn(
+        'fixed left-0 top-0 h-screen z-50 transition-all duration-300 border-r border-white/5',
+        sidebarCollapsed ? 'w-[70px]' : 'w-[260px]',
+        'bg-sidebar'
+      )}
+    >
+      {/* Branding Section (Logo only to avoid duplicate name) */}
+      <div className="h-16 flex items-center px-4 border-b border-white/5 mb-2 overflow-hidden">
+        <div className="flex items-center gap-3">
+          <div 
+            onClick={() => navigate('dashboard')}
+            className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-black font-black text-xs shrink-0 shadow-lg shadow-orange-500/20 cursor-pointer"
+          >
+             G
+          </div>
           {!sidebarCollapsed && (
             <motion.div
-              className="flex items-center gap-2"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.1 }}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex flex-col"
             >
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-vintage-300 to-vintage-500 flex items-center justify-center text-white text-sm font-bold shadow-sm">
-                C
-              </div>
-              <div>
-                <h1 className="text-sm font-playfair font-bold text-sidebar-foreground">GANESHA</h1>
-                <p className="text-[10px] text-sidebar-foreground/60">ERP Enterprise</p>
-              </div>
+               <span className="text-[10px] font-black text-amber-500/80 uppercase tracking-widest">Master Menu</span>
             </motion.div>
           )}
-          {sidebarCollapsed && (
-            <div className="w-8 h-8 mx-auto rounded-lg bg-gradient-to-br from-vintage-300 to-vintage-500 flex items-center justify-center text-white text-sm font-bold shadow-sm">
-              C
-            </div>
-          )}
-          {/* Mobile close button */}
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-1 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/60"
-            title="Cerrar menú"
-            aria-label="Cerrar menú"
-          >
-            <X className="w-5 h-5" />
-          </button>
-          {/* Desktop collapse button */}
-          <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="hidden lg:flex p-1 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/60"
-            title={sidebarCollapsed ? 'Expandir barra' : 'Contraer barra'}
-            aria-label={sidebarCollapsed ? 'Expandir barra' : 'Contraer barra'}
-          >
-            {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </button>
         </div>
+      </div>
 
-        {/* Company selector */}
-        {!sidebarCollapsed && (
-          <div className="px-4 py-3 border-b border-sidebar-border">
-            <label htmlFor="company-switcher" className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sidebar-foreground/70 mb-2 block">
-              Empresa activa
-            </label>
-            <select
-              id="company-switcher"
-              value={currentCompany?.id || ''}
-              onChange={(e) => handleCompanyChange(e.target.value)}
-              disabled={companiesLoading || companies.length === 0}
-              className="w-full bg-sidebar border border-sidebar-border rounded-xl px-3 py-2 text-sm text-sidebar-foreground focus:outline-none focus:ring-2 focus:ring-vintage-300"
-              aria-label="Seleccionar empresa"
-            >
-              <option value="" disabled>
-                {companiesLoading ? 'Cargando empresas...' : companies.length === 0 ? 'No hay empresas' : 'Selecciona una empresa'}
-              </option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.name}
-                </option>
-              ))}
-            </select>
+      {/* Navegación */}
+      <div className="h-[calc(100vh-140px)] overflow-y-auto px-3 py-2 custom-scrollbar">
+        {categories.map((cat, catIdx) => (
+          <div key={cat} className="mb-4 last:mb-0">
+            {!sidebarCollapsed && (
+              <p className="px-3 mb-2 text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em]">
+                {cat}
+              </p>
+            )}
+            <div className="space-y-1">
+              {menuItems
+                .filter(item => item.category === cat)
+                .map((item) => {
+                  const isActive = currentView === item.view || (item.view === 'data-management' && currentView === 'data-mgmt');
+                  return (
+                    <button
+                      key={item.view}
+                      onClick={() => navigate(item.view)}
+                      className={cn(
+                        'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative',
+                        isActive 
+                          ? 'bg-amber-500/10 text-amber-500 ring-1 ring-amber-500/20 shadow-lg shadow-amber-500/5' 
+                          : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5'
+                      )}
+                    >
+                      <span className={cn(
+                        'transition-transform duration-200 group-hover:scale-110',
+                        isActive ? 'text-amber-500' : 'text-zinc-600'
+                      )}>
+                        {item.icon}
+                      </span>
+                      
+                      {!sidebarCollapsed && (
+                        <span className="text-[11px] font-bold tracking-wide transition-all truncate">
+                          {item.title}
+                        </span>
+                      )}
+
+                      {isActive && (
+                        <motion.div 
+                          layoutId="active-indicator"
+                          className="absolute left-0 w-1 h-5 bg-amber-500 rounded-r-full"
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+            </div>
           </div>
-        )}
+        ))}
+      </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-2 px-2">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => navigate(item.id)}
-              className={cn(
-                'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 mb-0.5 group relative',
-                currentView === item.id
-                  ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm font-medium'
-                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                sidebarCollapsed && 'justify-center px-2'
-              )}
-              title={item.label}
-              aria-label={item.label}
-            >
-              <span className={cn(
-                'transition-colors',
-                currentView === item.id ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground/50 group-hover:text-sidebar-foreground'
-              )}>
-                {item.icon}
-              </span>
-              {!sidebarCollapsed && (
-                <>
-                  <span className="flex-1 text-left">{item.label}</span>
-                  {item.badge && (
-                    <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-md bg-vintage-300 text-white">
-                      {item.badge}
-                    </span>
-                  )}
-                  {item.id === 'notifications' && unreadCount > 0 && (
-                    <span className="min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold rounded-full bg-error text-white">
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                  )}
-                </>
-              )}
-              {sidebarCollapsed && item.id === 'notifications' && unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] flex items-center justify-center text-[8px] font-bold rounded-full bg-error text-white">
-                  {unreadCount > 99 ? '!' : unreadCount}
-                </span>
-              )}
-            </button>
-          ))}
-        </nav>
-
-        {/* User section */}
-        <div className="p-3 border-t border-sidebar-border">
-          {!sidebarCollapsed && user ? (
-            <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-sidebar-accent transition-colors">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-vintage-300 to-vintage-500 flex items-center justify-center text-white text-xs font-bold">
-                {user.name?.charAt(0)?.toUpperCase() || 'U'}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">{user.name}</p>
-                <p className="text-[10px] text-sidebar-foreground/50">{user.role}</p>
-              </div>
-              <button
-                onClick={logout}
-                className="p-1.5 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/40 hover:text-error transition-colors"
-                title="Cerrar sesión"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={logout}
-              className="w-full flex items-center justify-center p-2 rounded-xl hover:bg-sidebar-accent text-sidebar-foreground/60 hover:text-error transition-colors"
-              title="Cerrar sesión"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
+      {/* IA Assistant / Shortcuts (Enhanced visibility) */}
+      <div className="absolute bottom-4 left-0 w-full px-4">
+        <button 
+          onClick={() => navigate('ai-chat')}
+          className={cn(
+            "w-full flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 border border-amber-400/50 hover:scale-[1.02] active:scale-95 transition-all group overflow-hidden relative shadow-lg shadow-amber-500/20",
+            sidebarCollapsed && "justify-center"
           )}
-        </div>
-      </aside>
-    </>
+        >
+          <Zap className="w-5 h-5 text-black animate-pulse" />
+          {!sidebarCollapsed && (
+            <div className="flex flex-col items-start leading-none">
+               <span className="text-[11px] font-black text-black uppercase tracking-wider">IA Ganesha</span>
+               <span className="text-[8px] text-black/60 font-black uppercase tracking-widest mt-1">Asesor Activo</span>
+            </div>
+          )}
+          {/* Internal shine effect */}
+          <div className="absolute top-[-100%] left-[-100%] w-[300%] h-[300%] bg-white/20 rotate-45 translate-x-[-50%] group-hover:translate-x-[50%] transition-transform duration-1000 pointer-events-none" />
+        </button>
+      </div>
+
+      {/* Collapse Toggle */}
+      <button
+        onClick={toggleSidebar}
+        className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-500 hover:text-white hover:border-amber-500/50 transition-all shadow-xl z-50"
+      >
+        {sidebarCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+      </button>
+    </aside>
   );
 }

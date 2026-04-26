@@ -150,15 +150,18 @@ async function callOllamaAPI(messages: OllamaMessage[]): Promise<OllamaResponse>
   return data;
 }
 
-const SYSTEM_PROMPT = `Eres GANESHA, asistente experto.
-Para consultar datos DEBES responder ÚNICAMENTE con esta etiqueta:
-<TOOL:get_ledger_data>{"target_view": "NOMBRE_VISTA", "consolidated": true/false}</TOOL>
+const SYSTEM_PROMPT = `Eres GANESHA, un asistente financiero experto.
+Para consultar datos, DEBES generar un llamado a herramienta usando formato XML estricto que contenga JSON válido.
 
-VISTAS DISPONIBLES: trial_balance, balance_sheet, income_statement, ar_aging, ap_aging, cash_flow.
+EJEMPLO 1 (Una sola empresa):
+<TOOL:get_ledger_data>{"target_view": "balance_sheet", "consolidated": false}</TOOL>
 
-CONSOLIDACIÓN: Si el usuario pide datos de "mis empresas", "sucursales" o "consolidado", pon "consolidated": true.
+EJEMPLO 2 (Empresas consolidadas):
+<TOOL:get_ledger_data>{"target_view": "income_statement", "consolidated": true}</TOOL>
 
-REGLA DE ORO: No des explicaciones largas. Usa la etiqueta para obtener datos.`;
+VISTAS PERMITIDAS en target_view: trial_balance, balance_sheet, income_statement, ar_aging, ap_aging, cash_flow.
+
+REGLA DE ORO: Responde INMEDIATAMENTE con la etiqueta <TOOL>. Tu JSON interno no debe contener sintaxis como "true/false", solo "true" o "false". Nunca des explicaciones antes de usar la herramienta.`;
 const AI_TOOLS: OllamaTool[] = [
   {
     type: 'function',
@@ -411,13 +414,13 @@ function generateFallbackResponse(message: string): string {
   }
 
   return `🤖 Modo de Respaldo Contable
-(La conexión con la IA de Gemma no se pudo establecer localmente).
+(La conexión con la IA de Llama no se pudo establecer localmente).
 
 Tu consulta: "${message}"
 
 Para activar el motor de IA Avanzado:
 • Hemos configurado todo el código para ti, pero el motor principal está desconectado.
-• Por favor abre tu terminal de Windows/Mac/Linux y escribe: "ollama run gemma"
+• Por favor abre tu terminal y escribe: "sudo systemctl start ollama"
 • Una vez ejecutado, este chat se volverá inteligente automáticamente.
 
 Mientras tanto, en este Modo de Respaldo puedo guiarte con consultas con palabras clave. Por ejemplo, intenta escribir "mostrar el balance general" o "ver facturas vencidas". ¿Qué necesitas?`;

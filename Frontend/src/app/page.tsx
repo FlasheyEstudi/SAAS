@@ -101,13 +101,15 @@ function ViewRouter() {
       case 'audit': return <AuditView />;
       case 'notifications': return <NotificationsView />;
       case 'search': return <SearchView />;
-      case 'data-mgmt': return <DataMgmtView />;
+      case 'data-mgmt':
+      case 'data-management': return <DataMgmtView />;
       case 'system': return <SystemView />;
       case 'ai-chat': return <AIChatView />;
       case 'taxes': return <TaxView />;
       case 'closing-entries': return <ClosingEntriesView />;
       case 'financial-concepts': return <FinancialConceptsView />;
       case 'payment-terms': return <PaymentTermsView />;
+      case 'company-settings': return <CompaniesView />; // Reutilizamos Companies para ajustes de momento
       default: return <DashboardView />;
     }
   };

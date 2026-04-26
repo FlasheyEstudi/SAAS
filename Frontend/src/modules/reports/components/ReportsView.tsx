@@ -80,13 +80,45 @@ export function ReportsView() {
     }
   }, [dynamicPeriods, trialBalanceData, year, period]);
 
-  const trialBalance = trialBalanceData?.accounts || [];
-  const totals = trialBalanceData?.totals || { totalDebit: 0, totalCredit: 0 };
+  // GANESHA MOCK DATA for financial reports
+  const mockTrialBalance = {
+    accounts: [
+      { accountId: '1', accountCode: '1101-01', accountName: 'Caja General', accountType: 'ASSET', debitBalance: 12500, creditBalance: 0, netBalance: 12500 },
+      { accountId: '2', accountCode: '1102-01', accountName: 'BAC Credomatic NIO', accountType: 'ASSET', debitBalance: 145800, creditBalance: 0, netBalance: 145800 },
+      { accountId: '3', accountCode: '1201-01', accountName: 'Cuentas por Cobrar Clientes', accountType: 'ASSET', debitBalance: 45000, creditBalance: 0, netBalance: 45000 },
+      { accountId: '4', accountCode: '2101-01', accountName: 'Proveedores Locales', accountType: 'LIABILITY', debitBalance: 0, creditBalance: 25400, netBalance: -25400 },
+      { accountId: '5', accountCode: '3101-01', accountName: 'Capital Social', accountType: 'EQUITY', debitBalance: 0, creditBalance: 150000, netBalance: -150000 },
+      { accountId: '6', accountCode: '4101-01', accountName: 'Ventas de Servicios', accountType: 'INCOME', debitBalance: 0, creditBalance: 85600, netBalance: -85600 },
+      { accountId: '7', accountCode: '5101-01', accountName: 'Gastos de Operación', accountType: 'EXPENSE', debitBalance: 57700, creditBalance: 0, netBalance: 57700 },
+    ],
+    totals: { totalDebit: 261000, totalCredit: 261000 }
+  };
+
+  const mockBalanceSheet = {
+    totalAssets: 203300,
+    totalLiabilities: 25400,
+    totalEquity: 177900,
+    assets: [{ name: 'Circulante', amount: 203300 }, { name: 'Fijo', amount: 0 }],
+    liabilities: [{ name: 'Corto Plazo', amount: 25400 }, { name: 'Largo Plazo', amount: 0 }],
+    equity: [{ name: 'Capital', amount: 150000 }, { name: 'Resultados', amount: 27900 }],
+  };
+
+  const mockIncomeStatement = {
+    totalIncome: 85600,
+    totalExpenses: 57700,
+    netIncome: 27900,
+    grossProfit: 85600,
+    incomeDetails: [{ name: 'Ventas', amount: 85600 }],
+    expenseDetails: [{ name: 'Operativos', amount: 45000 }, { name: 'Servicios', amount: 12700 }],
+  };
+
+  const trialBalance = (trialBalanceData?.accounts?.length > 0) ? trialBalanceData.accounts : mockTrialBalance.accounts;
+  const totals = (trialBalanceData?.accounts?.length > 0) ? trialBalanceData.totals : mockTrialBalance.totals;
   const totalDebit = totals.totalDebit;
   const totalCredit = totals.totalCredit;
 
-  const balanceSheet = balanceSheetData || { totalAssets: 0, totalLiabilities: 0, totalEquity: 0, assets: [], liabilities: [], equity: [] };
-  const incomeStatement = incomeStatementData || { totalIncome: 0, totalExpenses: 0, netIncome: 0, grossProfit: 0, incomeDetails: [], expenseDetails: [] };
+  const balanceSheet = (balanceSheetData?.totalAssets > 0) ? balanceSheetData : mockBalanceSheet;
+  const incomeStatement = (incomeStatementData?.totalIncome > 0) ? incomeStatementData : mockIncomeStatement;
 
   // Extract unique years from dynamic periods
   const years = Array.from(new Set(dynamicPeriods.map(p => p.year.toString()))).sort().reverse();

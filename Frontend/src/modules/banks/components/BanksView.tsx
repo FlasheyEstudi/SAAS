@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Landmark,
@@ -60,14 +60,21 @@ function getMovementIcon(type: string) {
 
 export function BanksView() {
   const {
-    bankAccounts: accounts = [], movements = [], isLoading, total = 0, totalPages = 1, page = 1, limit = 20,
+    bankAccounts: accounts = [], movements = [], isLoading, total: rawTotal = 0, totalPages = 1, page = 1, limit = 20,
     search = '', accountFilter = '', typeFilter = '',
     setSearch, setAccountFilter, setTypeFilter, setPage, clearFilters,
     createMovement, reconcileMovement,
     createAccount, updateAccount, deleteAccount,
-    totalBalance = 0, totalDeposits = 0, totalWithdrawals = 0,
+    totalBalance: hookBalance = 0, totalDeposits: hookDeposits = 0, totalWithdrawals: hookWithdrawals = 0,
     isCreatingAccount, isUpdatingAccount, isDeletingAccount,
   } = useBanks() as any;
+
+  // Compute summary from real data — prefer hook values, fallback to computing from arrays
+  const totalBalance = hookBalance || accounts.reduce((s: number, a: any) => s + (a.currentBalance || a.initialBalance || 0), 0);
+  const totalDeposits = hookDeposits || movements.filter((m: any) => m.movementType === 'DEPOSIT').reduce((s: number, m: any) => s + Math.abs(m.amount || 0), 0);
+  const totalWithdrawals = hookWithdrawals || movements.filter((m: any) => m.movementType === 'WITHDRAWAL').reduce((s: number, m: any) => s + Math.abs(m.amount || 0), 0);
+  const total = rawTotal || movements.length;
+
 
   const [showForm, setShowForm] = useState(false);
   const [showAccountForm, setShowAccountForm] = useState(false);
@@ -94,14 +101,13 @@ export function BanksView() {
       toast.loading('Generando estado de cuenta...');
       const companyName = 'GANESHA Compañía Demo';
       
-      // Find the name of the filtered account if any
       const selectedAcc = accounts.find((a: any) => a.id === accountFilter);
-      const accName = selectedAcc ? `${selectedAcc.bankName} - ${selectedAcc.accountNumber}` : 'Todas las Cuentas';
+      const accNameStr = selectedAcc ? `${selectedAcc.bankName} - ${selectedAcc.accountNumber}` : 'Todas las Cuentas';
 
       if (format === 'excel') {
-        await exportBanksExcel(movements, companyName, accName);
+        await exportBanksExcel(movements, companyName, accNameStr);
       } else {
-        await exportBanksPDF(movements, companyName, accName);
+        await exportBanksPDF(movements, companyName, accNameStr);
       }
       toast.dismiss();
       toast.success(`Movimientos exportados en ${format.toUpperCase()}`);
@@ -141,14 +147,14 @@ export function BanksView() {
     }
   }, [formAccountId, formType, formDescription, formAmount, formDate, formReference, createMovement]);
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setFormAccountId(accounts?.[0]?.id || '');
     setFormType('DEPOSIT');
     setFormDescription('');
     setFormAmount('');
     setFormDate(new Date().toISOString().split('T')[0]);
     setFormReference('');
-  };
+  }, [accounts]);
 
   const handleCreateAccount = useCallback(async () => {
     if (!accName.trim()) { toast.error('Ingresa un nombre'); return; }
@@ -206,10 +212,10 @@ export function BanksView() {
     else toast.error('No se pudo conciliar');
   }, [reconcileMovement]);
 
-  const accountFilterOptions = (accounts || []).map((a: any) => ({
+  const accountFilterOptions = useMemo(() => (accounts || []).map((a: any) => ({
     value: a.id,
     label: `${a.bankName} (${a.accountNumber.slice(-4)})`,
-  }));
+  })), [accounts]);
 
   const tableHeaders = [
     { key: 'date', label: 'Fecha', align: 'left' as const, className: 'w-[110px]' },

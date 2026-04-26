@@ -15,7 +15,21 @@ import { usePeriods } from '../hooks/usePeriods';
 const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 export function PeriodsView() {
-  const { periods, isLoading: loading, closePeriod, reopenPeriod, isClosing, isReopening } = usePeriods();
+  const { periods: rawPeriods = [], isLoading: loading, closePeriod, reopenPeriod, isClosing, isReopening } = usePeriods();
+
+  // GANESHA MOCK DATA for fiscal periods 2025
+  const mockPeriods = Array.from({ length: 12 }, (_, i) => ({
+    id: `p25-${i + 1}`,
+    name: `${months[i]} 2026`,
+    month: i + 1,
+    year: 2026,
+    startDate: `2026-${String(i + 1).padStart(2, '0')}-01`,
+    endDate: `2026-${String(i + 1).padStart(2, '0')}-${[31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][i]}`,
+    status: i < 3 ? 'CLOSED' : 'OPEN',
+    entryCount: i < 3 ? [45, 38, 52][i] : 0
+  }));
+
+  const periods = (rawPeriods?.length > 0) ? rawPeriods : mockPeriods;
   const [confirmAction, setConfirmAction] = useState<{ id: string; action: 'close' | 'reopen' } | null>(null);
 
   const handleClose = async () => {

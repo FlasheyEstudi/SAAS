@@ -14,7 +14,14 @@ import { useFixedAssets, FixedAsset } from '../hooks/useFixedAssets';
 import { useAppStore } from '@/lib/stores/useAppStore';
 
 export function AssetsView() {
-  const { assets, summary, loading, depreciating, refreshAssets, depreciateAsset, bulkDepreciate, getAssetHistory, createAsset, updateAsset, deleteAsset } = useFixedAssets();
+  const { assets = [], summary: rawSummary, loading, depreciating, refreshAssets, depreciateAsset, bulkDepreciate, getAssetHistory, createAsset, updateAsset, deleteAsset } = useFixedAssets();
+
+  // Compute summary from real data — prefer hook summary, fallback to computing from assets array
+  const totalValue = rawSummary?.totalCost || assets.reduce((s: number, a: any) => s + (a.purchaseAmount || 0), 0);
+  const totalDepreciation = rawSummary?.totalAccumulatedDepreciation || assets.reduce((s: number, a: any) => s + (a.accumulatedDepreciation || 0), 0);
+  const bookValue = rawSummary?.totalBookValue || assets.reduce((s: number, a: any) => s + (a.currentBookValue || 0), 0);
+  
+
   const companyId = useAppStore((state) => state.companyId);
   const [viewingHistory, setViewingHistory] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -23,10 +30,10 @@ export function AssetsView() {
   
   const [form, setForm] = useState<Partial<FixedAsset>>({
     name: '',
-    category: '',
-    acquisitionDate: new Date().toISOString().split('T')[0],
-    acquisitionCost: 0,
-    residualValue: 0,
+    assetType: 'OTHER',
+    purchaseDate: new Date().toISOString().split('T')[0],
+    purchaseAmount: 0,
+    salvageValue: 0,
     usefulLifeMonths: 60,
     depreciationMethod: 'STRAIGHT_LINE',
     status: 'ACTIVE',
@@ -64,10 +71,10 @@ export function AssetsView() {
     setEditing(null);
     setForm({
       name: '',
-      category: '',
-      acquisitionDate: new Date().toISOString().split('T')[0],
-      acquisitionCost: 0,
-      residualValue: 0,
+      assetType: 'OTHER',
+      purchaseDate: new Date().toISOString().split('T')[0],
+      purchaseAmount: 0,
+      salvageValue: 0,
       usefulLifeMonths: 60,
       depreciationMethod: 'STRAIGHT_LINE',
       status: 'ACTIVE',
@@ -80,10 +87,10 @@ export function AssetsView() {
     setEditing(asset);
     setForm({
       name: asset.name,
-      category: asset.category,
-      acquisitionDate: asset.acquisitionDate.split('T')[0],
-      acquisitionCost: asset.acquisitionCost,
-      residualValue: asset.residualValue,
+      assetType: asset.assetType,
+      purchaseDate: asset.purchaseDate.split('T')[0],
+      purchaseAmount: asset.purchaseAmount,
+      salvageValue: asset.salvageValue,
       usefulLifeMonths: asset.usefulLifeMonths,
       depreciationMethod: asset.depreciationMethod,
       status: asset.status,
@@ -93,7 +100,7 @@ export function AssetsView() {
   };
 
   const handleSave = async () => {
-    if (!form.name || !form.category || !form.acquisitionCost) {
+    if (!form.name || !form.assetType || !form.purchaseAmount) {
       toast.error('Nombre, categoría y costo son obligatorios');
       return;
     }
@@ -127,16 +134,14 @@ export function AssetsView() {
         </div>
       </div>
 
-      {summary && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          <VintageCard><p className="text-xs text-vintage-500">Costo Total</p><p className="text-lg font-bold text-vintage-800">{formatCurrency(summary.totalCost)}</p></VintageCard>
-          <VintageCard><p className="text-xs text-vintage-500">Valor en Libros</p><p className="text-lg font-bold text-success">{formatCurrency(summary.totalBookValue)}</p></VintageCard>
-          <VintageCard><p className="text-xs text-vintage-500">Depreciación Acumulada</p><p className="text-lg font-bold text-error">{formatCurrency(summary.totalAccumulatedDepreciation)}</p></VintageCard>
-          <VintageCard><p className="text-xs text-vintage-500">Total Activos</p><p className="text-lg font-bold text-vintage-800">{summary.totalAssets}</p></VintageCard>
-          <VintageCard><p className="text-xs text-vintage-500">Activos</p><p className="text-lg font-bold text-success">{summary.activeAssets}</p></VintageCard>
-          <VintageCard><p className="text-xs text-vintage-500">Depreciados</p><p className="text-lg font-bold text-info">{summary.fullyDepreciated}</p></VintageCard>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <VintageCard><p className="text-xs text-vintage-500">Costo Total</p><p className="text-lg font-bold text-vintage-800">{formatCurrency(totalValue)}</p></VintageCard>
+          <VintageCard><p className="text-xs text-vintage-500">Valor en Libros</p><p className="text-lg font-bold text-success">{formatCurrency(bookValue)}</p></VintageCard>
+          <VintageCard><p className="text-xs text-vintage-500">Depreciación Acumulada</p><p className="text-lg font-bold text-error">{formatCurrency(totalDepreciation)}</p></VintageCard>
+          <VintageCard><p className="text-xs text-vintage-500">Total Activos</p><p className="text-lg font-bold text-vintage-800">{rawSummary?.totalAssets ?? assets.length}</p></VintageCard>
+          <VintageCard><p className="text-xs text-vintage-500">Activos</p><p className="text-lg font-bold text-success">{rawSummary?.activeAssets ?? assets.filter((a: any) => a.status === 'ACTIVE').length}</p></VintageCard>
+          <VintageCard><p className="text-xs text-vintage-500">Depreciados</p><p className="text-lg font-bold text-info">{rawSummary?.fullyDepreciated ?? assets.filter((a: any) => a.status === 'FULLY_DEPRECIATED').length}</p></VintageCard>
         </div>
-      )}
 
       <VintageCard className="p-0 overflow-hidden">
         <div className="overflow-x-auto">
@@ -158,9 +163,9 @@ export function AssetsView() {
               ) : (
                 (assets || []).map((a: FixedAsset, i: number) => (
                   <motion.tr key={a.id} className="hover:bg-vintage-50 transition-colors" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}>
-                    <td className="px-4 py-3"><div><p className="text-sm font-medium text-vintage-800">{a.name}</p><p className="text-xs text-vintage-500">Adq: {formatDate(a.acquisitionDate)}</p></div></td>
-                    <td className="px-4 py-3 text-sm text-vintage-600">{a.category}</td>
-                    <td className="px-4 py-3 text-sm text-vintage-700 text-right font-mono">{formatCurrency(a.acquisitionCost)}</td>
+                    <td className="px-4 py-3"><div><p className="text-sm font-medium text-vintage-800">{a.name}</p><p className="text-xs text-vintage-500">Adq: {formatDate(a.purchaseDate)}</p></div></td>
+                    <td className="px-4 py-3 text-sm text-vintage-600">{a.assetType}</td>
+                    <td className="px-4 py-3 text-sm text-vintage-700 text-right font-mono">{formatCurrency(a.purchaseAmount)}</td>
                     <td className="px-4 py-3 text-sm text-right font-mono text-success">{formatCurrency(a.currentBookValue)}</td>
                     <td className="px-4 py-3 text-sm text-right font-mono text-error">{formatCurrency(a.accumulatedDepreciation)}</td>
                     <td className="px-4 py-3 text-center">
@@ -193,12 +198,22 @@ export function AssetsView() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-4">
                 <FloatingInput label="Nombre del Activo" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-                <FloatingInput label="Categoría (ej: Vehículos, Edificios)" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
-                <FloatingInput label="Costo de Adquisición" type="number" value={form.acquisitionCost} onChange={(e) => setForm({ ...form, acquisitionCost: Number(e.target.value) })} />
-                <FloatingInput label="Valor Residual / de Salvamento" type="number" value={form.residualValue} onChange={(e) => setForm({ ...form, residualValue: Number(e.target.value) })} />
+                <div className="relative">
+                  <select value={form.assetType} onChange={(e) => setForm({ ...form, assetType: e.target.value as any })} className="peer w-full px-3 pt-5 pb-2 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400 appearance-none">
+                    <option value="BUILDING">Edificio</option>
+                    <option value="FURNITURE">Mobiliario</option>
+                    <option value="COMPUTER">Equipo de Cómputo</option>
+                    <option value="VEHICLE">Vehículo</option>
+                    <option value="MACHINERY">Maquinaria</option>
+                    <option value="OTHER">Otro</option>
+                  </select>
+                  <label className="absolute left-3 top-1.5 text-xs text-vintage-500 font-medium pointer-events-none">Categoría</label>
+                </div>
+                <FloatingInput label="Costo de Adquisición" type="number" value={form.purchaseAmount} onChange={(e) => setForm({ ...form, purchaseAmount: Number(e.target.value) })} />
+                <FloatingInput label="Valor Residual / de Salvamento" type="number" value={form.salvageValue} onChange={(e) => setForm({ ...form, salvageValue: Number(e.target.value) })} />
               </div>
               <div className="space-y-4">
-                <FloatingInput label="Fecha de Adquisición" type="date" value={form.acquisitionDate} onChange={(e) => setForm({ ...form, acquisitionDate: e.target.value })} />
+                <FloatingInput label="Fecha de Adquisición" type="date" value={form.purchaseDate} onChange={(e) => setForm({ ...form, purchaseDate: e.target.value })} />
                 <FloatingInput label="Vida Útil (Meses)" type="number" value={form.usefulLifeMonths} onChange={(e) => setForm({ ...form, usefulLifeMonths: Number(e.target.value) })} />
                 <div className="relative">
                   <select value={form.depreciationMethod} onChange={(e) => setForm({ ...form, depreciationMethod: e.target.value as any })} className="peer w-full px-3 pt-5 pb-2 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400 appearance-none">

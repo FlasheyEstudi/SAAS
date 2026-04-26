@@ -15,6 +15,7 @@ export function AnimatedTable({
   emptyIcon,
   isLoading,
   className,
+  lines = 5,
 }: {
   headers: { key: string; label: string; align?: 'left' | 'center' | 'right'; className?: string }[];
   data: any[];
@@ -25,16 +26,26 @@ export function AnimatedTable({
   emptyIcon?: React.ReactNode;
   isLoading?: boolean;
   className?: string;
+  lines?: number;
 }) {
+  if (isLoading) {
     return (
-      <div className={cn('bg-card dark:bg-zinc-900 border border-vintage-200 dark:border-zinc-800 rounded-xl overflow-hidden', className)}>
-        <div className="p-6 space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-4 bg-vintage-100 dark:bg-zinc-800 rounded shimmer-bg" style={{ width: `${80 + Math.random() * 20}%` }} />
+      <div className={cn('bg-card dark:bg-zinc-950 border border-border dark:border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm', className)}>
+        <div className="p-8 space-y-4">
+          {Array.from({ length: lines }).map((_, i) => (
+            <div 
+              key={i} 
+              className={cn(
+                "h-5 bg-muted/40 dark:bg-zinc-900/60 rounded-lg shimmer-bg",
+                i === lines - 1 ? 'w-[40%]' : i === 0 ? 'w-[90%]' : 'w-full'
+              )} 
+              style={{ animationDelay: `${i * 100}ms` }} 
+            />
           ))}
         </div>
       </div>
     );
+  }
 
   return (
     <div className={cn('bg-card dark:bg-zinc-900 border border-vintage-200 dark:border-zinc-800 rounded-xl overflow-hidden', className)}>
@@ -206,7 +217,7 @@ export function FilterBar({
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
-            className="w-full pl-10 pr-4 py-2.5 text-sm bg-card dark:bg-zinc-900 border border-vintage-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400 dark:focus:ring-zinc-700 focus:border-vintage-400 dark:focus:border-zinc-700 transition-all text-vintage-900 dark:text-zinc-100"
+            className="w-full pl-10 pr-4 py-3 text-sm bg-card dark:bg-zinc-950 border border-border dark:border-zinc-800/60 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all text-foreground shadow-inner"
           />
         </div>
         {filters && filters.length > 0 && (

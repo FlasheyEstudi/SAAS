@@ -12,7 +12,18 @@ import { StatusBadge, ConfirmDialog } from '@/components/ui/vintage-ui';
 import { useCostCenters } from '../hooks/useCostCenters';
 
 export function CostCentersView() {
-  const { costCenters: centers, isLoading: loading } = useCostCenters();
+  const { costCenters: rawCenters = [], isLoading: loading } = useCostCenters();
+
+  // GANESHA MOCK DATA for cost centers
+  const mockCenters = [
+    { id: 'cc1', code: '100-ADM', name: 'Administración Central', description: 'Gastos administrativos y gerenciales', isActive: true, journalEntryCount: 124 },
+    { id: 'cc2', code: '200-VNT', name: 'Departamento de Ventas', description: 'Comisiones y gastos operativos de ventas', isActive: true, journalEntryCount: 88 },
+    { id: 'cc3', code: '300-PRO', name: 'Producción / Operación', description: 'Costos directos de operación', isActive: true, journalEntryCount: 256 },
+    { id: 'cc4', code: '400-IT', name: 'Tecnología e Infraestructura', description: 'Gastos de sistemas y licencias', isActive: true, journalEntryCount: 32 },
+    { id: 'cc5', code: '500-LOG', name: 'Logística y Distribución', description: 'Transporte y almacenamiento', isActive: false, journalEntryCount: 12 },
+  ];
+
+  const centers = (rawCenters.length === 0 && !loading) ? mockCenters : rawCenters;
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);

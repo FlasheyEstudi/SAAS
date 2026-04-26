@@ -6,18 +6,18 @@ import { toast } from 'sonner';
 export interface FixedAsset {
   id: string;
   name: string;
-  category: string;
-  acquisitionDate: string;
-  acquisitionCost: number;
-  residualValue: number;
+  description?: string;
+  assetType: 'BUILDING' | 'FURNITURE' | 'COMPUTER' | 'VEHICLE' | 'MACHINERY' | 'OTHER';
+  purchaseDate: string;
+  purchaseAmount: number;
+  salvageValue: number;
   usefulLifeMonths: number;
-  depreciationMethod: 'STRAIGHT_LINE' | 'DECLINING_BALANCE';
+  depreciationMethod: 'STRAIGHT_LINE' | 'DECLINING';
   currentBookValue: number;
   accumulatedDepreciation: number;
   status: 'ACTIVE' | 'DISPOSED' | 'FULLY_DEPRECIATED';
-  serialNumber?: string;
   location?: string;
-  notes?: string;
+  accountId?: string;
 }
 
 export interface AssetSummary {
@@ -64,13 +64,17 @@ export function useFixedAssets() {
 
   const depreciateAsset = useCallback(async (assetId: string) => {
     try {
-      await apiClient.post(ASSETS.depreciate(assetId));
+      const now = new Date();
+      await apiClient.post(ASSETS.depreciate(assetId), {
+        year: now.getFullYear(),
+        month: now.getMonth() + 1,
+      });
       toast.success('Depreciación calculada correctamente');
       fetchAssets();
       fetchSummary();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error depreciating asset:', error);
-      toast.error('No se pudo calcular la depreciación');
+      toast.error(error?.error || 'No se pudo calcular la depreciación');
     }
   }, [fetchAssets, fetchSummary]);
 
@@ -102,7 +106,8 @@ export function useFixedAssets() {
 
   const createAsset = useCallback(async (data: Partial<FixedAsset>) => {
     try {
-      await apiClient.post(ASSETS.create, data);
+      const companyId = localStorage.getItem('current_company_id');
+      await apiClient.post(ASSETS.create, { ...data, companyId });
       toast.success('Activo creado correctamente');
       fetchAssets();
       fetchSummary();
@@ -116,7 +121,8 @@ export function useFixedAssets() {
 
   const updateAsset = useCallback(async (id: string, data: Partial<FixedAsset>) => {
     try {
-      await apiClient.put(ASSETS.update(id), data);
+      const companyId = localStorage.getItem('current_company_id');
+      await apiClient.put(ASSETS.update(id), { ...data, companyId });
       toast.success('Activo actualizado correctamente');
       fetchAssets();
       fetchSummary();

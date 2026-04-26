@@ -1,288 +1,310 @@
 'use client';
 
-import { cn } from '@/lib/utils';
-import { useAppStore } from '@/lib/stores/useAppStore';
-import { Menu, Bell, Search, Bot, ArrowLeft, Building2, ChevronDown, Sun, Moon, Settings, Database, History, Plus, LogOut, Palette, UserCog } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ThemePicker } from '@/components/ui/theme-picker';
 import { useState } from 'react';
+import { 
+  Bell, 
+  Search, 
+  User, 
+  LogOut, 
+  Shield, 
+  Database, 
+  Palette, 
+  Moon, 
+  Sun, 
+  Building2, 
+  PlusCircle, 
+  Briefcase,
+  ChevronDown,
+  Sparkles,
+  Bot,
+  FileDown,
+  Waves,
+  Snowflake,
+  CheckCircle2,
+  AlertCircle,
+  Clock
+} from 'lucide-react';
+import { useAppStore, type ThemeType } from '@/lib/stores/useAppStore';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 export function Header() {
   const { 
-    toggleSidebar, sidebarCollapsed, currentView, unreadCount, 
-    navigate, goBack, viewParams, user, currentCompany, 
-    availableCompanies, setCurrentCompany, isDarkMode, toggleDarkMode,
-    logout
+    user, 
+    logout, 
+    navigate, 
+    theme, 
+    setTheme, 
+    currentCompany, 
+    availableCompanies, 
+    setCurrentCompany,
+    notifications = []
   } = useAppStore();
-  const [themePickerOpen, setThemePickerOpen] = useState(false);
 
-  // ... (keep viewTitles)
-  const viewTitles: Record<string, string> = {
-    'login': 'Iniciar Sesión',
-    'dashboard': 'Dashboard',
-    'companies': 'Empresas',
-    'periods': 'Períodos Contables',
-    'accounts': 'Plan de Cuentas',
-    'cost-centers': 'Centros de Costo',
-    'journal': 'Pólizas Contables',
-    'journal-create': 'Nueva Póliza',
-    'journal-detail': 'Detalle de Póliza',
-    'third-parties': 'Terceros',
-    'invoices': 'Facturación',
-    'invoice-create': 'Nueva Factura',
-    'invoice-detail': 'Detalle de Factura',
-    'banks': 'Bancos',
-    'reports': 'Reportes Financieros',
-    'assets': 'Activos Fijos',
-    'budgets': 'Presupuestos',
-    'exchange': 'Tipos de Cambio',
-    'users': 'Gestión de Usuarios',
-    'audit': 'Bitácora de Auditoría',
-    'notifications': 'Notificaciones',
-    'search': 'Búsqueda Global',
-    'data-mgmt': 'Importar / Exportar',
-    'system': 'Sistema',
-    'ai-chat': 'Asistente IA Contable',
-    'taxes': 'Configuración de Impuestos',
+  const handleLogout = () => {
+    logout();
+    navigate('landing');
+    toast.info('Sesión cerrada correctamente');
   };
 
-  const showBack = currentView === 'journal-create' || currentView === 'journal-detail' || currentView === 'invoice-create' || currentView === 'invoice-detail';
+  const handleCompanyChange = (companyId: string) => {
+    const company = availableCompanies.find(c => c.id === companyId);
+    if (company) {
+      setCurrentCompany(company as any);
+      toast.success(`Cambiado a: ${company.name}`);
+    }
+  };
+
+  const themes: { id: ThemeType; name: string; icon: React.ReactNode }[] = [
+    { id: 'onyx', name: 'Onyx Midnight', icon: <Moon className="w-4 h-4 text-amber-500" /> },
+    { id: 'ivory', name: 'Ivory Grace', icon: <Sun className="w-4 h-4 text-zinc-400" /> },
+    { id: 'ocean', name: 'Midnight Ocean', icon: <Waves className="w-4 h-4 text-blue-400" /> },
+    { id: 'frost', name: 'Nordic Frost', icon: <Snowflake className="w-4 h-4 text-cyan-300" /> },
+    { id: 'copper', name: 'Copper Ethos', icon: <Sparkles className="w-4 h-4 text-orange-400" /> },
+    { id: 'amethyst', name: 'Amethyst Vision', icon: <Sparkles className="w-4 h-4 text-purple-400" /> },
+  ];
+
+  // Datos mock de notificaciones si no hay
+  const displayNotifications = notifications.length > 0 ? notifications : [
+    { id: '1', title: 'Cierre de Periodo', message: 'El periodo de Marzo ha sido cerrado con éxito.', type: 'success', time: 'hace 5 min' },
+    { id: '2', title: 'Nueva Factura', message: 'Distribuidora S.A ha emitido una nueva factura por C$12,500.', type: 'info', time: 'hace 10 min' },
+    { id: '3', title: 'Alerta de Auditoría', message: 'Se detectó un descuadre en la cuenta 1101-01.', type: 'error', time: 'hace 1 hora' },
+  ];
 
   return (
-    <header className={cn(
-      'sticky top-0 z-30 flex items-center justify-between h-[65px] px-4 lg:px-6 border-b border-vintage-200 bg-vintage-50/80 backdrop-blur-md transition-all duration-300 dark:bg-zinc-900/80 dark:border-zinc-800',
-      sidebarCollapsed ? 'lg:ml-[70px]' : 'lg:ml-[260px]'
-    )}>
-      <div className="flex items-center gap-3">
-        {/* Mobile menu toggle */}
-        <button
-          onClick={toggleSidebar}
-          title="Abrir menú"
-          className="lg:hidden p-2 rounded-xl hover:bg-vintage-100 text-vintage-700 transition-colors"
+    <header className="h-16 border-b border-border bg-background/80 backdrop-blur-3xl px-6 flex items-center justify-between sticky top-0 z-40 transition-colors duration-500">
+      <div className="flex items-center gap-4 flex-1">
+        {/* LOGO REDISEÑADO CON CONTRASTE FIJO */}
+        <div 
+          onClick={() => navigate('dashboard')}
+          className="flex items-center gap-3 cursor-pointer group"
         >
-          <Menu className="w-5 h-5" />
-        </button>
-
-        {/* Back button */}
-        {showBack && (
-          <motion.button
-            onClick={goBack}
-            className="flex items-center gap-1 text-sm text-vintage-600 hover:text-vintage-800 transition-colors"
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Volver</span>
-          </motion.button>
-        )}
-
-        {/* Page title */}
-        <motion.h2
-          key={currentView}
-          className="text-lg font-playfair font-semibold text-vintage-800 dark:text-zinc-100"
-          initial={{ opacity: 0, y: -5 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          {viewTitles[currentView] || 'Ganesha ERP'}
-        </motion.h2>
-
-        {/* Company selector */}
-        {currentCompany && (
-          <div className="relative group">
-            <motion.button
-              className="flex items-center gap-2 px-3 py-1.5 bg-vintage-50 border border-vintage-200 rounded-lg hover:bg-vintage-100 transition-colors dark:bg-zinc-800 dark:border-zinc-700 dark:hover:bg-zinc-700"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <Building2 className="w-4 h-4 text-vintage-500" />
-              <span className="text-sm font-medium text-vintage-700 dark:text-zinc-300 truncate max-w-[150px]">
-                {currentCompany.name}
-              </span>
-              <ChevronDown className="w-3 h-3 text-vintage-500" />
-            </motion.button>
-
-            {/* Dropdown menu */}
-            <div className="absolute top-full left-0 mt-1 w-64 bg-card border border-vintage-200 dark:bg-zinc-900 dark:border-zinc-800 rounded-xl shadow-xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-              <div className="px-3 py-1.5 mb-1">
-                <span className="text-[10px] font-bold text-vintage-400 uppercase tracking-widest">Cambiar Empresa</span>
-              </div>
-              {availableCompanies.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => {
-                    if (c.id !== currentCompany.id) {
-                      setCurrentCompany({ ...currentCompany, id: c.id, name: c.name });
-                      navigate('dashboard');
-                    }
-                  }}
-                  className={cn(
-                    "w-full text-left px-4 py-2 text-sm transition-colors flex items-center justify-between",
-                    c.id === currentCompany.id ? "bg-vintage-100 dark:bg-zinc-800 text-vintage-800 dark:text-white font-semibold" : "text-vintage-600 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800"
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <Building2 className="w-3.5 h-3.5" />
-                    <span className="truncate">{c.name}</span>
-                  </div>
-                  {c.id === currentCompany.id && <div className="w-1.5 h-1.5 rounded-full bg-success" />}
-                </button>
-              ))}
-              <div className="border-t border-vintage-100 dark:border-zinc-800 mt-1 pt-1 px-2">
-                <button 
-                  onClick={() => navigate('companies')}
-                  className="w-full text-left px-2 py-1.5 text-xs text-vintage-500 hover:text-vintage-700 dark:text-zinc-500 dark:hover:text-zinc-300 flex items-center gap-1.5"
-                >
-                  <motion.span whileHover={{ x: 2 }}>Gestionar empresas...</motion.span>
-                </button>
-              </div>
-            </div>
+          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20 transition-transform group-hover:scale-105">
+             <span className="font-black text-lg">G</span>
           </div>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2">
-        {/* Search button */}
-        <button
-          onClick={() => navigate('search')}
-          className="p-2 rounded-xl hover:bg-vintage-100 dark:hover:bg-zinc-800 text-vintage-600 dark:text-zinc-400 transition-colors hidden sm:flex"
-          title="Búsqueda global"
-        >
-          <Search className="w-5 h-5" />
-        </button>
-
-        {/* AI Chat button */}
-        <button
-          onClick={() => navigate('ai-chat')}
-          className="p-2 rounded-xl hover:bg-vintage-100 dark:hover:bg-zinc-800 text-vintage-600 dark:text-zinc-400 transition-colors relative"
-          title="IA Contable"
-        >
-          <Bot className="w-5 h-5" />
-          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-vintage-400 animate-pulse-soft" />
-        </button>
-
-        {/* Notifications button */}
-        <button
-          onClick={() => navigate('notifications')}
-          className="p-2 rounded-xl hover:bg-vintage-100 dark:hover:bg-zinc-800 text-vintage-600 dark:text-zinc-400 transition-colors relative"
-          title="Notificaciones"
-        >
-          <Bell className="w-5 h-5" />
-          {unreadCount > 0 && (
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold rounded-full bg-error text-white"
-            >
-              {unreadCount > 99 ? '99+' : unreadCount}
-            </motion.span>
-          )}
-        </button>
-
-        {/* User Profile dropdown */}
-        <div className="relative group ml-1">
-          <button className="flex items-center gap-2 p-1 rounded-full hover:bg-vintage-100 dark:hover:bg-zinc-800 transition-colors">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-vintage-300 to-vintage-500 dark:from-zinc-600 dark:to-zinc-800 flex items-center justify-center text-white text-xs font-bold ring-2 ring-vintage-100 dark:ring-zinc-800 ring-offset-2 dark:ring-offset-zinc-900 transition-all group-hover:ring-vintage-300 dark:group-hover:ring-zinc-600">
-              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-            </div>
-            <ChevronDown className="w-3.5 h-3.5 text-vintage-500 transition-transform group-hover:rotate-180" />
-          </button>
-
-          <div className="absolute top-full right-0 mt-2 w-64 bg-card border border-vintage-200 dark:bg-zinc-900 dark:border-zinc-800 rounded-2xl shadow-2xl py-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 transform origin-top-right scale-95 group-hover:scale-100">
-            <div className="px-4 py-2 mb-2">
-              <p className="text-sm font-bold text-vintage-900 dark:text-white truncate">{user?.name}</p>
-              <p className="text-[10px] text-vintage-500 dark:text-zinc-400 truncate tracking-tight font-medium uppercase">{user?.role}</p>
-            </div>
-            
-            <div className="h-px bg-vintage-100 dark:bg-zinc-800 my-1" />
-
-            {/* Dark Mode Switch in Menu */}
-            <button 
-              onClick={(e) => { e.stopPropagation(); toggleDarkMode(); }}
-              className="w-full text-left px-4 py-2.5 text-sm text-vintage-600 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800 flex items-center justify-between transition-colors"
-            >
-              <div className="flex items-center gap-2.5">
-                {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                <span>{isDarkMode ? 'Modo Claro' : 'Modo Oscuro'}</span>
-              </div>
-              <div className={cn(
-                "w-8 h-4 rounded-full relative transition-colors",
-                isDarkMode ? "bg-vintage-400" : "bg-vintage-200 dark:bg-zinc-700"
-              )}>
-                <div className={cn(
-                  "absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-all",
-                  isDarkMode ? "left-4.5" : "left-0.5"
-                )} />
-              </div>
-            </button>
-
-            <button onClick={() => navigate('users')} className="w-full text-left px-4 py-2.5 text-sm text-vintage-600 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800 flex items-center gap-2.5 transition-colors">
-              <UserCog className="w-4 h-4" />
-              <span>Usuarios</span>
-            </button>
-            <button onClick={() => navigate('audit')} className="w-full text-left px-4 py-2.5 text-sm text-vintage-600 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800 flex items-center gap-2.5 transition-colors">
-              <History className="w-4 h-4" />
-              <span>Auditoría</span>
-            </button>
-            <button onClick={() => navigate('system')} className="w-full text-left px-4 py-2.5 text-sm text-vintage-600 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800 flex items-center gap-2.5 transition-colors">
-              <Settings className="w-4 h-4" />
-              <span>Sistema</span>
-            </button>
-            <button onClick={() => navigate('data-mgmt')} className="w-full text-left px-4 py-2.5 text-sm text-vintage-600 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800 flex items-center gap-2.5 transition-colors">
-              <Database className="w-4 h-4" />
-              <span>Importar / Exportar</span>
-            </button>
-            <button 
-              onClick={(e) => { e.stopPropagation(); setThemePickerOpen(true); }} 
-              className="w-full text-left px-4 py-2.5 text-sm text-vintage-600 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800 flex items-center gap-2.5 transition-colors"
-            >
-              <Palette className="w-4 h-4" />
-              <span>Personalización</span>
-            </button>
-            
-            <div className="h-px bg-vintage-100 dark:bg-zinc-800 my-2" />
-            
-            <div className="px-4 py-1.5">
-              <span className="text-[9px] font-bold text-vintage-400 dark:text-zinc-500 uppercase tracking-widest">Empresas Vinculadas</span>
-            </div>
-            
-            <div className="max-h-32 overflow-y-auto thin-scrollbar">
-              {availableCompanies.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => {
-                    if (c.id !== currentCompany?.id) {
-                      setCurrentCompany({ ...currentCompany!, id: c.id, name: c.name });
-                      navigate('dashboard');
-                    }
-                  }}
-                  className={cn(
-                    "w-full text-left px-4 py-2 text-xs transition-colors flex items-center justify-between",
-                    c.id === currentCompany?.id ? "bg-vintage-100/50 dark:bg-zinc-800/50 text-vintage-900 dark:text-white font-bold" : "text-vintage-500 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800"
-                  )}
-                >
-                  <span className="truncate">{c.name}</span>
-                  {c.id === currentCompany?.id && <div className="w-1 h-1 rounded-full bg-success" />}
-                </button>
-              ))}
-            </div>
-
-            <button onClick={() => navigate('companies')} className="w-full text-left px-4 py-2.5 text-sm text-vintage-500 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800 flex items-center gap-2.5 transition-colors mt-1 border-t border-vintage-100 dark:border-zinc-800 pt-2">
-              <Plus className="w-4 h-4" />
-              <span>Crear / Gestionar Empresa</span>
-            </button>
-            
-            <div className="h-px bg-vintage-100 dark:bg-zinc-800 my-2" />
-            
-            <button onClick={() => logout()} className="w-full text-left px-4 py-2.5 text-sm text-error hover:bg-error/5 flex items-center gap-2.5 transition-colors font-medium">
-              <LogOut className="w-4 h-4" />
-              <span>Cerrar Sesión</span>
-            </button>
+          <div className="flex flex-col">
+            <h1 className="text-xl font-black uppercase tracking-[0.4em] text-foreground dark:text-zinc-100 leading-none">
+              GANESHA
+            </h1>
+            <span className="text-[8px] font-bold text-primary uppercase tracking-[0.6em] mt-1 opacity-80">
+              Intelligence
+            </span>
           </div>
         </div>
+        
+        {/* ACCESOS DIRECTOS DE EMPRESA (Restaurados) */}
+        <div className="hidden xl:flex items-center gap-2 ml-8 border-l border-muted pl-8">
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-all group outline-none">
+              <Building2 className="w-4 h-4 text-primary opacity-70 group-hover:opacity-100" />
+              <span className="text-[10px] font-black uppercase tracking-widest">{currentCompany?.name || 'Seleccionar Empresa'}</span>
+              <ChevronDown className="w-3 h-3 opacity-50" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-64 bg-card border-border shadow-2xl p-2 rounded-xl flex flex-col gap-1" align="start">
+              <DropdownMenuLabel className="text-[9px] uppercase tracking-widest font-black text-muted-foreground px-2 py-2 border-border mb-1">Elegir Empresa Activa</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {availableCompanies?.length === 0 && (
+                <div className="px-2 py-4 text-center text-xs text-muted-foreground">Logueate nuevamente para refrescar</div>
+              )}
+              {availableCompanies?.map(c => (
+                <DropdownMenuItem 
+                  key={c.id} 
+                  onClick={() => handleCompanyChange(c.id)}
+                  className="flex justify-between items-center px-2 py-3 cursor-pointer hover:bg-muted/30 rounded-lg outline-none"
+                >
+                    <div className="flex items-center gap-3">
+                      <Briefcase className="w-3 h-3 text-muted-foreground" />
+                      <span className={`text-[10px] uppercase font-bold tracking-wide ${currentCompany?.id === c.id ? 'text-primary' : 'text-foreground'}`}>
+                        {c.name}
+                      </span>
+                    </div>
+                    {currentCompany?.id === c.id && <div className="w-2 h-2 rounded-full bg-primary shadow-lg shadow-primary/50" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <button 
+            onClick={() => navigate('companies')}
+            className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-all"
+            title="Administrar Empresas"
+          >
+            <PlusCircle className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="relative max-w-sm w-full ml-auto hidden lg:block">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground font-bold" />
+          <Input 
+            placeholder="Buscar..." 
+            className="pl-10 bg-muted/20 border-none text-foreground placeholder:text-muted-foreground h-9 rounded-xl focus-visible:ring-primary/10 transition-all focus:bg-muted/40"
+          />
+        </div>
       </div>
-      <ThemePicker isOpen={themePickerOpen} onClose={() => setThemePickerOpen(false)} />
+
+      <div className="flex items-center gap-3">
+        {/* IA Assistant Quick access (Mejorado) */}
+        <button 
+          onClick={() => navigate('ai-chat')}
+          className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-600/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:border-amber-500/40 transition-all flex items-center gap-2 group shadow-sm shadow-amber-500/5"
+        >
+          <Bot className="w-4 h-4" />
+          <span className="text-[10px] font-black uppercase tracking-widest hidden md:block">IA Ganesha</span>
+        </button>
+
+        {/* NOTIFICATIONS DROPDOWN */}
+        <DropdownMenu>
+          <DropdownMenuTrigger className="p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all relative outline-none">
+            <Bell className="w-5 h-5" />
+            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-background" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-80 p-2 bg-card border-border shadow-2xl rounded-2xl" align="end">
+            <DropdownMenuLabel className="px-3 py-3 flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-widest text-foreground">Avisos Recientes</span>
+              <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">3 Nuevos</span>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <div className="max-h-80 overflow-y-auto">
+              {displayNotifications.map((notif) => (
+                <DropdownMenuItem key={notif.id} className="p-3 cursor-pointer rounded-xl hover:bg-muted/30 mb-1 flex gap-3 items-start">
+                   <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                     notif.type === 'success' ? 'bg-green-500/10 text-green-500' :
+                     notif.type === 'error' ? 'bg-red-500/10 text-red-500' :
+                     'bg-blue-500/10 text-blue-500'
+                   }`}>
+                     {notif.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                   </div>
+                   <div className="flex-1">
+                      <p className="text-[11px] font-black text-foreground uppercase tracking-wide leading-tight">{notif.title}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">{notif.message}</p>
+                      <div className="flex items-center gap-1 mt-1.5 opacity-50">
+                         <Clock className="w-2.5 h-2.5" />
+                         <span className="text-[8px] font-bold uppercase">{notif.time || 'Ahora'}</span>
+                      </div>
+                   </div>
+                </DropdownMenuItem>
+              ))}
+            </div>
+            <DropdownMenuSeparator />
+            <button 
+              onClick={() => navigate('notifications')}
+              className="w-full py-3 text-[10px] font-black text-primary uppercase tracking-[0.2em] hover:bg-primary/5 rounded-xl transition-colors"
+            >
+              Ver toda la actividad
+            </button>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <div className="h-6 w-px bg-muted mx-2" />
+
+        {/* Profile Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex items-center gap-3 p-1 rounded-2xl hover:bg-muted/30 transition-all outline-none border border-transparent">
+            <div className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center overflow-hidden">
+               <div className="w-full h-full bg-gradient-to-tr from-muted to-background flex items-center justify-center text-muted-foreground font-bold text-xs uppercase">
+                 {user?.name?.substring(0, 1) || 'C'}
+               </div>
+            </div>
+            <div className="hidden md:flex flex-col items-start mr-1">
+              <span className="text-[11px] font-black text-foreground uppercase tracking-wider leading-none mb-1">{user?.name || 'Maestro'}</span>
+              <span className="text-[9px] font-bold text-primary uppercase tracking-widest leading-none opacity-60">Empresarial</span>
+            </div>
+            <ChevronDown className="w-3 h-3 text-muted-foreground" />
+          </DropdownMenuTrigger>
+          
+          <DropdownMenuContent className="w-72 bg-card border-border text-muted-foreground p-2 shadow-2xl rounded-2xl" align="end">
+            <DropdownMenuLabel className="px-3 py-4">
+              <div className="flex flex-col gap-1">
+                <p className="text-foreground text-xs font-black uppercase tracking-widest">{user?.name}</p>
+                <p className="text-[9px] text-muted-foreground font-bold tracking-widest lowercase">{user?.email}</p>
+              </div>
+            </DropdownMenuLabel>
+            
+            <DropdownMenuSeparator />
+
+            {/* GESTIÓN DE EMPRESAS */}
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-muted/30 hover:text-foreground transition-colors cursor-pointer">
+                <Building2 className="w-4 h-4 text-primary" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Mis Empresas</span>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="bg-card border-border shadow-2xl p-2 min-w-[220px] rounded-xl">
+                <DropdownMenuLabel className="text-[9px] uppercase tracking-widest font-black text-muted-foreground px-2 py-2 border-b border-border mb-1">Elegir Empresa</DropdownMenuLabel>
+                {availableCompanies?.map(c => (
+                  <DropdownMenuItem 
+                    key={c.id} 
+                    onClick={() => handleCompanyChange(c.id)}
+                    className="flex justify-between items-center px-2 py-3 cursor-pointer hover:bg-muted/30 rounded-lg"
+                  >
+                     <div className="flex items-center gap-3">
+                        <Briefcase className="w-3 h-3 text-muted-foreground" />
+                        <span className={`text-[10px] uppercase font-bold ${currentCompany?.id === c.id ? 'text-primary' : 'text-muted-foreground'}`}>
+                          {c.name}
+                        </span>
+                     </div>
+                     {currentCompany?.id === c.id && <div className="w-2 h-2 rounded-full bg-primary shadow-lg shadow-primary/50" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+
+            <DropdownMenuSeparator />
+            
+            {/* PERSONALIZACIÓN */}
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-muted/30 hover:text-foreground transition-colors cursor-pointer">
+                <Palette className="w-4 h-4 text-primary" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Temas Maestro</span>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="bg-card border-border shadow-2xl p-2 rounded-xl">
+                <div className="px-2 py-2 mb-2 flex flex-col gap-2">
+                   <div className="grid grid-cols-1 gap-1">
+                      {themes.map(t => (
+                        <button 
+                          key={t.id}
+                          onClick={() => setTheme(t.id)}
+                          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-left transition-all ${theme === t.id ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'hover:bg-muted/30 text-muted-foreground'}`}
+                        >
+                          {t.icon}
+                          <span className="text-[9px] font-black uppercase tracking-widest">{t.name}</span>
+                        </button>
+                      ))}
+                   </div>
+                </div>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+
+            <DropdownMenuItem 
+              onClick={() => navigate('audit')}
+              className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-muted/30 hover:text-foreground transition-colors cursor-pointer"
+            >
+              <Shield className="w-4 h-4 text-muted-foreground" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Auditoría & Logs</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+            
+            <DropdownMenuItem 
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-red-500/10 text-red-500 transition-colors cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Cerrar Sesión</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </header>
   );
 }

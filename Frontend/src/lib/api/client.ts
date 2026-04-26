@@ -4,8 +4,19 @@ import { toast } from 'sonner';
 let API_BASE = process.env.NEXT_PUBLIC_API_URL || '/backend-api';
 
 // Auto-detect API host for mobile/network access
-if (typeof window !== 'undefined' && API_BASE.includes('localhost') && !window.location.hostname.includes('localhost')) {
-  API_BASE = API_BASE.replace('localhost', window.location.hostname);
+// When accessed from phone/tablet, replace any hardcoded IP or localhost with the actual hostname
+if (typeof window !== 'undefined') {
+  const currentHost = window.location.hostname;
+  // If accessing from a different host than what's configured, rewrite the API URL
+  try {
+    const url = new URL(API_BASE);
+    if (url.hostname !== currentHost) {
+      url.hostname = currentHost;
+      API_BASE = url.toString().replace(/\/$/, '');
+    }
+  } catch {
+    // API_BASE is a relative path like '/backend-api', no rewriting needed
+  }
 }
 
 class ApiClient {

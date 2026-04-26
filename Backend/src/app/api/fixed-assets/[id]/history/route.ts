@@ -16,13 +16,13 @@ export async function GET(request: Request, context: RouteContext) {
     const where = { fixedAssetId: id };
 
     const [history, total] = await Promise.all([
-      db.fixedAssetDepreciation.findMany({
+      db.depreciationEntry.findMany({
         where,
-        orderBy: [{ periodYear: 'asc' }, { periodMonth: 'asc' }],
+        orderBy: [{ year: 'asc' }, { month: 'asc' }],
         skip: (page - 1) * limit,
         take: limit,
       }),
-      db.fixedAssetDepreciation.count({ where }),
+      db.depreciationEntry.count({ where }),
     ]);
 
     const result: PaginatedResponse<typeof history[0]> = {

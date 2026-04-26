@@ -1,7 +1,7 @@
 // API Client with interceptors
 import { toast } from 'sonner';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/backend-api';
 
 class ApiClient {
   private baseUrl: string;

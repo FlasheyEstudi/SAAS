@@ -38,12 +38,6 @@ const navItems: NavItem[] = [
   { id: 'exchange', label: 'Tipos de Cambio', icon: <ArrowLeftRight className="w-5 h-5" /> },
   { id: 'financial-concepts', label: 'Conceptos', icon: <BookOpen className="w-5 h-5" /> },
   { id: 'payment-terms', label: 'Términos', icon: <Clock className="w-5 h-5" /> },
-  { id: 'users', label: 'Usuarios', icon: <UserCog className="w-5 h-5" /> },
-  { id: 'audit', label: 'Auditoría', icon: <Shield className="w-5 h-5" /> },
-  { id: 'notifications', label: 'Notificaciones', icon: <Bell className="w-5 h-5" /> },
-  { id: 'search', label: 'Búsqueda', icon: <Search className="w-5 h-5" /> },
-  { id: 'data-mgmt', label: 'Import/Export', icon: <Database className="w-5 h-5" /> },
-  { id: 'system', label: 'Sistema', icon: <Activity className="w-5 h-5" /> },
   { id: 'ai-chat', label: 'IA GANESHA', icon: <Bot className="w-5 h-5" />, badge: 'IA' },
 ];
 

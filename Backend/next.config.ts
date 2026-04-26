@@ -8,9 +8,6 @@ const nextConfig: NextConfig = {
   },
   reactStrictMode: false,
   allowedDevOrigins: ['172.16.27.22', 'localhost'],
-  turbopack: {
-    root: "c:/Users/RESP_SOPORTE_TECNICO/SAAS/Backend",
-  },
 };
 
 export default nextConfig;

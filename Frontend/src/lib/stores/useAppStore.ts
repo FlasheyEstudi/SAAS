@@ -12,6 +12,7 @@ export interface User {
 }
 
 export type AppView =
+  | 'landing'
   | 'login'
   | 'register'
   | 'dashboard'
@@ -67,6 +68,9 @@ interface AppState {
   // UI State
   isLoading: boolean;
   globalSearch: string;
+  isDarkMode: boolean;
+  accentColor: string; // Hex color
+  theme: 'vintage' | 'modern' | 'minimal' | 'glass';
 
   // Actions
   login: (user: User, token: string, companyId: string, company?: Company | null) => void;
@@ -90,6 +94,9 @@ interface AppState {
 
   setLoading: (loading: boolean) => void;
   setGlobalSearch: (search: string) => void;
+  toggleDarkMode: () => void;
+  setAccentColor: (color: string) => void;
+  setTheme: (theme: 'vintage' | 'modern' | 'minimal' | 'glass') => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -101,7 +108,7 @@ export const useAppStore = create<AppState>()(
       token: null,
 
       // Navigation defaults
-      currentView: 'login',
+      currentView: 'landing',
       viewParams: {},
       sidebarOpen: true,
       sidebarCollapsed: false,
@@ -118,6 +125,9 @@ export const useAppStore = create<AppState>()(
       // UI defaults
       isLoading: false,
       globalSearch: '',
+      isDarkMode: false,
+      accentColor: '#A8B5A2', // Classic vintage green default
+      theme: 'vintage',
 
       // Auth actions
       login: (user, token, companyId, company = null) => {
@@ -146,7 +156,7 @@ export const useAppStore = create<AppState>()(
           companyId: null,
           currentCompany: null,
           availableCompanies: [],
-          currentView: 'login',
+          currentView: 'landing',
           notifications: [],
           unreadCount: 0,
         });
@@ -215,6 +225,9 @@ export const useAppStore = create<AppState>()(
       // UI actions
       setLoading: (loading) => set({ isLoading: loading }),
       setGlobalSearch: (search) => set({ globalSearch: search }),
+      toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
+      setAccentColor: (color) => set({ accentColor: color }),
+      setTheme: (theme) => set({ theme }),
     }),
     {
       name: 'erp-app-store',
@@ -227,6 +240,9 @@ export const useAppStore = create<AppState>()(
         user: state.user,
         currentCompany: state.currentCompany,
         sidebarCollapsed: state.sidebarCollapsed,
+        isDarkMode: state.isDarkMode,
+        accentColor: state.accentColor,
+        theme: state.theme,
       }),
     }
   )

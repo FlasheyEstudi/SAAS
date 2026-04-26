@@ -24,7 +24,29 @@ function useMounted() {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const mounted = useMounted();
+  const isDarkMode = useAppStore((s) => s.isDarkMode);
+  const theme = useAppStore((s) => s.theme);
+  const accentColor = useAppStore((s) => s.accentColor);
   const logout = useAppStore((s) => s.logout);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    
+    // Dark mode
+    if (isDarkMode) root.classList.add('dark');
+    else root.classList.remove('dark');
+    
+    // Theme classes
+    const themes = ['theme-vintage', 'theme-modern', 'theme-minimal', 'theme-glass'];
+    root.classList.remove(...themes);
+    root.classList.add(`theme-${theme}`);
+    
+    // Accent color
+    root.style.setProperty('--primary-custom', accentColor);
+    // Rough approximation for secondary (lighter) and tertiary
+    root.style.setProperty('--primary-custom-soft', `${accentColor}20`); // 20% opacity
+    root.style.setProperty('--primary-custom-bold', `${accentColor}dd`); 
+  }, [isDarkMode, theme, accentColor]);
 
   useEffect(() => {
     const handleLogout = () => logout();

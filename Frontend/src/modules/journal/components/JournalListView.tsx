@@ -169,12 +169,12 @@ export function JournalListView() {
       {/* Page header */}
       <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-lavender/30 flex items-center justify-center">
-            <BookOpen className="w-5 h-5 text-vintage-700" />
+          <div className="w-10 h-10 rounded-xl bg-lavender/30 dark:bg-indigo-950/30 flex items-center justify-center">
+            <BookOpen className="w-5 h-5 text-vintage-700 dark:text-indigo-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-playfair text-vintage-800">Pólizas</h1>
-            <p className="text-sm text-vintage-500">Registro de pólizas contables</p>
+            <h1 className="text-2xl font-playfair text-vintage-800 dark:text-zinc-100">Pólizas</h1>
+            <p className="text-sm text-vintage-500 dark:text-zinc-500">Registro de pólizas contables</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -215,24 +215,24 @@ export function JournalListView() {
       {/* Summary cards */}
       <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <VintageCard hover={false} className="p-4">
-          <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total pólizas</p>
-          <p className="text-xl font-playfair text-vintage-800 mt-1">{total}</p>
+          <p className="text-xs text-vintage-500 dark:text-zinc-500 font-medium uppercase tracking-wider">Total pólizas</p>
+          <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 mt-1">{total}</p>
         </VintageCard>
         <VintageCard hover={false} className="p-4">
-          <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Publicadas</p>
-          <p className="text-xl font-playfair text-success mt-1">
+          <p className="text-xs text-vintage-500 dark:text-zinc-500 font-medium uppercase tracking-wider">Publicadas</p>
+          <p className="text-xl font-playfair text-success dark:text-emerald-400 mt-1">
             {(entries || []).filter((e: any) => e.status === 'POSTED').length}
           </p>
         </VintageCard>
         <VintageCard hover={false} className="p-4">
-          <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Borradores</p>
-          <p className="text-xl font-playfair text-warning mt-1">
+          <p className="text-xs text-vintage-500 dark:text-zinc-500 font-medium uppercase tracking-wider">Borradores</p>
+          <p className="text-xl font-playfair text-warning dark:text-amber-400 mt-1">
             {(entries || []).filter((e: any) => e.status === 'DRAFT').length}
           </p>
         </VintageCard>
         <VintageCard hover={false} className="p-4">
-          <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Debe</p>
-          <p className="text-xl font-playfair text-vintage-800 mt-1">
+          <p className="text-xs text-vintage-500 dark:text-zinc-500 font-medium uppercase tracking-wider">Total Debe</p>
+          <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 mt-1">
             {formatCurrency((entries || []).reduce((s: number, e: any) => s + (e.totalDebit || 0), 0), 'NIO')}
           </p>
         </VintageCard>
@@ -251,27 +251,27 @@ export function JournalListView() {
           renderRow={(row) => (
             <>
               <td className="px-4 py-3">
-                <span className="text-sm font-semibold text-vintage-800">{row.entryNumber}</span>
+                <span className="text-sm font-semibold text-vintage-800 dark:text-zinc-200">{row.entryNumber}</span>
               </td>
               <td className="px-4 py-3">
-                <span className="text-sm text-vintage-600">{formatDate(row.entryDate)}</span>
+                <span className="text-sm text-vintage-600 dark:text-zinc-500">{formatDate(row.entryDate)}</span>
               </td>
               <td className="px-4 py-3 text-center">{getTypeBadge(row.entryType)}</td>
               <td className="px-4 py-3">
-                <span className="text-sm text-vintage-700 line-clamp-1">{row.description}</span>
+                <span className="text-sm text-vintage-700 dark:text-zinc-400 line-clamp-1">{row.description}</span>
               </td>
               <td className="px-4 py-3 text-right">
-                <span className="text-sm font-mono text-vintage-700">{formatCurrency(row.totalDebit, 'NIO')}</span>
+                <span className="text-sm font-mono text-vintage-700 dark:text-zinc-400">{formatCurrency(row.totalDebit, 'NIO')}</span>
               </td>
               <td className="px-4 py-3 text-right">
-                <span className="text-sm font-mono text-vintage-700">{formatCurrency(row.totalCredit, 'NIO')}</span>
+                <span className="text-sm font-mono text-vintage-700 dark:text-zinc-400">{formatCurrency(row.totalCredit, 'NIO')}</span>
               </td>
               <td className="px-4 py-3 text-center">{getStatusBadge(row.status)}</td>
               <td className="px-4 py-3 text-center">
                 <div className="flex items-center justify-center gap-1">
                   <button
                     onClick={(e) => { e.stopPropagation(); handleView(row.id); }}
-                    className="p-1.5 rounded-lg text-vintage-500 hover:text-vintage-800 hover:bg-vintage-100 transition-colors"
+                    className="p-1.5 rounded-lg text-vintage-500 dark:text-zinc-500 hover:text-vintage-800 dark:hover:text-zinc-200 hover:bg-vintage-100 dark:hover:bg-zinc-800 transition-colors"
                     title="Ver detalle"
                   >
                     <Eye className="w-4 h-4" />
@@ -326,19 +326,19 @@ export function JournalListView() {
         >
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setConfirmDelete(null)} />
           <motion.div
-            className="relative bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl border border-vintage-200"
+            className="relative bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl border border-vintage-200 dark:border-zinc-800"
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.2 }}
           >
-            <h3 className="text-lg font-playfair text-vintage-800 mb-2">Eliminar Póliza</h3>
-            <p className="text-sm text-vintage-600 mb-6">
+            <h3 className="text-lg font-playfair text-vintage-800 dark:text-zinc-100 mb-2">Eliminar Póliza</h3>
+            <p className="text-sm text-vintage-600 dark:text-zinc-500 mb-6">
               ¿Estás seguro de que deseas eliminar esta póliza? Esta acción no se puede deshacer.
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setConfirmDelete(null)}
-                className="px-4 py-2 text-sm rounded-xl border border-vintage-200 text-vintage-700 hover:bg-vintage-50 transition-colors"
+                className="px-4 py-2 text-sm rounded-xl border border-vintage-200 dark:border-zinc-800 text-vintage-700 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800 transition-colors"
               >
                 Cancelar
               </button>

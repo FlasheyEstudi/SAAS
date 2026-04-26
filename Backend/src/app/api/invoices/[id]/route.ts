@@ -27,6 +27,11 @@ export async function GET(_request: Request, context: RouteContext) {
             status: true,
           },
         },
+        lines: true,
+        taxEntries: {
+          include: { taxRate: true }
+        },
+        paymentSchedules: true,
       },
     });
 
@@ -51,8 +56,18 @@ export async function GET(_request: Request, context: RouteContext) {
       agingBucket = 'overdue_31_60';
     }
 
+    // Map lines to include total (subtotal + tax if we had tax per line, but for now just subtotal)
+    const linesWithTotal = invoice.lines.map(l => ({
+      ...l,
+      total: l.subtotal // In the current schema, subtotal is the line's base.
+    }));
+
     return success({
       ...invoice,
+      lines: linesWithTotal,
+      invoiceNumber: invoice.number, // Frontend expects invoiceNumber
+      invoiceDate: invoice.issueDate, // Frontend expects invoiceDate
+      paymentSchedule: invoice.paymentSchedules || [], // Frontend expects paymentSchedule (singular)
       daysOverdue,
       agingBucket,
     });

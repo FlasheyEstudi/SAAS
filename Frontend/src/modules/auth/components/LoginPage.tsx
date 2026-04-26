@@ -15,6 +15,7 @@ import { PastelButton } from '@/components/ui/pastel-button';
 import { FloatingInput } from '@/components/ui/floating-input';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
+import { AuthLayout } from './AuthLayout';
 
 // ─── Validation schema ───────────────────────────────────────
 const loginSchema = z.object({
@@ -51,20 +52,6 @@ const itemVariants: any = {
   },
 };
 
-const blobVariants: any = {
-  animate: (i: number) => ({
-    y: [0, -15, 0, 10, 0],
-    x: [0, 8, -5, 0, 0],
-    rotate: [0, 5, -3, 2, 0],
-    scale: [1, 1.03, 0.98, 1.01, 1],
-    transition: {
-      duration: 8 + i * 2,
-      repeat: Infinity,
-      ease: 'easeInOut',
-    },
-  }),
-};
-
 // ─── Component ───────────────────────────────────────────────
 export function LoginPage() {
   const { login, isLoading, error, clearError } = useAuth();
@@ -93,7 +80,7 @@ export function LoginPage() {
       return;
     }
     toast.promise(
-      apiClient.post(AUTH.resetPassword('1'), { email: emailValue }), // Call standard resetting process
+      apiClient.post(AUTH.resetPassword('1'), { email: emailValue }),
       {
         loading: 'Enviando instrucciones de recuperación...',
         success: `Instrucciones enviadas a ${emailValue}`,
@@ -104,133 +91,78 @@ export function LoginPage() {
 
   const handleQuickLogin = () => {
     if (clearError) clearError();
-    login({ email: 'admin@gea.com.mx', password: 'Admin123!', companyId: '' });
-  };
-
-  const goToRegister = () => {
-    if (navigate) navigate('register');
+    login({ email: 'admin@alpha.com.ni', password: 'Admin123!', companyId: '' });
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-vintage-50 via-cream/30 to-lavender/20">
-      {/* ── Decorative background blobs ── */}
+    <AuthLayout>
       <motion.div
-        className="pointer-events-none absolute -top-32 -left-32 h-96 w-96 rounded-full bg-vintage-200/40 blur-3xl"
-        variants={blobVariants}
-        animate="animate"
-        custom={0}
-      />
-      <motion.div
-        className="pointer-events-none absolute -bottom-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-lavender/40 blur-3xl"
-        variants={blobVariants}
-        animate="animate"
-        custom={1}
-      />
-      <motion.div
-        className="pointer-events-none absolute top-1/4 right-1/4 h-64 w-64 rounded-full bg-peach/40 blur-3xl"
-        variants={blobVariants}
-        animate="animate"
-        custom={2}
-      />
-      <motion.div
-        className="pointer-events-none absolute bottom-1/3 left-1/3 h-48 w-48 rounded-full bg-vintage-100/60 blur-2xl"
-        variants={blobVariants}
-        animate="animate"
-        custom={3}
-      />
-
-      {/* ── Subtle pattern overlay ── */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.035] subtle-pattern-overlay" />
-
-      {/* ── Main card ── */}
-      <motion.div
-        className="relative z-10 w-full max-w-md mx-4 px-4"
+        className="w-full max-w-md mx-auto"
         variants={containerVariants as any}
         initial="hidden"
         animate="visible"
       >
         <VintageCard
           variant="glass"
-          className="p-8 md:p-10 shadow-xl shadow-vintage-200/30"
+          className="p-8 md:p-10 shadow-2xl border-white/20 dark:border-zinc-800/50 backdrop-blur-2xl"
         >
-          {/* ── Branding ── */}
+          {/* Header */}
           <motion.div variants={itemVariants} className="flex flex-col items-center mb-8">
-            <motion.div
-              className="relative mb-4"
-              whileHover={{ scale: 1.05, rotate: -2 }}
-              transition={{ type: 'spring', stiffness: 300 }}
-            >
-              <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-vintage-300 to-vintage-400 shadow-lg shadow-vintage-300/30">
-                <BookOpen className="w-8 h-8 text-white" />
-              </div>
-              <motion.div
-                className="absolute -top-1 -right-1"
-                animate={{ rotate: [0, 15, -15, 0], scale: [1, 1.15, 1] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                <Sparkles className="w-5 h-5 text-warning" />
-              </motion.div>
-            </motion.div>
-
-            <h1 className="font-playfair text-2xl md:text-3xl font-bold text-vintage-900 tracking-tight">
-              GANESHA
+            <div className="w-16 h-16 rounded-3xl bg-primary flex items-center justify-center shadow-xl shadow-primary/20 mb-4 ring-4 ring-primary/10">
+              <BookOpen className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="font-playfair text-3xl font-black text-foreground tracking-tight">
+              Bienvenido
             </h1>
-            <p className="mt-1.5 text-sm text-vintage-600">
-              Sistema de Gestión GANESHA Empresarial
+            <p className="mt-1 text-sm text-center text-muted-foreground font-medium">
+              Ingresa a la Suite Contable <span className="text-primary font-bold">GANESHA</span>
             </p>
           </motion.div>
 
-          {/* ── Divider ── */}
-          <motion.div variants={itemVariants} className="mb-6">
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent to-vintage-200" />
-              <span className="text-xs font-medium text-vintage-500 uppercase tracking-widest">
-                Acceder
-              </span>
-              <div className="flex-1 h-px bg-gradient-to-l from-transparent to-vintage-200" />
-            </div>
-          </motion.div>
-
-          {/* ── Form ── */}
+          {/* Form */}
           <motion.form
             variants={itemVariants}
             onSubmit={handleSubmit(onSubmit)}
             className="space-y-5"
             noValidate
           >
-            {/* Email field */}
             <FloatingInput
               label="Correo electrónico"
               type="email"
-              placeholder=""
               icon={<Mail className="w-4 h-4" />}
               error={errors.email?.message}
               {...register('email')}
             />
 
-            {/* Password field */}
             <div className="relative">
               <FloatingInput
                 label="Contraseña"
                 type={showPassword ? 'text' : 'password'}
-                placeholder=""
                 icon={<Lock className="w-4 h-4" />}
                 error={errors.password?.message}
                 {...register('password')}
-                className="pr-10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-vintage-500 hover:text-vintage-700 transition-colors p-1"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
                 tabIndex={-1}
-                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               >
-                {showPassword ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input type="checkbox" className="w-4 h-4 rounded border-border text-primary focus:ring-primary" />
+                <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Recordarme</span>
+              </label>
+              <button
+                type="button"
+                className="text-xs font-bold text-primary hover:underline underline-offset-4"
+                onClick={handleForgotPassword}
+              >
+                ¿Olvidaste tu contraseña?
               </button>
             </div>
 
@@ -241,97 +173,69 @@ export function LoginPage() {
                   initial={{ opacity: 0, y: -8, height: 0 }}
                   animate={{ opacity: 1, y: 0, height: 'auto' }}
                   exit={{ opacity: 0, y: -8, height: 0 }}
-                  transition={{ duration: 0.25 }}
+                  className="overflow-hidden"
                 >
-                  <div className="flex items-start gap-2 p-3 rounded-xl bg-error/10 border border-error/20">
-                    <div className="mt-0.5 w-4 h-4 rounded-full bg-error/20 flex items-center justify-center flex-shrink-0">
-                      <span className="text-[10px] font-bold text-error">!</span>
-                    </div>
-                    <p className="text-xs text-error leading-relaxed">
+                  <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 mb-2">
+                    <span className="text-xs text-destructive leading-relaxed">
                       {error || 'Por favor corrige los errores del formulario.'}
-                    </p>
+                    </span>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Forgot password link */}
-            <div className="text-right">
-              <button
-                type="button"
-                className="text-xs text-vintage-500 hover:text-vintage-700 transition-colors hover:underline"
-                onClick={handleForgotPassword}
-              >
-                ¿Olvidaste tu contraseña?
-              </button>
-            </div>
-
-            {/* Submit button */}
             <PastelButton
               type="submit"
               loading={isLoading}
-              className={cn(
-                'w-full h-12 text-sm font-semibold tracking-wide',
-                'bg-gradient-to-r from-vintage-300 to-vintage-400',
-                'hover:from-vintage-400 hover:to-vintage-500',
-                'shadow-lg shadow-vintage-300/25',
-                'transition-all duration-300'
-              )}
+              className="w-full h-12 text-sm font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.01] active:scale-[0.99]"
             >
-              {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+              Iniciar Sesión
             </PastelButton>
-          </motion.form>
 
-          {/* ── Divider ── */}
-          <motion.div variants={itemVariants} className="my-6">
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent to-vintage-200" />
-              <span className="text-xs text-vintage-400">o</span>
-              <div className="flex-1 h-px bg-gradient-to-l from-transparent to-vintage-200" />
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border"></div>
+              </div>
+              <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-[0.2em]">
+                <span className="bg-card px-3 text-muted-foreground">Acceso Alternativo</span>
+              </div>
             </div>
-          </motion.div>
 
-          {/* ── Quick demo access ── */}
-          <motion.div variants={itemVariants}>
-            <PastelButton
-              type="button"
-              variant="outline"
-              className="w-full h-11 text-sm"
-              onClick={handleQuickLogin}
-              disabled={isLoading}
-            >
-              Acceso rápido demo
-            </PastelButton>
-            <p className="mt-2 text-center text-[11px] text-vintage-400">
-              Inicia sesión automáticamente con una cuenta de demostración
-            </p>
-          </motion.div>
-
-          {/* ── Register link ── */}
-          <motion.p
-            variants={itemVariants}
-            className="mt-6 text-center text-sm text-vintage-600"
-          >
-            ¿No tienes una cuenta?{' '}
             <button
               type="button"
-              className="font-semibold text-vintage-500 hover:text-vintage-700 transition-colors hover:underline underline-offset-2"
-              onClick={goToRegister}
+              onClick={handleQuickLogin}
+              disabled={isLoading}
+              className="w-full h-12 rounded-2xl border-2 border-border hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2 group"
             >
-              Crear cuenta
+              <Sparkles className="w-4 h-4 text-primary group-hover:animate-pulse" />
+              <span className="text-sm font-bold text-foreground">Acceso Demo Rápido</span>
+              <span className="ml-2 px-1.5 py-0.5 rounded-md bg-success/10 text-[9px] font-black text-success uppercase tracking-widest">Demo</span>
+            </button>
+          </motion.form>
+
+          <motion.p
+            variants={itemVariants}
+            className="mt-8 text-center text-sm text-muted-foreground"
+          >
+            ¿Eres nuevo aquí?{' '}
+            <button
+              type="button"
+              className="font-bold text-primary hover:underline underline-offset-4"
+              onClick={() => navigate('register')}
+            >
+              Crea una cuenta gratuita
             </button>
           </motion.p>
         </VintageCard>
-
-        {/* ── Footer ── */}
+        
         <motion.p
           variants={itemVariants}
-          className="mt-6 text-center text-[11px] text-vintage-400"
+          className="mt-8 text-center text-[11px] text-muted-foreground uppercase tracking-widest font-bold opacity-60"
         >
-          © {new Date().getFullYear()} GANESHA · Todos los derechos reservados
+          © {new Date().getFullYear()} GANESHA · Excelencia Contable
         </motion.p>
       </motion.div>
-    </div>
+    </AuthLayout>
   );
 }
 

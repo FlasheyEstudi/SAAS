@@ -5,11 +5,12 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
   'http://172.16.27.22:3000',
+  'http://172.16.27.216:3000',
 ];
 
 export function middleware(request: NextRequest) {
   const origin = request.headers.get('origin') || '';
-  const isAllowed = allowedOrigins.includes(origin);
+  const isAllowed = allowedOrigins.includes(origin) || origin.startsWith('http://172.16.');
 
   // Handle preflight (OPTIONS) requests
   if (request.method === 'OPTIONS') {

@@ -4,6 +4,7 @@ import { useAppStore } from '@/lib/stores/useAppStore';
 import { useEffect } from 'react';
 import { LoginPage } from '@/modules/auth/components/LoginPage';
 import { RegisterPage } from '@/modules/auth/components/RegisterPage';
+import LandingPage from './landing/page';
 import { DashboardView } from '@/modules/dashboard/components/DashboardView';
 import { JournalListView } from '@/modules/journal/components/JournalListView';
 import { JournalEntryForm } from '@/modules/journal/components/JournalEntryForm';
@@ -41,7 +42,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const sidebarCollapsed = useAppStore((s) => s.sidebarCollapsed);
 
   return (
-    <div className="min-h-screen bg-vintage-50">
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
       <Sidebar />
       <Header />
       <main className={cn(
@@ -59,15 +60,24 @@ function ViewRouter() {
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const navigate = useAppStore((s) => s.navigate);
 
-  // Redirigir a login si no está autenticado y no está en una vista de auth
+  // Redirección centralizada
   useEffect(() => {
-    if (!isAuthenticated && currentView !== 'login' && currentView !== 'register') {
-      navigate('login');
+    const isAuthView = currentView === 'login' || currentView === 'register' || currentView === 'landing';
+    
+    if (isAuthenticated && isAuthView) {
+      // El pequeño delay previene bucles de navegación infinitos si el estado aún no es estable
+      const timer = setTimeout(() => navigate('dashboard'), 0);
+      return () => clearTimeout(timer);
+    }
+    
+    if (!isAuthenticated && !isAuthView) {
+      navigate('landing');
     }
   }, [isAuthenticated, currentView, navigate]);
 
   const renderView = () => {
     switch (currentView) {
+      case 'landing': return <LandingPage />;
       case 'login': return <LoginPage />;
       case 'register': return <RegisterPage />;
       case 'dashboard': return <DashboardView />;
@@ -102,11 +112,11 @@ function ViewRouter() {
     }
   };
 
-  if (currentView === 'login' || currentView === 'register') {
+  if (currentView === 'login' || currentView === 'register' || currentView === 'landing') {
     return (
       <AnimatePresence mode="wait">
         <motion.div key={currentView} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-          {currentView === 'login' ? <LoginPage /> : <RegisterPage />}
+          {currentView === 'landing' ? <LandingPage /> : currentView === 'login' ? <LoginPage /> : <RegisterPage />}
         </motion.div>
       </AnimatePresence>
     );

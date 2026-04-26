@@ -104,6 +104,63 @@
   --sidebar-accent-foreground: #5C4A3D;
   --sidebar-border: #FFD1DC;
   --sidebar-ring: #FFB6C1;
+  
+  --primary-custom: #FFB6C1;
+}
+
+/* Theme: Modern - Cleaner, whiter, cooler */
+.theme-modern {
+  --background: #F9FAFB;
+  --foreground: #111827;
+  --card: #FFFFFF;
+  --card-foreground: #1F2937;
+  --primary: var(--primary-custom);
+  --border: #E5E7EB;
+  --input: #F3F4F6;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #374151;
+  --sidebar-border: #F3F4F6;
+}
+
+/* Theme: Minimal - Pure white / High contrast */
+.theme-minimal {
+  --background: #FFFFFF;
+  --foreground: #000000;
+  --card: #FFFFFF;
+  --card-foreground: #000000;
+  --primary: #000000;
+  --border: #EEEEEE;
+  --input: #FAFAFA;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #000000;
+  --sidebar-border: #EEEEEE;
+}
+
+/* Theme: Glass - Translucent and airy */
+.theme-glass {
+  --background: #F0F2F5;
+  --foreground: #1C1E21;
+  --card: rgba(255, 255, 255, 0.7);
+  --border: rgba(255, 255, 255, 0.5);
+  --sidebar: rgba(255, 255, 255, 0.4);
+}
+
+.dark.theme-modern {
+  --background: #09090B;
+  --foreground: #FAFAFA;
+  --card: #18181B;
+  --card-foreground: #FAFAFA;
+  --border: #27272A;
+  --sidebar: #09090B;
+  --sidebar-foreground: #A1A1AA;
+}
+
+.dark.theme-minimal {
+  --background: #000000;
+  --foreground: #FFFFFF;
+  --card: #000000;
+  --border: #222222;
+  --sidebar: #000000;
 }
 
 .dark {
@@ -138,6 +195,15 @@
   --sidebar-accent-foreground: #FFD1DC;
   --sidebar-border: #5C4A3D;
   --sidebar-ring: #FFB6C1;
+}
+
+/* Override primary with custom if it exists */
+:root, .dark, .theme-modern, .theme-minimal, .theme-glass {
+  --primary: var(--primary-custom);
+  --ring: var(--primary-custom);
+  --sidebar-primary: var(--primary-custom);
+  --color-vintage-300: var(--primary-custom);
+  --color-vintage-400: var(--primary-custom);
 }
 
 @keyframes fadeIn {

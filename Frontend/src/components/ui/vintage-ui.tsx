@@ -15,11 +15,11 @@ export function StatusBadge({
   size?: 'sm' | 'md';
 }) {
   const statusStyles = {
-    success: 'bg-success/15 text-success border-success/30',
-    warning: 'bg-warning/15 text-warning border-warning/30',
-    error: 'bg-error/15 text-error border-error/30',
-    info: 'bg-info/15 text-info border-info/30',
-    neutral: 'bg-vintage-100 text-vintage-700 border-vintage-200',
+    success: 'bg-success/15 dark:bg-emerald-950/30 text-success dark:text-emerald-400 border-success/30 dark:border-emerald-800/50',
+    warning: 'bg-warning/15 dark:bg-amber-950/30 text-warning dark:text-amber-400 border-warning/30 dark:border-amber-800/50',
+    error: 'bg-error/15 dark:bg-red-950/30 text-error dark:text-red-400 border-error/30 dark:border-red-800/50',
+    info: 'bg-info/15 dark:bg-sky-950/30 text-info dark:text-sky-400 border-info/30 dark:border-sky-800/50',
+    neutral: 'bg-vintage-100 dark:bg-zinc-800 text-vintage-700 dark:text-zinc-400 border-vintage-200 dark:border-zinc-700',
   };
 
   return (
@@ -97,11 +97,11 @@ export function EmptyState({
       transition={{ duration: 0.5 }}
     >
       {icon && (
-        <div className="w-16 h-16 rounded-full bg-vintage-100 flex items-center justify-center mb-4 text-vintage-400">
+        <div className="w-16 h-16 rounded-full bg-vintage-100 dark:bg-zinc-800 flex items-center justify-center mb-4 text-vintage-400 dark:text-zinc-600">
           {icon}
         </div>
       )}
-      <h3 className="text-lg font-playfair text-vintage-800 mb-1">{title}</h3>
+      <h3 className="text-lg font-playfair text-vintage-800 dark:text-zinc-200 mb-1">{title}</h3>
       {description && (
         <p className="text-sm text-vintage-600 max-w-sm mb-4">{description}</p>
       )}
@@ -118,7 +118,7 @@ export function VintageSkeleton({ className, lines = 3 }: { className?: string; 
         <div
           key={i}
           className={cn(
-            'h-4 bg-vintage-100 rounded shimmer-bg',
+            'h-4 bg-vintage-100 dark:bg-zinc-800 rounded shimmer-bg',
             i === lines - 1 ? 'w-[60%]' : 'w-full',
             i === 0 ? 'delay-0' : i === 1 ? 'delay-100' : i === 2 ? 'delay-200' : 'delay-300'
           )}
@@ -132,8 +132,8 @@ export function VintageSkeleton({ className, lines = 3 }: { className?: string; 
 export function PageLoader({ text = 'Cargando...' }: { text?: string }) {
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 animate-fade-in">
-      <Loader2 className="w-8 h-8 text-vintage-400 animate-spin" />
-      <p className="text-sm text-vintage-600 font-playfair">{text}</p>
+      <Loader2 className="w-8 h-8 text-vintage-400 dark:text-zinc-600 animate-spin" />
+      <p className="text-sm text-vintage-600 dark:text-zinc-400 font-playfair">{text}</p>
     </div>
   );
 }
@@ -169,17 +169,17 @@ export function ConfirmDialog({
     >
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
       <motion.div
-        className="relative bg-card rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl border border-vintage-200"
+        className="relative bg-card dark:bg-zinc-900 rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl border border-vintage-200 dark:border-zinc-800"
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.2 }}
       >
-        <h3 className="text-lg font-playfair text-vintage-800 mb-2">{title}</h3>
-        <p className="text-sm text-vintage-600 mb-6">{description}</p>
+        <h3 className="text-lg font-playfair text-vintage-800 dark:text-zinc-100 mb-2">{title}</h3>
+        <p className="text-sm text-vintage-600 dark:text-zinc-400 mb-6">{description}</p>
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm rounded-xl border border-vintage-200 text-vintage-700 hover:bg-vintage-50 transition-colors"
+            className="px-4 py-2 text-sm rounded-xl border border-vintage-200 dark:border-zinc-800 text-vintage-700 dark:text-zinc-300 hover:bg-vintage-50 dark:hover:bg-zinc-800 transition-colors"
           >
             {cancelLabel}
           </button>
@@ -210,7 +210,7 @@ export function VintageTabs({
   onChange: (id: string) => void;
 }) {
   return (
-    <div className="flex gap-1 bg-vintage-100 rounded-xl p-1 overflow-x-auto">
+    <div className="flex gap-1 bg-vintage-100 dark:bg-zinc-800/50 rounded-xl p-1 overflow-x-auto">
       {tabs.map((tab) => (
         <button
           key={tab.id}
@@ -218,8 +218,8 @@ export function VintageTabs({
           className={cn(
             'flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all duration-300 whitespace-nowrap',
             active === tab.id
-              ? 'bg-white text-vintage-800 shadow-sm font-medium'
-              : 'text-vintage-600 hover:text-vintage-800 hover:bg-vintage-50'
+              ? 'bg-white dark:bg-zinc-700 text-vintage-800 dark:text-white shadow-sm font-medium'
+              : 'text-vintage-600 dark:text-zinc-400 hover:text-vintage-800 dark:hover:text-zinc-200 hover:bg-vintage-50 dark:hover:bg-zinc-800'
           )}
         >
           {tab.icon}

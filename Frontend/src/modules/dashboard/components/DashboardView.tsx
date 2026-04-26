@@ -63,7 +63,7 @@ const itemVariants = {
 };
 
 // ─── Pastel Chart Colors ───────────────────────────────────────────
-const PASTEL_COLORS = ['#FFB6C1', '#D4A5A5', '#E6E6FA', '#F5E6D3', '#86C1A5', '#FFDAB9'];
+const PASTEL_COLORS = ['var(--primary)', '#D4A5A5', '#E6E6FA', '#F5E6D3', '#86C1A5', '#FFDAB9'];
 const DASHBOARD_DOT_CLASSES = [
   'dashboard-dot-0',
   'dashboard-dot-1',
@@ -87,13 +87,13 @@ function VintageTooltip({ active, payload, label }: any) {
   if (!active || !payload || payload.length === 0) return null;
 
   return (
-    <div className="bg-white/95 backdrop-blur-sm border border-vintage-200 rounded-xl p-3 shadow-lg">
-      <p className="text-xs font-medium text-vintage-600 mb-2">{label}</p>
+    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm border border-vintage-200 dark:border-zinc-800 rounded-xl p-3 shadow-lg">
+      <p className="text-xs font-medium text-vintage-600 dark:text-zinc-400 mb-2">{label}</p>
       {payload.map((entry: any, index: number) => (
         <div key={index} className="flex items-center gap-2 text-xs mb-1 last:mb-0">
           <span className={cn('w-2.5 h-2.5 rounded-full shrink-0', getDashboardDotClass(index))} />
-          <span className="text-vintage-600 capitalize">{entry.name}:</span>
-          <span className="font-semibold text-vintage-800">
+          <span className="text-vintage-600 dark:text-zinc-400 capitalize">{entry.name}:</span>
+          <span className="font-semibold text-vintage-800 dark:text-zinc-100">
             {formatCurrency(entry.value, 'NIO', 0)}
           </span>
         </div>
@@ -108,11 +108,11 @@ function PieVintageTooltip({ active, payload }: any) {
   const entry = payload[0];
 
   return (
-    <div className="bg-white/95 backdrop-blur-sm border border-vintage-200 rounded-xl p-3 shadow-lg">
+    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm border border-vintage-200 dark:border-zinc-800 rounded-xl p-3 shadow-lg">
       <div className="flex items-center gap-2 text-xs">
         <span className={cn('w-2.5 h-2.5 rounded-full shrink-0', getDashboardDotClass(entry.payload?.index ?? 0))} />
-        <span className="text-vintage-600">{entry.name}:</span>
-        <span className="font-semibold text-vintage-800">
+        <span className="text-vintage-600 dark:text-zinc-400">{entry.name}:</span>
+        <span className="font-semibold text-vintage-800 dark:text-zinc-100">
           {formatCurrency(entry.value, 'NIO', 0)}
         </span>
       </div>
@@ -127,7 +127,7 @@ function VintageTick({ x, y, payload }: any) {
       x={x}
       y={y + 12}
       textAnchor="middle"
-      className="fill-vintage-500 text-[10px] font-sans"
+      className="fill-vintage-500 dark:fill-zinc-500 text-[10px] font-sans"
     >
       {payload.value}
     </text>
@@ -168,7 +168,7 @@ function KPICard({
                 value={value}
                 prefix="C$"
                 decimals={0}
-                className="text-2xl sm:text-3xl font-bold text-vintage-800"
+                className="text-2xl sm:text-3xl font-bold text-vintage-800 dark:text-zinc-100"
               />
             </div>
             {change !== undefined && (
@@ -214,7 +214,7 @@ function JournalEntryRow({ entry }: { entry: any }) {
   const statusInfo = statusMap[entry.status] || { status: 'neutral' as const, label: entry.status };
 
   return (
-    <div className="flex items-center gap-3 py-3 px-1 border-b border-vintage-100 last:border-0 hover:bg-vintage-50/50 rounded-lg transition-colors">
+    <div className="flex items-center gap-3 py-3 px-1 border-b border-vintage-100 dark:border-zinc-800 last:border-0 hover:bg-vintage-50/50 dark:hover:bg-zinc-800/50 rounded-lg transition-colors">
       <div className="shrink-0">
         <span
           className={cn(
@@ -259,7 +259,7 @@ function InvoiceRow({ invoice }: { invoice: any }) {
   const statusInfo = statusMap[invoice.status] || { status: 'neutral' as const, label: invoice.status };
 
   return (
-    <div className="flex items-center gap-3 py-3 px-1 border-b border-vintage-100 last:border-0 hover:bg-vintage-50/50 rounded-lg transition-colors">
+    <div className="flex items-center gap-3 py-3 px-1 border-b border-vintage-100 dark:border-zinc-800 last:border-0 hover:bg-vintage-50/50 dark:hover:bg-zinc-800/50 rounded-lg transition-colors">
       <div className="shrink-0">
         <span
           className={cn(
@@ -301,7 +301,7 @@ function TopClientRow({ client, index }: { client: any; index: number }) {
   const paidPercent = total > 0 ? (client.facturasPagadas / total) * 100 : 0;
 
   return (
-    <div className="flex items-center gap-3 py-2.5 px-1 hover:bg-vintage-50/50 rounded-lg transition-colors">
+    <div className="flex items-center gap-3 py-2.5 px-1 hover:bg-vintage-50/50 dark:hover:bg-zinc-800/50 rounded-lg transition-colors">
       <span className="text-xs font-bold text-vintage-400 w-4 text-center">{index + 1}</span>
       <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 bg-vintage-300">
         {client.initials}
@@ -388,7 +388,7 @@ export function DashboardView() {
 
   return (
     <motion.div
-      className="min-h-screen bg-vintage-50/50"
+      className="min-h-screen bg-background"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -398,7 +398,7 @@ export function DashboardView() {
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl sm:text-3xl font-playfair text-vintage-800 font-bold">
+              <h1 className="text-2xl sm:text-3xl font-playfair text-vintage-800 dark:text-zinc-100 font-bold">
                 Panel de Control
               </h1>
               {hasBranches && (
@@ -407,8 +407,8 @@ export function DashboardView() {
                   className={cn(
                     "flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase border transition-all",
                     isConsolidated 
-                      ? "bg-vintage-800 text-white border-vintage-800 shadow-sm" 
-                      : "bg-white text-vintage-400 border-vintage-200 hover:border-vintage-400"
+                      ? "bg-vintage-800 dark:bg-zinc-100 text-white dark:text-zinc-900 border-vintage-800 dark:border-zinc-100 shadow-sm" 
+                      : "bg-white dark:bg-zinc-900 text-vintage-400 dark:text-zinc-500 border-vintage-200 dark:border-zinc-800 hover:border-vintage-400 dark:hover:border-zinc-600"
                   )}
                 >
                   <Sparkles className={cn("w-3 h-3", isConsolidated ? "text-peach" : "text-vintage-300")} />
@@ -421,21 +421,21 @@ export function DashboardView() {
               <select 
                 value={selectedYear} 
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="bg-white border border-vintage-200 rounded-lg px-2 py-1 text-xs text-vintage-700 outline-none focus:border-vintage-400"
+                className="bg-white dark:bg-zinc-900 border border-vintage-200 dark:border-zinc-800 rounded-lg px-2 py-1 text-xs text-vintage-700 dark:text-zinc-300 outline-none focus:border-vintage-400 dark:focus:border-zinc-600"
               >
                 {[2023, 2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
               </select>
               <select 
                 value={selectedMonth} 
                 onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="bg-white border border-vintage-200 rounded-lg px-2 py-1 text-xs text-vintage-700 outline-none focus:border-vintage-400"
+                className="bg-white dark:bg-zinc-900 border border-vintage-200 dark:border-zinc-800 rounded-lg px-2 py-1 text-xs text-vintage-700 dark:text-zinc-300 outline-none focus:border-vintage-400 dark:focus:border-zinc-600"
               >
                 {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'].map((m, i) => (
                   <option key={i+1} value={i+1}>{m}</option>
                 ))}
               </select>
             </div>
-            <p className="text-sm text-vintage-500 mt-1">
+            <p className="text-sm text-vintage-500 dark:text-zinc-500 mt-1">
               {isConsolidated 
                 ? `Consolidado de ${currentCompany?.name} y sus sucursales` 
                 : `Bienvenido, ${user?.name || 'Usuario'} · Resumen de ${currentCompany?.name || 'la empresa'}`
@@ -471,14 +471,14 @@ export function DashboardView() {
         <KPICard
           title="Utilidad Neta"
           value={kpis.netIncome}
-          icon={<PiggyBank className="w-5 h-5 text-vintage-500" />}
-          iconBg="bg-lavender/60"
+          icon={<PiggyBank className="w-5 h-5 text-primary" />}
+          iconBg="bg-primary/20"
         />
         <KPICard
           title="Saldo en Banco"
           value={kpis.cashBalance}
-          icon={<Wallet className="w-5 h-5 text-vintage-600" />}
-          iconBg="bg-peach/60"
+          icon={<Wallet className="w-5 h-5 text-vintage-600 dark:text-zinc-400" />}
+          iconBg="bg-accent/60 dark:bg-zinc-800"
         />
       </motion.div>
 
@@ -527,9 +527,9 @@ export function DashboardView() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-vintage-500" />
-              <h3 className="text-sm font-semibold text-vintage-800">Tendencia de Ingresos y Gastos</h3>
+              <h3 className="text-sm font-semibold text-vintage-800 dark:text-zinc-100">Tendencia de Ingresos y Gastos</h3>
             </div>
-            <span className="text-[10px] text-vintage-400 bg-vintage-100 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] text-vintage-400 bg-vintage-100 dark:bg-zinc-800 dark:text-zinc-500 px-2 py-0.5 rounded-full">
               Últimos 6 meses
             </span>
           </div>
@@ -538,15 +538,15 @@ export function DashboardView() {
               <AreaChart data={revenueTrend} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="gradientIngresos" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#86C1A5" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#86C1A5" stopOpacity={0.05} />
+                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.05} />
                   </linearGradient>
                   <linearGradient id="gradientEgresos" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#FFB6C1" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#FFB6C1" stopOpacity={0.05} />
+                    <stop offset="5%" stopColor="#D4A5A5" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#D4A5A5" stopOpacity={0.05} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#FFE4E8" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" className="opacity-50" vertical={false} />
                 <XAxis dataKey="month" tick={<VintageTick />} axisLine={false} tickLine={false} />
                 <YAxis tick={<VintageTick />} axisLine={false} tickLine={false} />
                 <Tooltip content={<VintageTooltip />} />
@@ -554,21 +554,21 @@ export function DashboardView() {
                   type="monotone"
                   dataKey="ingresos"
                   name="Ingresos"
-                  stroke="#86C1A5"
+                  stroke="var(--primary)"
                   strokeWidth={2.5}
                   fill="url(#gradientIngresos)"
-                  dot={{ fill: '#86C1A5', strokeWidth: 0, r: 4 }}
-                  activeDot={{ r: 6, stroke: '#86C1A5', strokeWidth: 2, fill: '#fff' }}
+                  dot={{ fill: 'var(--primary)', strokeWidth: 0, r: 4 }}
+                  activeDot={{ r: 6, stroke: 'var(--primary)', strokeWidth: 2, fill: '#fff' }}
                 />
                 <Area
                   type="monotone"
                   dataKey="egresos"
                   name="Gastos"
-                  stroke="#FFB6C1"
+                  stroke="#D4A5A5"
                   strokeWidth={2.5}
                   fill="url(#gradientEgresos)"
-                  dot={{ fill: '#FFB6C1', strokeWidth: 0, r: 4 }}
-                  activeDot={{ r: 6, stroke: '#FFB6C1', strokeWidth: 2, fill: '#fff' }}
+                  dot={{ fill: '#D4A5A5', strokeWidth: 0, r: 4 }}
+                  activeDot={{ r: 6, stroke: '#D4A5A5', strokeWidth: 2, fill: '#fff' }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -611,8 +611,8 @@ export function DashboardView() {
             ))}
           </div>
           <div className="text-center mt-3">
-            <p className="text-xs text-vintage-400">Margen neto</p>
-            <p className="text-lg font-bold text-success">
+            <p className="text-xs text-muted-foreground">Margen neto</p>
+            <p className="text-lg font-bold text-success font-playfair">
               {kpis.totalRevenue > 0 ? ((kpis.netIncome / kpis.totalRevenue) * 100).toFixed(1) : 0}%
             </p>
           </div>
@@ -623,16 +623,16 @@ export function DashboardView() {
       <motion.div variants={itemVariants} className="mb-6">
         <VintageCard>
           <div className="flex items-center gap-2 mb-4">
-            <BarChart3 className="w-4 h-4 text-vintage-500" />
-            <h3 className="text-sm font-semibold text-vintage-800">Gastos por Categoría</h3>
-            <span className="ml-auto text-[10px] text-vintage-400 bg-vintage-100 px-2 py-0.5 rounded-full">
+            <BarChart3 className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">Gastos por Categoría</h3>
+            <span className="ml-auto text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
               Total: {formatCompactNumber(kpis.totalExpenses)}
             </span>
           </div>
           <div className="h-52 sm:h-56">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={expenseCategories} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#FFE4E8" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#FFE4E8" className="dark:opacity-10" vertical={false} />
                 <XAxis
                   dataKey="categoria"
                   tick={<VintageTick />}

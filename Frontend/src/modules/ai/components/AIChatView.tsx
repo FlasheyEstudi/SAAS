@@ -182,8 +182,8 @@ export function AIChatView() {
       )}
 
       <form onSubmit={handleSubmit} className="flex gap-2 mt-3 flex-shrink-0">
-        <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Pregunta sobre contabilidad, reportes o datos..." className="flex-1 px-4 py-3 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400 focus:border-vintage-400 transition-all" disabled={isTyping || status !== 'online'} />
-        <button type="submit" disabled={isTyping || !input.trim() || status !== 'online'} className="px-4 py-3 rounded-xl bg-gradient-to-r from-vintage-300 to-vintage-400 text-white hover:from-vintage-400 hover:to-vintage-500 disabled:opacity-40 transition-all shadow-sm hover:shadow-md">
+        <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Pregunta sobre contabilidad, reportes o datos..." className="flex-1 px-4 py-3 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400 focus:border-vintage-400 transition-all" disabled={isTyping} />
+        <button type="submit" disabled={isTyping || !input.trim()} className="px-4 py-3 rounded-xl bg-gradient-to-r from-vintage-300 to-vintage-400 text-white hover:from-vintage-400 hover:to-vintage-500 disabled:opacity-40 transition-all shadow-sm hover:shadow-md">
           {isTyping ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
         </button>
       </form>

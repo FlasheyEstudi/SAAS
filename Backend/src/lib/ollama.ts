@@ -215,6 +215,7 @@ const AI_TOOLS: OllamaTool[] = [
 
 
 
+
 async function isOllamaAvailable(): Promise<boolean> {
   if (!AI_ENABLED) {
     console.log('[AI] isOllamaAvailable: AI_ENABLED is false');
@@ -372,7 +373,54 @@ function generateFallbackResponse(message: string): string {
   if (lowerMsg.includes('balance')) return '📊 Para ver el Balance General dirígete a Reportes > Balance General.';
   if (lowerMsg.includes('resultado')) return '📈 El Estado de Resultados está disponible en Reportes > Estado de Resultados.';
 
-  return `🤖 Modo Fallback — La IA local no está conectada.\n\nConsulta: "${message}"\n\nPuedes consultar los reportes directamente en el menú lateral.`;
+  if (lowerMsg.includes('balance') || lowerMsg.includes('general')) {
+    return '📊 Para generar el Balance General, utiliza:\nGET /api/reports/balance-sheet?companyId={ID}&year=2024&month=1';
+  }
+  if (lowerMsg.includes('resultado') || lowerMsg.includes('pérdida') || lowerMsg.includes('ganancia')) {
+    return '📈 Para ver el Estado de Resultados:\nGET /api/reports/income-statement?companyId={ID}&year=2024&month=1\nMuestra ingresos, gastos y utilidad neta del período.';
+  }
+  if (lowerMsg.includes('poliza') || lowerMsg.includes('póliza') || lowerMsg.includes('diario')) {
+    return '📝 Para consultar pólizas:\nGET /api/journal-entries?companyId={ID}\nPuedes filtrar por período, estado (DRAFT/POSTED) y tipo.';
+  }
+  if (lowerMsg.includes('factura') || lowerMsg.includes('cxc') || lowerMsg.includes('cxp')) {
+    return '🧾 Para facturas:\n• CxC: GET /api/invoices?companyId={ID}&invoiceType=SALE\n• CxP: GET /api/invoices?companyId={ID}&invoiceType=PURCHASE\n• Antigüedad: GET /api/invoices/aging?companyId={ID}';
+  }
+  if (lowerMsg.includes('banco') || lowerMsg.includes('concilia')) {
+    return '🏦 Para conciliación bancaria:\n1. GET /api/bank-movements?bankAccountId={ID}&status=PENDING\n2. POST /api/bank-movements/reconcile';
+  }
+  if (lowerMsg.includes('cuenta') || lowerMsg.includes('plan')) {
+    return '📋 Plan de Cuentas:\n• Árbol completo: GET /api/accounts/tree?companyId={ID}\n• Buscar: GET /api/accounts/search?companyId={ID}&query=banco';
+  }
+  if (lowerMsg.includes('kpi') || lowerMsg.includes('dashboard') || lowerMsg.includes('resumen')) {
+    return '📈 Dashboard:\n• KPIs: GET /api/dashboard/kpis?companyId={ID}\n• Posición de caja: GET /api/dashboard/cash-positions?companyId={ID}\n• Tendencias: GET /api/dashboard/expense-trends?companyId={ID}';
+  }
+  if (lowerMsg.includes('balanza') || lowerMsg.includes('comprobación')) {
+    return '⚖️ Balanza de Comprobación:\nGET /api/reports/trial-balance?companyId={ID}&year=2024&month=1\nMuestra saldos deudores y acreedores por cuenta.';
+  }
+  if (lowerMsg.includes('flujo') || lowerMsg.includes('efectivo')) {
+    return '💰 Flujo de Efectivo:\nGET /api/reports/cash-flow?companyId={ID}&year=2024&month=1';
+  }
+  if (lowerMsg.includes('iva') || lowerMsg.includes('impuesto') || lowerMsg.includes('fiscal')) {
+    return '🏦 Reportes Fiscales:\n• Resumen IVA: GET /api/tax/reports/iva-summary?companyId={ID}&year=2024&month=1\n• DIOT: GET /api/tax/reports/diot?companyId={ID}&year=2024&month=1\n• Retenciones: GET /api/tax/reports/withholding?companyId={ID}&year=2024&month=1';
+  }
+  if (lowerMsg.includes('activo') || lowerMsg.includes('depreciacion') || lowerMsg.includes('depreciación')) {
+    return '🏭 Activos Fijos:\n• Resumen: GET /api/fixed-assets/summary?companyId={ID}\n• Depreciar: POST /api/fixed-assets/bulk-depreciate?companyId={ID}&year=2024&month=1';
+  }
+  if (lowerMsg.includes('presupuesto') || lowerMsg.includes('budget')) {
+    return '📋 Presupuestos:\n• vs Real: GET /api/budgets/report?companyId={ID}&year=2024&month=1\n• Varianza: GET /api/budgets/variance?companyId={ID}&year=2024&month=1';
+  }
+
+  return `🤖 Modo de Respaldo Contable
+(La conexión con la IA de Gemma no se pudo establecer localmente).
+
+Tu consulta: "${message}"
+
+Para activar el motor de IA Avanzado:
+• Hemos configurado todo el código para ti, pero el motor principal está desconectado.
+• Por favor abre tu terminal de Windows/Mac/Linux y escribe: "ollama run gemma"
+• Una vez ejecutado, este chat se volverá inteligente automáticamente.
+
+Mientras tanto, en este Modo de Respaldo puedo guiarte con consultas con palabras clave. Por ejemplo, intenta escribir "mostrar el balance general" o "ver facturas vencidas". ¿Qué necesitas?`;
 }
 
 export { 

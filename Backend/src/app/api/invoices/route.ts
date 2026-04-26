@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { success, created, error, parsePagination, serverError } from '@/lib/api-helpers';
+import { success, created, error, parsePagination, serverError, generateInvoiceNumber } from '@/lib/api-helpers';
 import type { PaginatedResponse } from '@/lib/api-helpers';
 import { Prisma } from '@prisma/client';
 
@@ -147,60 +147,96 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { companyId, thirdPartyId, invoiceType, number, issueDate, dueDate, totalAmount, description } = body;
+    const { 
+      companyId, 
+      thirdPartyId, 
+      invoiceType, 
+      number, 
+      invoiceDate, // renamed from issueDate in frontend
+      issueDate,   // keep support for both
+      dueDate, 
+      description,
+      lines = [] 
+    } = body;
+
+    const finalIssueDate = invoiceDate || issueDate;
 
     // Validate required fields
-    if (!companyId) {
-      return error('El companyId es obligatorio');
-    }
-    if (!thirdPartyId) {
-      return error('El thirdPartyId es obligatorio');
-    }
+    if (!companyId) return error('El companyId es obligatorio');
+    if (!thirdPartyId) return error('El thirdPartyId es obligatorio');
     if (!invoiceType || !['SALE', 'PURCHASE'].includes(invoiceType)) {
       return error('El invoiceType es obligatorio y debe ser SALE o PURCHASE');
     }
-    if (!number || typeof number !== 'string' || number.trim().length === 0) {
-      return error('El número de factura es obligatorio');
-    }
-    if (!issueDate) {
-      return error('La fecha de emisión es obligatoria');
-    }
-    if (totalAmount === undefined || totalAmount === null || totalAmount <= 0) {
-      return error('El monto total debe ser mayor a 0');
+    if (!finalIssueDate) return error('La fecha de emisión es obligatoria');
+
+    // Generate number if missing
+    let finalNumber = number;
+    if (!finalNumber || finalNumber.trim() === '') {
+      finalNumber = await generateInvoiceNumber(companyId, invoiceType);
     }
 
     // Verify company exists
     const company = await db.company.findUnique({ where: { id: companyId } });
-    if (!company) {
-      return error('La empresa especificada no existe');
-    }
+    if (!company) return error('La empresa especificada no existe');
 
     // Verify third party exists
     const thirdParty = await db.thirdParty.findUnique({ where: { id: thirdPartyId } });
-    if (!thirdParty) {
-      return error('El tercero especificado no existe');
-    }
+    if (!thirdParty) return error('El tercero especificado no existe');
 
-    // balanceDue defaults to totalAmount
-    const balanceDue = totalAmount;
+    // Calculate totals from lines if present
+    let calculatedSubtotal = 0;
+    let calculatedTaxAmount = 0;
+    
+    const invoiceLinesData = lines.map((line: any, idx: number) => {
+      const q = line.quantity || 1;
+      const up = line.unitPrice || 0;
+      const tr = line.taxRate || 0;
+      const sub = q * up;
+      const tax = sub * (tr / 100);
+      
+      calculatedSubtotal += sub;
+      calculatedTaxAmount += tax;
+      
+      return {
+        lineNumber: idx + 1,
+        description: line.description || 'Sin descripción',
+        quantity: q,
+        unitPrice: up,
+        subtotal: sub,
+        taxBase: sub,
+        // taxAmount is not per line in the schema, but total for invoice
+      };
+    });
 
-    const invoice = await db.invoice.create({
-      data: {
-        companyId,
-        thirdPartyId,
-        invoiceType,
-        number: number.trim(),
-        issueDate: new Date(issueDate),
-        dueDate: dueDate ? new Date(dueDate) : null,
-        totalAmount,
-        balanceDue,
-        description: description?.trim() || null,
-      },
-      include: {
-        thirdParty: {
-          select: { id: true, name: true, type: true },
+    const totalAmount = body.totalAmount || (calculatedSubtotal + calculatedTaxAmount);
+    const subtotal = body.subtotal || calculatedSubtotal;
+    const taxAmount = body.taxAmount || calculatedTaxAmount;
+
+    // Start transaction
+    const invoice = await db.$transaction(async (tx) => {
+      return await tx.invoice.create({
+        data: {
+          companyId,
+          thirdPartyId,
+          invoiceType,
+          number: finalNumber.trim(),
+          issueDate: new Date(finalIssueDate),
+          dueDate: dueDate ? new Date(dueDate) : null,
+          subtotal,
+          taxAmount,
+          totalAmount,
+          balanceDue: totalAmount,
+          description: description?.trim() || null,
+          status: 'PENDING',
+          lines: {
+            create: invoiceLinesData
+          }
         },
-      },
+        include: {
+          thirdParty: { select: { id: true, name: true, type: true } },
+          lines: true
+        }
+      });
     });
 
     return created(invoice);
@@ -209,9 +245,6 @@ export async function POST(request: Request) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         return error('Ya existe una factura con ese número para este tipo en la empresa');
-      }
-      if (err.code === 'P2003') {
-        return error('La empresa o el tercero especificado no existe');
       }
     }
     return serverError('Error al crear la factura');

@@ -46,8 +46,8 @@ const EXPENSE_COLOR = '#f0c8c0';
 function VintageTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white/95 backdrop-blur-sm border border-vintage-200 rounded-xl p-3 shadow-lg">
-      <p className="text-sm font-medium text-vintage-800 mb-1">{label}</p>
+    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm border border-vintage-200 dark:border-zinc-800 rounded-xl p-3 shadow-lg text-vintage-800 dark:text-zinc-100">
+      <p className="text-sm font-medium mb-1">{label}</p>
       {payload.map((entry: any, idx: number) => (
         <p key={idx} className="text-xs" style={{ color: entry.color }}>
           {entry.name}: {formatCurrency(entry.value, 'NIO')}
@@ -174,412 +174,329 @@ export function ReportsView() {
     { name: 'Utilidad', ingresos: incomeStatement.netIncome, gastos: 0 },
   ];
 
-
-
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
-      {/* Page header */}
-      <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-lavender/30 flex items-center justify-center">
-            <BarChart3 className="w-5 h-5 text-vintage-700" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-playfair text-vintage-800">Reportes</h1>
-            <p className="text-sm text-vintage-500">Informes financieros y contables</p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <PastelButton variant="outline" onClick={() => handleExport('pdf')} className="gap-2">
-            <Download className="w-4 h-4" />
-            PDF
-          </PastelButton>
-          <PastelButton variant="outline" onClick={() => handleExport('excel')} className="gap-2">
-            <FileSpreadsheet className="w-4 h-4" />
-            Excel
-          </PastelButton>
-        </div>
-      </motion.div>
-
-      {/* Period selectors */}
-      <motion.div variants={itemVariants} className="flex flex-wrap gap-3 items-center">
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-vintage-600 font-medium">Año:</label>
-          <select
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
-            className="px-3 py-2 text-sm bg-card border border-vintage-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-vintage-400"
-          >
-            {years.map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-vintage-600 font-medium">Periodo:</label>
-          <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-            className="px-3 py-2 text-sm bg-card border border-vintage-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-vintage-400"
-          >
-            {availablePeriods.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-        </div>
-      </motion.div>
-
-      {/* Tabs */}
-      <motion.div variants={itemVariants}>
-        <VintageTabs tabs={tabs} active={activeTab} onChange={setActiveTab} />
-      </motion.div>
-
-      {/* Tab content */}
-      <motion.div variants={itemVariants}>
-        {/* ── TRIAL BALANCE ── */}
-        {activeTab === 'trial-balance' && (
-          <div className="space-y-4">
-            {/* Summary cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <VintageCard hover={false} className="p-4">
-                <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Cuentas</p>
-                <p className="text-xl font-playfair text-vintage-800 mt-1">{trialBalance.length}</p>
-              </VintageCard>
-              <VintageCard hover={false} className="p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <TrendingUp className="w-4 h-4 text-vintage-500" />
-                  <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Debe</p>
-                </div>
-                <p className="text-xl font-playfair text-vintage-800 mt-1">{formatCurrency(totalDebit, 'NIO')}</p>
-              </VintageCard>
-              <VintageCard hover={false} className="p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <TrendingDown className="w-4 h-4 text-vintage-500" />
-                  <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Haber</p>
-                </div>
-                <p className="text-xl font-playfair text-vintage-800 mt-1">{formatCurrency(totalCredit, 'NIO')}</p>
-              </VintageCard>
+    <motion.div 
+      className="min-h-screen bg-background"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <div className="space-y-6">
+        {/* Page header */}
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-lavender/30 dark:bg-indigo-950/30 flex items-center justify-center">
+              <BarChart3 className="w-5 h-5 text-vintage-700 dark:text-indigo-400" />
             </div>
+            <div>
+              <h1 className="text-2xl font-playfair text-vintage-800 dark:text-zinc-100">Reportes</h1>
+              <p className="text-sm text-vintage-500 dark:text-zinc-500">Informes financieros y contables</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <PastelButton variant="outline" onClick={() => handleExport('pdf')} className="gap-2">
+              <Download className="w-4 h-4" />
+              PDF
+            </PastelButton>
+            <PastelButton variant="outline" onClick={() => handleExport('excel')} className="gap-2">
+              <FileSpreadsheet className="w-4 h-4" />
+              Excel
+            </PastelButton>
+          </div>
+        </motion.div>
 
-            {/* Balance indicator */}
-            <VintageCard hover={false} className={cn(
-              'p-3 flex items-center justify-between',
-              Math.abs(totalDebit - totalCredit) <= 0.01 ? 'border-success/50 bg-success/5' : 'border-error/50 bg-error/5',
-            )}>
-              <span className="text-sm font-medium text-vintage-700">Diferencia Debe - Haber:</span>
-              <span className={cn(
-                'text-sm font-mono font-bold',
-                Math.abs(totalDebit - totalCredit) <= 0.01 ? 'text-success' : 'text-error',
+        {/* Period selectors */}
+        <motion.div variants={itemVariants} className="flex flex-wrap gap-3 items-center">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-vintage-600 dark:text-zinc-500 font-medium">Año:</label>
+            <select
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              className="px-3 py-2 text-sm bg-card dark:bg-zinc-900 border border-vintage-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-vintage-400 dark:focus:ring-zinc-700 text-vintage-800 dark:text-zinc-300"
+            >
+              {years.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-vintage-600 dark:text-zinc-500 font-medium">Periodo:</label>
+            <select
+              value={period}
+              onChange={(e) => setPeriod(e.target.value)}
+              className="px-3 py-2 text-sm bg-card dark:bg-zinc-900 border border-vintage-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-vintage-400 dark:focus:ring-zinc-700 text-vintage-800 dark:text-zinc-300"
+            >
+              {availablePeriods.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+        </motion.div>
+
+        {/* Tabs */}
+        <motion.div variants={itemVariants}>
+          <VintageTabs tabs={tabs} active={activeTab} onChange={setActiveTab} />
+        </motion.div>
+
+        {/* Tab content */}
+        <motion.div variants={itemVariants}>
+          {/* ── TRIAL BALANCE ── */}
+          {activeTab === 'trial-balance' && (
+            <div className="space-y-4">
+              {/* Summary cards */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <VintageCard hover={false} className="p-4">
+                  <p className="text-xs text-vintage-500 dark:text-zinc-500 font-medium uppercase tracking-wider">Total Cuentas</p>
+                  <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 mt-1">{trialBalance.length}</p>
+                </VintageCard>
+                <VintageCard hover={false} className="p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <TrendingUp className="w-4 h-4 text-vintage-500 dark:text-zinc-500" />
+                    <p className="text-xs text-vintage-500 dark:text-zinc-500 font-medium uppercase tracking-wider">Total Debe</p>
+                  </div>
+                  <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 mt-1">{formatCurrency(totalDebit, 'NIO')}</p>
+                </VintageCard>
+                <VintageCard hover={false} className="p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <TrendingDown className="w-4 h-4 text-vintage-500 dark:text-zinc-500" />
+                    <p className="text-xs text-vintage-500 dark:text-zinc-500 font-medium uppercase tracking-wider">Total Haber</p>
+                  </div>
+                  <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 mt-1">{formatCurrency(totalCredit, 'NIO')}</p>
+                </VintageCard>
+              </div>
+
+              {/* Balance indicator */}
+              <VintageCard hover={false} className={cn(
+                'p-3 flex items-center justify-between',
+                Math.abs(totalDebit - totalCredit) <= 0.01 
+                  ? 'border-success/50 bg-success/5 dark:bg-emerald-950/10' 
+                  : 'border-error/50 bg-error/5 dark:bg-red-950/10',
               )}>
-                {formatCurrency(Math.abs(totalDebit - totalCredit), 'NIO')}
-                {Math.abs(totalDebit - totalCredit) <= 0.01 ? ' ✓ Cuadrada' : ''}
-              </span>
-            </VintageCard>
+                <span className="text-sm font-medium text-vintage-700 dark:text-zinc-400">Diferencia Debe - Haber:</span>
+                <span className={cn(
+                  'text-sm font-mono font-bold',
+                  Math.abs(totalDebit - totalCredit) <= 0.01 ? 'text-success' : 'text-error',
+                )}>
+                  {formatCurrency(Math.abs(totalDebit - totalCredit), 'NIO')}
+                  {Math.abs(totalDebit - totalCredit) <= 0.01 ? ' ✓ Cuadrada' : ''}
+                </span>
+              </VintageCard>
 
-            {/* Table */}
-            <AnimatedTable
-              headers={trialBalanceHeaders}
-              data={trialBalance}
-              keyExtractor={(row) => row.accountId}
-              renderRow={(row, idx) => (
-                <>
-                  <td className="px-4 py-2.5 text-sm font-mono text-vintage-600">{row.accountCode}</td>
-                  <td className="px-4 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <span className={cn(
-                        'w-2 h-2 rounded-full',
-                        row.accountType === 'ASSET' && 'bg-info',
-                        row.accountType === 'LIABILITY' && 'bg-peach',
-                        row.accountType === 'EQUITY' && 'bg-lavender',
-                        row.accountType === 'INCOME' && 'bg-success',
-                        row.accountType === 'EXPENSE' && 'bg-error/70',
-                      )} />
-                      <span className="text-sm text-vintage-700">{row.accountName}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-2.5 text-right text-sm font-mono text-vintage-700">
-                    {row.debitBalance > 0 ? formatCurrency(row.debitBalance, 'NIO') : '—'}
-                  </td>
-                  <td className="px-4 py-2.5 text-right text-sm font-mono text-vintage-700">
-                    {row.creditBalance > 0 ? formatCurrency(row.creditBalance, 'NIO') : '—'}
-                  </td>
-                  <td className={cn(
-                    'px-4 py-2.5 text-right text-sm font-mono font-semibold',
-                    row.netBalance > 0 ? 'text-success' : row.netBalance < 0 ? 'text-error' : 'text-vintage-500',
-                  )}>
-                    {formatCurrency(row.netBalance, 'NIO')}
-                  </td>
-                </>
-              )}
-              emptyMessage="No hay datos para este periodo"
-            />
-          </div>
-        )}
-
-        {/* ── BALANCE SHEET ── */}
-        {activeTab === 'balance-sheet' && (
-          <div className="space-y-6">
-            {/* Summary cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <VintageCard hover={false} className="p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <DollarSign className="w-4 h-4 text-success" />
-                  <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Activos</p>
-                </div>
-                <AnimatedCounter value={balanceSheet.totalAssets} prefix="$" decimals={0} className="text-xl font-playfair text-success" />
-              </VintageCard>
-              <VintageCard hover={false} className="p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <DollarSign className="w-4 h-4 text-error" />
-                  <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Pasivos</p>
-                </div>
-                <AnimatedCounter value={balanceSheet.totalLiabilities} prefix="$" decimals={0} className="text-xl font-playfair text-error" />
-              </VintageCard>
-              <VintageCard hover={false} className="p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <DollarSign className="w-4 h-4 text-vintage-700" />
-                  <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Patrimonio</p>
-                </div>
-                <AnimatedCounter value={balanceSheet.totalEquity} prefix="$" decimals={0} className="text-xl font-playfair text-vintage-800" />
-              </VintageCard>
+              {/* Table */}
+              <AnimatedTable
+                headers={trialBalanceHeaders}
+                data={trialBalance}
+                keyExtractor={(row: any) => row.accountId}
+                renderRow={(row: any) => (
+                  <>
+                    <td className="px-4 py-2.5 text-sm font-mono text-vintage-600 dark:text-zinc-400">{row.accountCode}</td>
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          'w-2 h-2 rounded-full',
+                          row.accountType === 'ASSET' && 'bg-info',
+                          row.accountType === 'LIABILITY' && 'bg-peach',
+                          row.accountType === 'EQUITY' && 'bg-lavender',
+                          row.accountType === 'INCOME' && 'bg-success',
+                          row.accountType === 'EXPENSE' && 'bg-error/70',
+                        )} />
+                        <span className="text-sm text-vintage-700 dark:text-zinc-300">{row.accountName}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2.5 text-right text-sm font-mono text-vintage-700 dark:text-zinc-400">
+                      {row.debitBalance > 0 ? formatCurrency(row.debitBalance, 'NIO') : '—'}
+                    </td>
+                    <td className="px-4 py-2.5 text-right text-sm font-mono text-vintage-700 dark:text-zinc-400">
+                      {row.creditBalance > 0 ? formatCurrency(row.creditBalance, 'NIO') : '—'}
+                    </td>
+                    <td className={cn(
+                      'px-4 py-2.5 text-right text-sm font-mono font-semibold',
+                      row.netBalance > 0 ? 'text-success dark:text-emerald-400' : row.netBalance < 0 ? 'text-error dark:text-red-400' : 'text-vintage-500 dark:text-zinc-600',
+                    )}>
+                      {formatCurrency(row.netBalance, 'NIO')}
+                    </td>
+                  </>
+                )}
+                emptyMessage="No hay datos para este periodo"
+              />
             </div>
+          )}
 
-            {/* Pie chart and breakdown */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Pie chart */}
-              <VintageCard hover={false} className="p-5">
-                <h3 className="text-lg font-playfair text-vintage-800 mb-4">Composición Financiera</h3>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={balancePieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={4}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        {balancePieData.map((entry, index) => (
-                          <Cell key={index} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<VintageTooltip />} />
-                      <Legend
-                        verticalAlign="bottom"
-                        formatter={(value: string) => <span className="text-sm text-vintage-700">{value}</span>}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+          {/* ── BALANCE SHEET ── */}
+          {activeTab === 'balance-sheet' && (
+            <div className="space-y-6">
+              {/* Summary cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <VintageCard hover={false} className="p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <DollarSign className="w-4 h-4 text-success dark:text-emerald-400" />
+                    <p className="text-xs text-vintage-500 dark:text-zinc-500 font-medium uppercase tracking-wider">Total Activos</p>
+                  </div>
+                  <AnimatedCounter value={balanceSheet.totalAssets} prefix="$" decimals={0} className="text-xl font-playfair text-success dark:text-emerald-400" />
+                </VintageCard>
+                <VintageCard hover={false} className="p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <DollarSign className="w-4 h-4 text-error dark:text-red-400" />
+                    <p className="text-xs text-vintage-500 dark:text-zinc-500 font-medium uppercase tracking-wider">Total Pasivos</p>
+                  </div>
+                  <AnimatedCounter value={balanceSheet.totalLiabilities} prefix="$" decimals={0} className="text-xl font-playfair text-error dark:text-red-400" />
+                </VintageCard>
+                <VintageCard hover={false} className="p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <DollarSign className="w-4 h-4 text-vintage-700 dark:text-zinc-400" />
+                    <p className="text-xs text-vintage-500 dark:text-zinc-500 font-medium uppercase tracking-wider">Total Patrimonio</p>
+                  </div>
+                  <AnimatedCounter value={balanceSheet.totalEquity} prefix="$" decimals={0} className="text-xl font-playfair text-vintage-800 dark:text-zinc-100" />
+                </VintageCard>
+              </div>
+
+              {/* Pie chart and breakdown */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Pie chart */}
+                <VintageCard hover={false} className="p-5">
+                  <h3 className="text-lg font-playfair text-vintage-800 dark:text-zinc-100 mb-4">Composición Financiera</h3>
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={balancePieData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={100}
+                          paddingAngle={4}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {balancePieData.map((entry, index) => (
+                            <Cell key={index} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<VintageTooltip />} />
+                        <Legend
+                          verticalAlign="bottom"
+                          formatter={(value: string) => <span className="text-sm text-vintage-700 dark:text-zinc-400">{value}</span>}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </VintageCard>
+
+                {/* Breakdown */}
+                <div className="space-y-4">
+                  <VintageCard hover={false} className="p-4">
+                    <h4 className="text-sm font-semibold text-vintage-800 dark:text-zinc-100 mb-3 flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-success" />
+                      Activos ({formatCurrency(balanceSheet.totalAssets, 'NIO')})
+                    </h4>
+                    <div className="space-y-2">
+                      {(balanceSheet.assets || []).map((section: any, sIdx: number) => (
+                        <div key={`asset-section-${section.name}-${sIdx}`}>
+                          <p className="text-sm font-medium text-vintage-700 dark:text-zinc-300">{section.name}: {formatCurrency(section.amount, 'NIO')}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </VintageCard>
+
+                  <VintageCard hover={false} className="p-4">
+                    <h4 className="text-sm font-semibold text-vintage-800 dark:text-zinc-100 mb-3 flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-error" />
+                      Pasivos ({formatCurrency(balanceSheet.totalLiabilities, 'NIO')})
+                    </h4>
+                    <div className="space-y-2">
+                      {(balanceSheet.liabilities || []).map((section: any, sIdx: number) => (
+                        <div key={`liability-section-${section.name}-${sIdx}`}>
+                          <p className="text-sm font-medium text-vintage-700 dark:text-zinc-300">{section.name}: {formatCurrency(section.amount, 'NIO')}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </VintageCard>
+
+                  <VintageCard hover={false} className="p-4">
+                    <h4 className="text-sm font-semibold text-vintage-800 dark:text-zinc-100 mb-3 flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-lavender" />
+                      Patrimonio ({formatCurrency(balanceSheet.totalEquity, 'NIO')})
+                    </h4>
+                    <div className="space-y-2">
+                      {(balanceSheet.equity || []).map((section: any, sIdx: number) => (
+                        <div key={`equity-section-${section.name}-${sIdx}`}>
+                          <p className="text-sm font-medium text-vintage-700 dark:text-zinc-300">{section.name}: {formatCurrency(section.amount, 'NIO')}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </VintageCard>
                 </div>
-              </VintageCard>
+              </div>
+            </div>
+          )}
 
-              {/* Breakdown */}
-              <div className="space-y-4">
-                {/* Assets breakdown */}
+          {/* ── INCOME STATEMENT ── */}
+          {activeTab === 'income-statement' && (
+            <div className="space-y-6">
+              {/* Summary cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <VintageCard hover={false} className="p-4">
-                  <h4 className="text-sm font-semibold text-vintage-800 mb-3 flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-success" />
-                    Activos ({formatCurrency(balanceSheet.totalAssets, 'NIO')})
-                  </h4>
-                  <div className="space-y-2">
-                    {(balanceSheet.assets || []).map((section: any, sIdx: number) => (
-                      <div key={`asset-section-${section.name}-${sIdx}`}>
-                        <p className="text-sm font-medium text-vintage-700">{section.name}: {formatCurrency(section.amount, 'NIO')}</p>
-                        {section.subItems?.map((sub, ssIdx) => (
-                          <p key={`asset-sub-${sub.name}-${ssIdx}`} className="text-xs text-vintage-500 pl-4">
-                            {sub.name}: {formatCurrency(sub.amount, 'NIO')}
-                          </p>
-                        ))}
-                      </div>
-                    ))}
+                  <div className="flex items-center gap-2 mb-1">
+                    <TrendingUp className="w-4 h-4 text-success dark:text-emerald-400" />
+                    <p className="text-xs text-vintage-500 dark:text-zinc-500 font-medium uppercase tracking-wider">Total Ingresos</p>
+                  </div>
+                  <AnimatedCounter value={incomeStatement.totalIncome} prefix="$" decimals={0} className="text-xl font-playfair text-success dark:text-emerald-400" />
+                </VintageCard>
+                <VintageCard hover={false} className="p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <TrendingDown className="w-4 h-4 text-error dark:text-red-400" />
+                    <p className="text-xs text-vintage-500 dark:text-zinc-500 font-medium uppercase tracking-wider">Total Gastos</p>
+                  </div>
+                  <AnimatedCounter value={incomeStatement.totalExpenses} prefix="$" decimals={0} className="text-xl font-playfair text-error dark:text-red-400" />
+                </VintageCard>
+                <VintageCard hover={false} className="p-4">
+                  <p className="text-xs text-vintage-500 dark:text-zinc-500 font-medium uppercase tracking-wider">Utilidad Bruta</p>
+                  <AnimatedCounter value={incomeStatement.grossProfit} prefix="$" decimals={0} className="text-xl font-playfair text-vintage-800 dark:text-zinc-100" />
+                </VintageCard>
+                <VintageCard hover={false} variant="gradient" className="p-4">
+                  <p className="text-xs text-vintage-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Utilidad Neta</p>
+                  <AnimatedCounter value={incomeStatement.netIncome} prefix="$" decimals={0} className="text-2xl font-playfair text-success dark:text-emerald-400 font-bold" />
+                </VintageCard>
+              </div>
+
+              {/* Charts row */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <VintageCard hover={false} className="p-5">
+                  <h3 className="text-lg font-playfair text-vintage-800 dark:text-zinc-100 mb-4">Ingresos vs Gastos</h3>
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={expenseCompareData} barSize={50}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e8e0d8" className="dark:opacity-10" />
+                        <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#7a6f65' }} className="dark:fill-zinc-500 font-sans" />
+                        <YAxis tick={{ fontSize: 12, fill: '#7a6f65' }} tickFormatter={(v) => `$${(v / 1000000).toFixed(1)}M`} className="dark:fill-zinc-500 font-sans" />
+                        <Tooltip content={<VintageTooltip />} />
+                        <Legend />
+                        <Bar dataKey="ingresos" fill={INCOME_COLOR} name="Ingresos" radius={[6, 6, 0, 0]} />
+                        <Bar dataKey="gastos" fill={EXPENSE_COLOR} name="Gastos" radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </VintageCard>
 
-                {/* Liabilities breakdown */}
-                <VintageCard hover={false} className="p-4">
-                  <h4 className="text-sm font-semibold text-vintage-800 mb-3 flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-error" />
-                    Pasivos ({formatCurrency(balanceSheet.totalLiabilities, 'NIO')})
-                  </h4>
-                  <div className="space-y-2">
-                    {(balanceSheet.liabilities || []).map((section: any, sIdx: number) => (
-                      <div key={`liability-section-${section.name}-${sIdx}`}>
-                        <p className="text-sm font-medium text-vintage-700">{section.name}: {formatCurrency(section.amount, 'NIO')}</p>
-                        {section.subItems?.map((sub, ssIdx) => (
-                          <p key={`liability-sub-${sub.name}-${ssIdx}`} className="text-xs text-vintage-500 pl-4">
-                            {sub.name}: {formatCurrency(sub.amount, 'NIO')}
-                          </p>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                </VintageCard>
-
-                {/* Equity breakdown */}
-                <VintageCard hover={false} className="p-4">
-                  <h4 className="text-sm font-semibold text-vintage-800 mb-3 flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-lavender" />
-                    Patrimonio ({formatCurrency(balanceSheet.totalEquity, 'NIO')})
-                  </h4>
-                  <div className="space-y-2">
-                    {(balanceSheet.equity || []).map((section: any, sIdx: number) => (
-                      <div key={`equity-section-${section.name}-${sIdx}`}>
-                        <p className="text-sm font-medium text-vintage-700">{section.name}: {formatCurrency(section.amount, 'NIO')}</p>
-                        {section.subItems?.map((sub, ssIdx) => (
-                          <p key={`equity-sub-${sub.name}-${ssIdx}`} className="text-xs text-vintage-500 pl-4">
-                            {sub.name}: {formatCurrency(sub.amount, 'NIO')}
-                          </p>
-                        ))}
-                      </div>
-                    ))}
+                <VintageCard hover={false} className="p-5">
+                  <h3 className="text-lg font-playfair text-vintage-800 dark:text-zinc-100 mb-4">Desglose de Gastos</h3>
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={incomeBarData.filter((d) => d.type === 'Gasto')} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e8e0d8" className="dark:opacity-10" />
+                        <XAxis type="number" tick={{ fontSize: 11, fill: '#7a6f65' }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} className="font-sans dark:fill-zinc-500" />
+                        <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#7a6f65' }} width={90} className="font-sans dark:fill-zinc-500" />
+                        <Tooltip content={<VintageTooltip />} />
+                        <Bar dataKey="amount" fill={EXPENSE_COLOR} name="Monto" radius={[0, 6, 6, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </VintageCard>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* ── INCOME STATEMENT ── */}
-        {activeTab === 'income-statement' && (
-          <div className="space-y-6">
-            {/* Summary cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <VintageCard hover={false} className="p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <TrendingUp className="w-4 h-4 text-success" />
-                  <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Ingresos</p>
-                </div>
-                <AnimatedCounter value={incomeStatement.totalIncome} prefix="$" decimals={0} className="text-xl font-playfair text-success" />
-              </VintageCard>
-              <VintageCard hover={false} className="p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <TrendingDown className="w-4 h-4 text-error" />
-                  <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Gastos</p>
-                </div>
-                <AnimatedCounter value={incomeStatement.totalExpenses} prefix="$" decimals={0} className="text-xl font-playfair text-error" />
-              </VintageCard>
-              <VintageCard hover={false} className="p-4">
-                <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Utilidad Bruta</p>
-                <AnimatedCounter value={incomeStatement.grossProfit} prefix="$" decimals={0} className="text-xl font-playfair text-vintage-800" />
-              </VintageCard>
-              <VintageCard hover={false} variant="gradient" className="p-4">
-                <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Utilidad Neta</p>
-                <AnimatedCounter value={incomeStatement.netIncome} prefix="$" decimals={0} className="text-2xl font-playfair text-success font-bold" />
-                <p className="text-xs text-success mt-1">
-                  Margen: {((incomeStatement.netIncome / incomeStatement.totalIncome) * 100).toFixed(1)}%
-                </p>
-              </VintageCard>
-            </div>
-
-            {/* Charts row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Income vs Expenses overview */}
-              <VintageCard hover={false} className="p-5">
-                <h3 className="text-lg font-playfair text-vintage-800 mb-4">Ingresos vs Gastos</h3>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={expenseCompareData} barSize={50}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e8e0d8" />
-                      <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#7a6f65' }} />
-                      <YAxis tick={{ fontSize: 12, fill: '#7a6f65' }} tickFormatter={(v) => `$${(v / 1000000).toFixed(1)}M`} />
-                      <Tooltip content={<VintageTooltip />} />
-                      <Legend />
-                      <Bar dataKey="ingresos" fill={INCOME_COLOR} name="Ingresos" radius={[6, 6, 0, 0]} />
-                      <Bar dataKey="gastos" fill={EXPENSE_COLOR} name="Gastos" radius={[6, 6, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </VintageCard>
-
-              {/* Detailed expense breakdown */}
-              <VintageCard hover={false} className="p-5">
-                <h3 className="text-lg font-playfair text-vintage-800 mb-4">Desglose de Gastos</h3>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={incomeBarData.filter((d) => d.type === 'Gasto')} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e8e0d8" />
-                      <XAxis type="number" tick={{ fontSize: 11, fill: '#7a6f65' }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} />
-                      <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#7a6f65' }} width={90} />
-                      <Tooltip content={<VintageTooltip />} />
-                      <Bar dataKey="amount" fill={EXPENSE_COLOR} name="Monto" radius={[0, 6, 6, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </VintageCard>
-            </div>
-
-            {/* Detailed tables */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Income details */}
-              <VintageCard hover={false} className="overflow-hidden">
-                <div className="p-4 border-b border-vintage-100">
-                  <h3 className="text-sm font-semibold text-vintage-800">Desglose de Ingresos</h3>
-                </div>
-                <div className="p-4 space-y-3">
-                  {(incomeStatement.incomeDetails || []).map((item: any) => {
-                    const pct = (item.amount / incomeStatement.totalIncome) * 100;
-                    return (
-                      <div key={item.name} className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-vintage-700">{item.name}</span>
-                          <span className="text-sm font-mono font-semibold text-success">{formatCurrency(item.amount, 'NIO')}</span>
-                        </div>
-                        <div className="h-1.5 bg-vintage-100 rounded-full overflow-hidden">
-                          <motion.div
-                            className="h-full bg-success rounded-full"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${pct}%` }}
-                            transition={{ duration: 0.8, delay: 0.2 }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <div className="border-t border-vintage-200 pt-2 flex justify-between">
-                    <span className="text-sm font-bold text-vintage-800">Total Ingresos</span>
-                    <span className="text-sm font-mono font-bold text-success">{formatCurrency(incomeStatement.totalIncome, 'NIO')}</span>
-                  </div>
-                </div>
-              </VintageCard>
-
-              {/* Expense details */}
-              <VintageCard hover={false} className="overflow-hidden">
-                <div className="p-4 border-b border-vintage-100">
-                  <h3 className="text-sm font-semibold text-vintage-800">Desglose de Gastos</h3>
-                </div>
-                <div className="p-4 space-y-3">
-                  {(incomeStatement.expenseDetails || []).map((item: any) => {
-                    const pct = (item.amount / incomeStatement.totalExpenses) * 100;
-                    return (
-                      <div key={item.name} className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-vintage-700">{item.name}</span>
-                          <span className="text-sm font-mono font-semibold text-error">{formatCurrency(item.amount, 'NIO')}</span>
-                        </div>
-                        <div className="h-1.5 bg-vintage-100 rounded-full overflow-hidden">
-                          <motion.div
-                            className="h-full bg-error rounded-full"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${pct}%` }}
-                            transition={{ duration: 0.8, delay: 0.2 }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <div className="border-t border-vintage-200 pt-2 flex justify-between">
-                    <span className="text-sm font-bold text-vintage-800">Total Gastos</span>
-                    <span className="text-sm font-mono font-bold text-error">{formatCurrency(incomeStatement.totalExpenses, 'NIO')}</span>
-                  </div>
-                </div>
-              </VintageCard>
-            </div>
-          </div>
-        )}
-      </motion.div>
+          )}
+        </motion.div>
+      </div>
     </motion.div>
   );
 }

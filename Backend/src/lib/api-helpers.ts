@@ -268,3 +268,23 @@ export async function generateEntryNumber(periodId: string, companyId: string): 
   const lastNum = parseInt(lastEntry.entryNumber, 10);
   return String(lastNum + 1).padStart(4, '0');
 }
+
+/**
+ * Genera el siguiente número de factura secuencial por empresa y tipo
+ */
+export async function generateInvoiceNumber(companyId: string, invoiceType: 'SALE' | 'PURCHASE'): Promise<string> {
+  const prefix = invoiceType === 'SALE' ? 'FC' : 'FP';
+  const lastInvoice = await db.invoice.findFirst({
+    where: { companyId, invoiceType },
+    orderBy: { number: 'desc' },
+    select: { number: true },
+  });
+
+  if (!lastInvoice) return `${prefix}-0001`;
+
+  const match = lastInvoice.number.match(/\-(\d+)$/);
+  if (!match) return `${prefix}-0001`;
+
+  const nextNum = parseInt(match[1], 10) + 1;
+  return `${prefix}-${String(nextNum).padStart(4, '0')}`;
+}

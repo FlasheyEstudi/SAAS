@@ -26,29 +26,27 @@ export function AnimatedTable({
   isLoading?: boolean;
   className?: string;
 }) {
-  if (isLoading) {
     return (
-      <div className={cn('bg-card rounded-xl border border-vintage-200 overflow-hidden', className)}>
+      <div className={cn('bg-card dark:bg-zinc-900 border border-vintage-200 dark:border-zinc-800 rounded-xl overflow-hidden', className)}>
         <div className="p-6 space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-4 bg-vintage-100 rounded shimmer-bg" style={{ width: `${80 + Math.random() * 20}%` }} />
+            <div key={i} className="h-4 bg-vintage-100 dark:bg-zinc-800 rounded shimmer-bg" style={{ width: `${80 + Math.random() * 20}%` }} />
           ))}
         </div>
       </div>
     );
-  }
 
   return (
-    <div className={cn('bg-card rounded-xl border border-vintage-200 overflow-hidden', className)}>
+    <div className={cn('bg-card dark:bg-zinc-900 border border-vintage-200 dark:border-zinc-800 rounded-xl overflow-hidden', className)}>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-vintage-200 bg-vintage-50/50">
+            <tr className="border-b border-vintage-200 dark:border-zinc-800 bg-vintage-50/50 dark:bg-zinc-800/20">
               {headers.map((header) => (
                 <th
                   key={header.key}
                   className={cn(
-                    'px-4 py-3 text-xs font-semibold text-vintage-700 uppercase tracking-wider',
+                    'px-4 py-3 text-xs font-semibold text-vintage-700 dark:text-zinc-400 uppercase tracking-wider',
                     header.align === 'center' && 'text-center',
                     header.align === 'right' && 'text-right',
                     header.className
@@ -59,14 +57,14 @@ export function AnimatedTable({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-vintage-100">
+          <tbody className="divide-y divide-vintage-100 dark:divide-zinc-800">
             <AnimatePresence>
               {!Array.isArray(data) || data.length === 0 ? (
                 <tr>
                   <td colSpan={headers.length} className="py-12 text-center">
                     <div className="flex flex-col items-center gap-2">
-                      {emptyIcon && <span className="text-vintage-300 text-3xl">{emptyIcon}</span>}
-                      <p className="text-sm text-vintage-600">{emptyMessage}</p>
+                      {emptyIcon && <span className="text-vintage-300 dark:text-zinc-700 text-3xl">{emptyIcon}</span>}
+                      <p className="text-sm text-vintage-600 dark:text-zinc-500">{emptyMessage}</p>
                     </div>
                   </td>
                 </tr>
@@ -79,7 +77,7 @@ export function AnimatedTable({
                     transition={{ duration: 0.3, delay: index * 0.03 }}
                     className={cn(
                       'transition-colors duration-200',
-                      onRowClick && 'cursor-pointer hover:bg-vintage-50',
+                      onRowClick && 'cursor-pointer hover:bg-vintage-50 dark:hover:bg-zinc-800/40',
                     )}
                     onClick={() => onRowClick?.(row)}
                   >
@@ -130,14 +128,14 @@ export function Pagination({
 
   return (
     <div className="flex items-center justify-between py-3 px-1">
-      <p className="text-sm text-vintage-600">
+      <p className="text-sm text-vintage-600 dark:text-zinc-500">
         Mostrando {start}-{end} de {total}
       </p>
       <div className="flex items-center gap-1">
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="px-3 py-1.5 text-sm rounded-lg border border-vintage-200 text-vintage-700 hover:bg-vintage-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-3 py-1.5 text-sm rounded-lg border border-vintage-200 dark:border-zinc-800 text-vintage-700 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           Anterior
         </button>
@@ -151,8 +149,8 @@ export function Pagination({
               className={cn(
                 'px-3 py-1.5 text-sm rounded-lg transition-colors',
                 page === p
-                  ? 'bg-vintage-400 text-white font-medium'
-                  : 'text-vintage-700 hover:bg-vintage-50 border border-transparent'
+                  ? 'bg-vintage-400 dark:bg-zinc-700 text-white dark:text-zinc-100 font-medium'
+                  : 'text-vintage-700 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800 border border-transparent'
               )}
             >
               {p}
@@ -162,7 +160,7 @@ export function Pagination({
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="px-3 py-1.5 text-sm rounded-lg border border-vintage-200 text-vintage-700 hover:bg-vintage-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-3 py-1.5 text-sm rounded-lg border border-vintage-200 dark:border-zinc-800 text-vintage-700 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           Siguiente
         </button>
@@ -208,7 +206,7 @@ export function FilterBar({
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
-            className="w-full pl-10 pr-4 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400 focus:border-vintage-400 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 text-sm bg-card dark:bg-zinc-900 border border-vintage-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400 dark:focus:ring-zinc-700 focus:border-vintage-400 dark:focus:border-zinc-700 transition-all text-vintage-900 dark:text-zinc-100"
           />
         </div>
         {filters && filters.length > 0 && (
@@ -217,8 +215,8 @@ export function FilterBar({
             className={cn(
               'flex items-center gap-2 px-4 py-2.5 text-sm rounded-xl border transition-all',
               showFilters || (activeFilters && Object.values(activeFilters).some(Boolean))
-                ? 'border-vintage-400 bg-vintage-50 text-vintage-800'
-                : 'border-vintage-200 text-vintage-600 hover:bg-vintage-50'
+                ? 'border-vintage-400 dark:border-zinc-600 bg-vintage-50 dark:bg-zinc-800 text-vintage-800 dark:text-zinc-100'
+                : 'border-vintage-200 dark:border-zinc-800 text-vintage-600 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800'
             )}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -246,13 +244,13 @@ export function FilterBar({
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="flex flex-wrap gap-3 p-3 bg-vintage-50 rounded-xl border border-vintage-200">
+            <div className="flex flex-wrap gap-3 p-3 bg-vintage-50 dark:bg-zinc-800/40 rounded-xl border border-vintage-200 dark:border-zinc-800">
               {filters.map((filter) => (
                 <select
                   key={filter.key}
                   value={activeFilters?.[filter.key] || ''}
                   onChange={(e) => onFilterChange?.(filter.key, e.target.value)}
-                  className="px-3 py-2 text-sm bg-card border border-vintage-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-vintage-400"
+                  className="px-3 py-2 text-sm bg-card dark:bg-zinc-900 border border-vintage-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-vintage-400 dark:focus:ring-zinc-700 text-vintage-800 dark:text-zinc-300"
                 >
                   <option value="">{filter.label}</option>
                   {filter.options.map((opt) => (

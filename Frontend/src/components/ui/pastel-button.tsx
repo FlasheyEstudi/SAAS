@@ -15,15 +15,15 @@ export const PastelButton = forwardRef<HTMLButtonElement, PastelButtonProps>(
   ({ className, loading, children, variant = 'default', disabled, ...props }, ref) => {
     const variantStyles = {
       default:
-        'bg-gradient-to-r from-vintage-300 to-vintage-400 text-white hover:from-vintage-400 hover:to-vintage-500 shadow-sm hover:shadow-md active:shadow-sm',
+        'bg-gradient-to-r from-vintage-300 to-vintage-400 dark:from-zinc-700 dark:to-zinc-800 text-white hover:from-vintage-400 hover:to-vintage-500 dark:hover:from-zinc-600 dark:hover:to-zinc-700 shadow-sm hover:shadow-md active:shadow-sm',
       outline:
-        'border-2 border-vintage-300 text-vintage-700 bg-transparent hover:bg-vintage-50 hover:border-vintage-400',
-      ghost: 'text-vintage-700 hover:bg-vintage-100',
-      secondary: 'bg-vintage-100 text-vintage-800 hover:bg-vintage-200',
-      destructive: 'bg-error/90 text-white hover:bg-error',
-      success: 'bg-success/90 text-white hover:bg-success',
-      warning: 'bg-warning/90 text-white hover:bg-warning',
-      link: 'text-vintage-500 underline-offset-4 hover:underline',
+        'border-2 border-vintage-300 dark:border-zinc-700 text-vintage-700 dark:text-zinc-300 bg-transparent hover:bg-vintage-50 dark:hover:bg-zinc-800/50 hover:border-vintage-400 dark:hover:border-zinc-600',
+      ghost: 'text-vintage-700 dark:text-zinc-400 hover:bg-vintage-100 dark:hover:bg-zinc-800',
+      secondary: 'bg-vintage-100 dark:bg-zinc-800 text-vintage-800 dark:text-zinc-200 hover:bg-vintage-200 dark:hover:bg-zinc-700',
+      destructive: 'bg-error/90 dark:bg-red-950/40 dark:text-red-400 dark:border dark:border-red-900/50 text-white hover:bg-error dark:hover:bg-red-900/60',
+      success: 'bg-success/90 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border dark:border-emerald-900/50 text-white hover:bg-success dark:hover:bg-emerald-900/60',
+      warning: 'bg-warning/90 dark:bg-amber-950/40 dark:text-amber-400 dark:border dark:border-amber-900/50 text-white hover:bg-warning dark:hover:bg-amber-900/60',
+      link: 'text-vintage-500 underline-offset-4 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200',
     };
 
     return (

@@ -1,7 +1,7 @@
 // API Client with interceptors
 import { toast } from 'sonner';
 
-let API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
+let API_BASE = process.env.NEXT_PUBLIC_API_URL || '/backend-api';
 
 // Auto-detect API host for mobile/network access
 if (typeof window !== 'undefined' && API_BASE.includes('localhost') && !window.location.hostname.includes('localhost')) {

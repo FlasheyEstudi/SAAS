@@ -12,7 +12,7 @@ export function StatusBadge({
 }: {
   status: 'success' | 'warning' | 'error' | 'info' | 'neutral';
   label: string;
-  size?: 'sm' | 'md';
+  size?: 'xs' | 'sm' | 'md';
 }) {
   const statusStyles = {
     success: 'bg-success/15 text-success border-success/30',
@@ -22,18 +22,30 @@ export function StatusBadge({
     neutral: 'bg-vintage-100 text-vintage-700 border-vintage-200',
   };
 
+  const badgePadding = {
+    xs: 'px-1.5 py-0 text-[10px]',
+    sm: 'px-2.5 py-0.5 text-xs',
+    md: 'px-3 py-1 text-sm',
+  };
+
+  const dotSize = {
+    xs: 'w-1 h-1',
+    sm: 'w-1.5 h-1.5',
+    md: 'w-2 h-2',
+  };
+
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 font-medium rounded-full border',
-        size === 'sm' ? 'px-2.5 py-0.5 text-xs' : 'px-3 py-1 text-sm',
+        'inline-flex items-center gap-1 font-medium rounded-full border transition-all duration-300',
+        badgePadding[size],
         statusStyles[status]
       )}
     >
       <span
         className={cn(
           'rounded-full',
-          size === 'sm' ? 'w-1.5 h-1.5' : 'w-2 h-2',
+          dotSize[size],
           status === 'success' && 'bg-success',
           status === 'warning' && 'bg-warning',
           status === 'error' && 'bg-error',
@@ -148,6 +160,7 @@ export function ConfirmDialog({
   confirmLabel = 'Confirmar',
   cancelLabel = 'Cancelar',
   variant = 'default',
+  loading = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -157,6 +170,7 @@ export function ConfirmDialog({
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: 'default' | 'destructive';
+  loading?: boolean;
 }) {
   if (!open) return null;
 
@@ -185,12 +199,14 @@ export function ConfirmDialog({
           </button>
           <button
             onClick={onConfirm}
-            className={`px-4 py-2 text-sm rounded-xl text-white transition-colors ${
+            disabled={loading}
+            className={`px-4 py-2 text-sm rounded-xl text-white transition-all flex items-center gap-2 ${
               variant === 'destructive'
-                ? 'bg-error hover:bg-error/80'
-                : 'bg-vintage-400 hover:bg-vintage-500'
+                ? 'bg-error hover:bg-error/80 disabled:bg-error/50'
+                : 'bg-vintage-400 hover:bg-vintage-500 disabled:bg-vintage-300'
             }`}
           >
+            {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             {confirmLabel}
           </button>
         </div>

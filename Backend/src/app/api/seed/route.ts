@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { success, error, serverError } from '@/lib/api-helpers';
+import bcrypt from 'bcryptjs';
 
 // ============================================================
 // SEED ROUTE: Populates the database with realistic Nicaraguan
@@ -743,20 +744,21 @@ export async function POST(request: NextRequest) {
       // 10. USERS (3 system users)
       // --------------------------------------------------------
       const usersData = [
-        { email: 'admin@alpha.com.ni', name: 'Carlos Mendoza', role: 'ADMIN' as const, password: Buffer.from('Admin123!').toString('base64') },
-        { email: 'contador@alpha.com.ni', name: 'María García', role: 'ACCOUNTANT' as const, password: Buffer.from('Contador123!').toString('base64') },
-        { email: 'gerente@alpha.com.ni', name: 'Roberto López', role: 'MANAGER' as const, password: Buffer.from('Gerente123!').toString('base64') },
+        { email: 'admin@alpha.com.ni', name: 'Carlos Mendoza', role: 'ADMIN' as const, password: 'Admin123!' },
+        { email: 'contador@alpha.com.ni', name: 'María García', role: 'ACCOUNTANT' as const, password: 'Contador123!' },
+        { email: 'gerente@alpha.com.ni', name: 'Roberto López', role: 'MANAGER' as const, password: 'Gerente123!' },
       ];
 
       const createdUsers: any[] = [];
       for (const u of usersData) {
+        const hashedPassword = await bcrypt.hash(u.password, 10);
         const user = await tx.user.create({
           data: {
             companyId,
             email: u.email,
             name: u.name,
             role: u.role,
-            password: u.password,
+            password: hashedPassword,
             lastLoginAt: new Date(2026, 5, 1, 9, 0, 0),
           },
         });

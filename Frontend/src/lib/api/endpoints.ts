@@ -27,6 +27,7 @@ export const PERIODS = {
   update: (id: string) => `/periods/${id}`,
   delete: (id: string) => `/periods/${id}`,
   close: (id: string) => `/periods/${id}/close`,
+  reopen: (id: string) => `/periods/${id}/reopen`,
   batch: '/periods/batch',
 } as const;
 

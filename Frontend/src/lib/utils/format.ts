@@ -123,7 +123,7 @@ export function getStatusLabel(status: string): string {
     PURCHASE: 'Compra',
     CHECKING: 'Cheques',
     SAVINGS: 'Ahorro',
-    CREDIT: 'Crédito',
+    BANK_CREDIT: 'Crédito',
     STRAIGHT_LINE: 'Línea Recta',
     DECLINING_BALANCE: 'Saldo Decreciente',
     ADMIN: 'Administrador',

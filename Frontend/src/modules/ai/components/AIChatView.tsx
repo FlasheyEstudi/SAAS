@@ -56,14 +56,17 @@ export function AIChatView() {
       const data = msg.rawData || msg.metadata.downloadConfig.data || {}; 
 
       if (type === 'balance_sheet') {
-        if (format === 'pdf') await exportBalanceSheetPDF(data, companyName);
-        else await exportBalanceSheetExcel(data, companyName);
+        const assets = data.assets || [];
+        if (format === 'pdf') await exportBalanceSheetPDF(assets, data.liabilities, data.equity, companyName, data.period);
+        else await exportBalanceSheetExcel(assets, data.liabilities, data.equity, companyName, data.period);
       } else if (type === 'income_statement') {
-        if (format === 'pdf') await exportIncomeStatementPDF(data, companyName);
-        else await exportIncomeStatementExcel(data, companyName);
+        if (format === 'pdf') await exportIncomeStatementPDF(data.income || [], data.expenses, data.netIncome, companyName, data.period);
+        else await exportIncomeStatementExcel(data.income || [], data.expenses, data.netIncome, companyName, data.period);
       } else if (type === 'trial_balance') {
-        if (format === 'pdf') await exportTrialBalancePDF(data, companyName);
-        else await exportTrialBalanceExcel(data, companyName);
+        const accounts = data.accounts || data.data || data;
+        const totals = data.totals || {};
+        if (format === 'pdf') await exportTrialBalancePDF(accounts, companyName, data.period, totals);
+        else await exportTrialBalanceExcel(accounts, companyName, data.period, totals);
       } else {
         toast.error('Tipo de reporte no soportado para descarga directa');
       }

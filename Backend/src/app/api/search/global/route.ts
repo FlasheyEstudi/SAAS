@@ -47,7 +47,7 @@ export async function GET(request: Request) {
     }
 
     if (!entityType || entityType === 'FixedAsset') {
-      const where: Prisma.FixedAssetWhereInput = companyId ? { companyId, OR: [{ name: { contains: q } }, { description: { contains: q } }] } : { OR: [{ name: { contains: q } }, { description: { contains: q } }] };
+      const where: Prisma.FixedAssetWhereInput = companyId ? { companyId, OR: [{ name: { contains: q } }, { code: { contains: q } }] } : { OR: [{ name: { contains: q } }, { code: { contains: q } }] };
       const items = await db.fixedAsset.findMany({ where, take: limit });
       if (items.length > 0) results.push({ entityType: 'FixedAsset', items });
     }

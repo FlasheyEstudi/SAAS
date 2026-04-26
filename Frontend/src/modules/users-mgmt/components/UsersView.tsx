@@ -19,7 +19,11 @@ export function UsersView() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
-  const [form, setForm] = useState({ name: '', email: '', role: 'VIEWER' });
+  const [form, setForm] = useState<{ name: string; email: string; role: 'ADMIN' | 'ACCOUNTANT' | 'MANAGER' | 'VIEWER' }>({ 
+    name: '', 
+    email: '', 
+    role: 'VIEWER' 
+  });
   
   const openCreate = () => { setEditing(null); setForm({ name: '', email: '', role: 'VIEWER' }); setShowForm(true); };
   const openEdit = (u: any) => { setEditing(u); setForm({ name: u.name, email: u.email, role: u.role }); setShowForm(true); };
@@ -119,8 +123,15 @@ export function UsersView() {
               <div className="space-y-1"><label className="text-xs text-vintage-600 font-medium ml-1">Email</label>
                 <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full px-3 py-2 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400" /></div>
               <div className="space-y-1"><label className="text-xs text-vintage-600 font-medium ml-1">Rol</label>
-                <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="w-full px-3 py-2 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400">
-                  <option value="ADMIN">Administrador</option><option value="ACCOUNTANT">Contador</option><option value="MANAGER">Gerente</option><option value="VIEWER">Visor</option>
+                <select 
+                  value={form.role} 
+                  onChange={(e) => setForm({ ...form, role: e.target.value as any })} 
+                  className="w-full px-3 py-2 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400"
+                >
+                  <option value="ADMIN">Administrador</option>
+                  <option value="ACCOUNTANT">Contador</option>
+                  <option value="MANAGER">Gerente</option>
+                  <option value="VIEWER">Visor</option>
                 </select></div>
             </div>
             <div className="flex justify-end gap-3 mt-6">

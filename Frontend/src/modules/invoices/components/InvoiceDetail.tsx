@@ -54,7 +54,7 @@ export function InvoiceDetail() {
       if (ok) {
         toast.success('Pago registrado correctamente');
         const updated = getInvoice(invoice.id);
-        setInvoice(updated);
+        setInvoice(updated ?? null);
       } else {
         toast.error('No se pudo registrar el pago');
       }

@@ -92,7 +92,7 @@ export function InvoiceForm() {
       const invoice = await createInvoice({
         thirdPartyId,
         invoiceType,
-        description: description || undefined,
+        description: description || '',
         invoiceDate,
         dueDate,
         lines: validLines.map((l) => ({

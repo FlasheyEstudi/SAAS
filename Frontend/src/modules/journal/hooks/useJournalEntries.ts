@@ -10,6 +10,7 @@ export interface CreateJournalEntryData {
   entryDate: string;
   entryType: string;
   periodId: string;
+  status?: 'DRAFT' | 'POSTED';
   lines: Array<{
     accountId: string;
     costCenterId?: string;
@@ -109,6 +110,7 @@ export function useJournalEntries() {
     isDeleting: deleteMutation.isPending,
     isPosting: postMutation.isPending,
     isValidating: validateMutation.isPending,
+    getEntry: (id: string) => entriesData?.data?.find(e => e.id === id),
   };
 }
 

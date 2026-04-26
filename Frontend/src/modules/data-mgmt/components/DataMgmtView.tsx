@@ -70,9 +70,10 @@ export function DataMgmtView() {
       
       // Map titles to actual export functions
       if (title.includes('Balanza')) {
-        // Sample data for demo if actual data fetching is managed here
-        if (format === 'Excel') await exportTrialBalanceExcel([], companyName);
-        else await exportTrialBalancePDF({ accounts: [], totals: {} }, companyName);
+        const period = new Date().toISOString().slice(0, 7);
+        const totals = { totalDebit: 0, totalCredit: 0, totalBalance: 0 };
+        if (format === 'Excel') await exportTrialBalanceExcel([], companyName, period, totals);
+        else await exportTrialBalancePDF([], companyName, period, totals);
       } else if (title.includes('Cuentas')) {
         if (format === 'Excel') await exportAccountsExcel([], companyName);
         else await exportAccountsPDF([], companyName);

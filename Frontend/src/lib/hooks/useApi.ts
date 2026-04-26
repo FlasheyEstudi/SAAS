@@ -40,18 +40,18 @@ export function useApiMutation<TData = any, TVariables = any, TContext = unknown
           return apiClient.post<TData>(url, variables);
       }
     },
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data, variables, context, mutation) => {
       if (showToast && successMessage) {
         toast.success(successMessage);
       }
-      onSuccess?.(data, variables, context);
+      if (onSuccess) (onSuccess as any)(data, variables, context, mutation);
     },
-    onError: (error, variables, context) => {
+    onError: (error, variables, context, mutation) => {
       if (showToast) {
         const err = error as any;
         toast.error(errorMessage || err?.error || err?.message || 'Error en la operación');
       }
-      onError?.(error, variables, context);
+      if (onError) (onError as any)(error, variables, context, mutation);
     },
     ...mutationOptions,
   });

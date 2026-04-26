@@ -10,7 +10,7 @@ export async function POST(request: Request) {
 
     const activeAssets = await db.fixedAsset.findMany({
       where: { companyId, status: 'ACTIVE' },
-      include: { _count: { select: { depreciations: true } } },
+      include: { _count: { select: { depreciationEntries: true } } },
     });
 
     if (activeAssets.length === 0) {
@@ -19,11 +19,11 @@ export async function POST(request: Request) {
 
     let depreciated = 0;
     let skipped = 0;
-    const results = [];
+    const results: any[] = [];
 
     for (const asset of activeAssets) {
-      const existingDep = await db.fixedAssetDepreciation.findFirst({
-        where: { fixedAssetId: asset.id, periodYear: parseInt(year), periodMonth: parseInt(month) },
+      const existingDep = await db.depreciationEntry.findFirst({
+        where: { fixedAssetId: asset.id, year: parseInt(year), month: parseInt(month) },
       });
       if (existingDep) { skipped++; continue; }
 
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
       let depreciationAmount = monthlyDepreciation;
 
       if (asset.depreciationMethod === 'DECLINING') {
-        const remainingLife = asset.usefulLifeMonths - asset._count.depreciations;
+        const remainingLife = asset.usefulLifeMonths - asset._count.depreciationEntries;
         depreciationAmount = (asset.currentBookValue - asset.salvageValue) / (remainingLife || 1);
       }
 
@@ -46,15 +46,14 @@ export async function POST(request: Request) {
       const newBookValue = Math.round((asset.purchaseAmount - newAccumulated) * 100) / 100;
 
       await db.$transaction(async (tx) => {
-        await tx.fixedAssetDepreciation.create({
+        await tx.depreciationEntry.create({
           data: {
+            companyId,
             fixedAssetId: asset.id,
-            periodYear: parseInt(year),
-            periodMonth: parseInt(month),
+            year: parseInt(year),
+            month: parseInt(month),
             depreciationAmount,
-            accumulatedBefore: asset.accumulatedDepreciation,
-            accumulatedAfter: newAccumulated,
-            bookValueBefore: asset.currentBookValue,
+            accumulatedTotal: newAccumulated,
             bookValueAfter: Math.max(newBookValue, asset.salvageValue),
           },
         });
@@ -71,7 +70,7 @@ export async function POST(request: Request) {
       });
 
       depreciated++;
-      results.push({ assetId: asset.id, assetName: asset.name, depreciationAmount });
+      results.push({ assetId: asset.id, assetName: asset.name, depreciationAmount } as any);
     }
 
     return created({ depreciated, skipped, results });

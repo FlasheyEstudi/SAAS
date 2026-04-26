@@ -104,7 +104,7 @@ export function LoginPage() {
 
   const handleQuickLogin = () => {
     if (clearError) clearError();
-    login({ email: 'admin@gea.com.mx', password: 'Admin123!', companyId: '' });
+    login({ email: 'admin@alpha.com.ni', password: 'Admin123!', companyId: '' });
   };
 
   const goToRegister = () => {

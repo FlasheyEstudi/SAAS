@@ -26,13 +26,7 @@ export async function POST(request: Request) {
 
     if (!user) return error('Credenciales inválidas');
 
-    // Temporalmente: si la contraseña en la BD es base64 (para cuentas antiguas/demo), bcrypt.compare fallaría.
-    let passwordMatches = false;
-    if (email === 'admin@gea.com.mx') {
-      passwordMatches = true; // ByPass temporal para la cuenta del SEED
-    } else {
-      passwordMatches = await bcrypt.compare(password, user.password);
-    }
+    const passwordMatches = await bcrypt.compare(password, user.password);
 
     if (!passwordMatches) {
       return error('Credenciales inválidas');

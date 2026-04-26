@@ -10,6 +10,12 @@ export const PERMISSIONS = {
     DELETE: 'journal:delete',
     VIEW: 'journal:view',
   },
+  ACCOUNTS: {
+    CREATE: 'accounts:create',
+    EDIT: 'accounts:edit',
+    DELETE: 'accounts:delete',
+    VIEW: 'accounts:view',
+  },
   PERIOD: {
     CREATE: 'period:create',
     CLOSE: 'period:close',
@@ -44,6 +50,7 @@ export const PERMISSIONS = {
     EDIT: 'assets:edit',
     DELETE: 'assets:delete',
     DEPRECIATE: 'assets:depreciate',
+    VIEW: 'assets:view',
   },
   BUDGETS: {
     CREATE: 'budgets:create',
@@ -59,7 +66,7 @@ export const PERMISSIONS = {
 } as const;
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
-  ADMIN: Object.values(PERMISSIONS).flat(),
+  ADMIN: Object.values(PERMISSIONS).flatMap(group => Object.values(group)),
   ACCOUNTANT: [
     PERMISSIONS.JOURNAL.CREATE,
     PERMISSIONS.JOURNAL.EDIT,
@@ -72,7 +79,9 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     PERMISSIONS.INVOICE.VIEW,
     PERMISSIONS.REPORTS.VIEW,
     PERMISSIONS.REPORTS.EXPORT,
-    PERMISSIONS.ACCOUNTS_CREATE,
+    PERMISSIONS.ACCOUNTS.CREATE,
+    PERMISSIONS.ACCOUNTS.EDIT,
+    PERMISSIONS.ACCOUNTS.VIEW,
     PERMISSIONS.BANKS.CREATE,
     PERMISSIONS.BANKS.EDIT,
     PERMISSIONS.BANKS.RECONCILE,

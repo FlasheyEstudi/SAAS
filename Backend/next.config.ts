@@ -7,10 +7,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
-  allowedDevOrigins: ['172.16.27.22', 'localhost'],
-  turbopack: {
-    root: "c:/Users/RESP_SOPORTE_TECNICO/SAAS/Backend",
-  },
+  allowedDevOrigins: ['192.168.0.110', '172.16.27.22', 'localhost'],
 };
 
 export default nextConfig;

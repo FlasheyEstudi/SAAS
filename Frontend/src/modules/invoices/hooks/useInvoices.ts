@@ -110,6 +110,7 @@ export function useInvoices() {
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
     isPaying: payMutation.isPending,
+    getInvoice: (id: string) => invoicesData?.data?.find(inv => inv.id === id),
   };
 }
 

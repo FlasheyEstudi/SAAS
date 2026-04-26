@@ -7,6 +7,7 @@ import { saveAs } from 'file-saver';
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { formatDate } from '@/lib/utils/format';
 
 // ============================================================
 // Excel Export with Professional Templates
@@ -277,8 +278,8 @@ export function exportToCSV(data: any[], filename: string, headers?: string[]): 
 export async function exportTrialBalanceExcel(
   data: any[],
   company: string,
-  period: string,
-  totals: { totalDebit: number; totalCredit: number; totalBalance: number }
+  period: string = '',
+  totals: { totalDebit: number; totalCredit: number; totalBalance: number } = { totalDebit: 0, totalCredit: 0, totalBalance: 0 }
 ): Promise<void> {
   const headers = ['Código', 'Cuenta', 'Tipo', 'Debe', 'Haber', 'Saldo'];
   const rows = data.map(row => [
@@ -310,8 +311,8 @@ export async function exportTrialBalanceExcel(
 export async function exportTrialBalancePDF(
   data: any[],
   company: string,
-  period: string,
-  totals: { totalDebit: number; totalCredit: number; totalBalance: number }
+  period: string = '',
+  totals: { totalDebit: number; totalCredit: number; totalBalance: number } = { totalDebit: 0, totalCredit: 0, totalBalance: 0 }
 ): Promise<void> {
   const headers = ['Código', 'Cuenta', 'Tipo', 'Debe', 'Haber', 'Saldo'];
   const rows = data.map(row => [
@@ -340,10 +341,10 @@ export async function exportTrialBalancePDF(
  */
 export async function exportBalanceSheetExcel(
   assets: any[],
-  liabilities: any[],
-  equity: any[],
-  company: string,
-  period: string
+  liabilities: any[] = [],
+  equity: any[] = [],
+  company: string = '',
+  period: string = ''
 ): Promise<void> {
   const headers = ['Concepto', 'Monto'];
   const rows: any[][] = [];
@@ -396,10 +397,10 @@ export async function exportBalanceSheetExcel(
  */
 export async function exportBalanceSheetPDF(
   assets: any[],
-  liabilities: any[],
-  equity: any[],
-  company: string,
-  period: string
+  liabilities: any[] = [],
+  equity: any[] = [],
+  company: string = '',
+  period: string = ''
 ): Promise<void> {
   const headers = ['Concepto', 'Monto'];
   const rows: any[][] = [];
@@ -435,10 +436,10 @@ export async function exportBalanceSheetPDF(
  */
 export async function exportIncomeStatementExcel(
   income: any[],
-  expenses: any[],
-  netIncome: number,
-  company: string,
-  period: string
+  expenses: any[] = [],
+  netIncome: number = 0,
+  company: string = '',
+  period: string = ''
 ): Promise<void> {
   const headers = ['Concepto', 'Monto'];
   const rows: any[][] = [];
@@ -478,10 +479,10 @@ export async function exportIncomeStatementExcel(
  */
 export async function exportIncomeStatementPDF(
   income: any[],
-  expenses: any[],
-  netIncome: number,
-  company: string,
-  period: string
+  expenses: any[] = [],
+  netIncome: number = 0,
+  company: string = '',
+  period: string = ''
 ): Promise<void> {
   const headers = ['Concepto', 'Monto'];
   const rows: any[][] = [];
@@ -585,10 +586,7 @@ export async function exportJournalEntriesPDF(
   });
 }
 
-// Helper to format date in JS
-function formatDate(date: string | Date): string {
-  return new Date(date).toLocaleDateString('es-NI');
-}
+
 
 /**
  * Export Third Parties (Terceros)

@@ -1,7 +1,7 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useAppStore } from '@/lib/stores/useAppStore';
 
 const queryClient = new QueryClient({
@@ -15,11 +15,11 @@ const queryClient = new QueryClient({
 });
 
 function useMounted() {
-  return useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  return mounted;
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {

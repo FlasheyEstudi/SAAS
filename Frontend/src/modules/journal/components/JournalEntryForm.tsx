@@ -151,7 +151,13 @@ export function JournalEntryForm() {
         debit: l.debit,
         credit: l.credit,
       }));
-      const result = await validateEntry({ description, lines: lineData });
+      const result = await validateEntry({ 
+        description, 
+        entryDate, 
+        entryType, 
+        periodId, 
+        lines: lineData 
+      });
       if (result.valid) {
         toast.success('✓ Póliza válida. Lista para guardar o publicar.');
         setValidationErrors([]);

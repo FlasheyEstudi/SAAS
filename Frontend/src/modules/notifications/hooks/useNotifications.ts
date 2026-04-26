@@ -3,12 +3,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
 import { NOTIFICATIONS } from '@/lib/api/endpoints';
-import type { Notification } from '@/lib/api/types';
+import type { AppNotification } from '@/lib/api/types';
 
 export function useNotifications() {
-  const { data, isLoading, error, refetch } = useQuery<{ notifications: Notification[] }>({
+  const { data, isLoading, error, refetch } = useQuery<{ notifications: AppNotification[] }>({
     queryKey: ['notifications', 'list'],
-    queryFn: () => apiClient.get<{ notifications: Notification[] }>(NOTIFICATIONS.list),
+    queryFn: () => apiClient.get<{ notifications: AppNotification[] }>(NOTIFICATIONS.list),
     retry: false,
   });
 

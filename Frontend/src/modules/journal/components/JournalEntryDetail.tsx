@@ -57,10 +57,9 @@ export function JournalEntryDetail() {
       return;
     }
     setIsLoading(true);
-    getEntry(entryId).then((data) => {
-      setEntry(data);
-      setIsLoading(false);
-    });
+    const data = getEntry(entryId);
+    setEntry(data ?? null);
+    setIsLoading(false);
   }, [entryId, getEntry, navigate]);
 
   const handleBack = useCallback(() => {

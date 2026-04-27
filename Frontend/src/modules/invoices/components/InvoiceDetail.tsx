@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, CreditCard, FileText, Building2, Calendar, Tag, Percent, Receipt } from 'lucide-react';
-import { useInvoices } from '../hooks/useInvoices';
+import { useInvoices, useInvoice } from '../hooks/useInvoices';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
@@ -38,23 +38,34 @@ export function InvoiceDetail() {
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
 
+  const { invoice: fetchedInvoice, isLoading: fetchLoading } = useInvoice(viewParams.id || '');
+
   useEffect(() => {
-    const id = viewParams.id;
-    if (!id) { navigate('invoices'); return; }
-    const inv = getInvoice(id);
-    setInvoice(inv ?? null);
-    setLoading(false);
-  }, [viewParams.id, getInvoice, navigate]);
+    if (!viewParams.id) {
+       navigate('invoices');
+       return;
+    }
+    if (fetchedInvoice) {
+      setInvoice(fetchedInvoice);
+    }
+  }, [viewParams.id, fetchedInvoice, navigate]);
+
+  useEffect(() => {
+    setLoading(fetchLoading);
+  }, [fetchLoading]);
 
   const handlePay = useCallback(async () => {
     if (!invoice) return;
     setPaying(true);
     try {
-      const ok = await payInvoice(invoice.id);
-      if (ok) {
+      const updatedInvoice = await payInvoice({ 
+        id: invoice.id, 
+        amount: invoice.balanceDue,
+        description: `Pago registrado desde detalle - ${new Date().toLocaleDateString()}`
+      });
+      if (updatedInvoice) {
         toast.success('Pago registrado correctamente');
-        const updated = getInvoice(invoice.id);
-        setInvoice(updated ?? null);
+        setInvoice(updatedInvoice as any);
       } else {
         toast.error('No se pudo registrar el pago');
       }
@@ -92,7 +103,7 @@ export function InvoiceDetail() {
           </button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-playfair text-vintage-800">{invoice.invoiceNumber}</h1>
+              <h1 className="text-2xl font-playfair text-vintage-800">{invoice.number}</h1>
               <StatusBadge status={getInvoiceStatus(invoice.status)} label={getStatusLabel(invoice.status)} size="md" />
             </div>
             <p className="text-sm text-vintage-500">
@@ -127,7 +138,7 @@ export function InvoiceDetail() {
           <div className="flex gap-6">
             <div>
               <p className="text-xs text-vintage-500">Emisión</p>
-              <p className="text-sm font-medium text-vintage-800">{formatDate(invoice.invoiceDate)}</p>
+              <p className="text-sm font-medium text-vintage-800">{formatDate(invoice.issueDate)}</p>
             </div>
             <div>
               <p className="text-xs text-vintage-500">Vencimiento</p>
@@ -178,7 +189,7 @@ export function InvoiceDetail() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-vintage-100">
-                {invoice.lines.map((line, idx) => (
+                {(invoice.lines || []).map((line, idx) => (
                   <motion.tr
                     key={line.id || idx}
                     initial={{ opacity: 0 }}
@@ -205,7 +216,7 @@ export function InvoiceDetail() {
                   <td colSpan={4} className="px-4 py-3 text-sm font-semibold text-vintage-700 text-right">Subtotal</td>
                   <td colSpan={2} className="px-4 py-3 text-sm font-mono text-vintage-700 text-right">{formatCurrency(invoice.subtotal, 'NIO')}</td>
                 </tr>
-                {invoice.taxEntries.map((tax) => (
+                {(invoice.taxEntries || []).map((tax) => (
                   <tr key={tax.id} className="border-t border-vintage-100">
                     <td colSpan={4} className="px-4 py-2 text-sm text-vintage-600 text-right flex items-center justify-end gap-1">
                       <Percent className="w-3 h-3" />
@@ -225,7 +236,7 @@ export function InvoiceDetail() {
       </motion.div>
 
       {/* Payment schedule */}
-      {invoice.paymentSchedule.length > 0 && (
+      {invoice.paymentSchedule && invoice.paymentSchedule.length > 0 && (
         <motion.div variants={itemVariants}>
           <VintageCard hover={false} className="overflow-hidden">
             <div className="p-4 border-b border-vintage-100">
@@ -244,7 +255,7 @@ export function InvoiceDetail() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-vintage-100">
-                  {invoice.paymentSchedule.map((ps, idx) => {
+                  {(invoice.paymentSchedule || []).map((ps, idx) => {
                     const balance = ps.amount - ps.paidAmount;
                     return (
                       <motion.tr
@@ -255,11 +266,11 @@ export function InvoiceDetail() {
                         className="hover:bg-vintage-50/50"
                       >
                         <td className="px-4 py-3 text-sm text-vintage-700">{formatDate(ps.dueDate)}</td>
-                        <td className="px-4 py-3 text-sm font-mono text-vintage-700 text-right">{formatCurrency(ps.amount, 'MXN')}</td>
-                        <td className="px-4 py-3 text-sm font-mono text-success text-right">{formatCurrency(ps.paidAmount, 'MXN')}</td>
+                        <td className="px-4 py-3 text-sm font-mono text-vintage-700 text-right">{formatCurrency(ps.amount, 'NIO')}</td>
+                        <td className="px-4 py-3 text-sm font-mono text-success text-right">{formatCurrency(ps.paidAmount, 'NIO')}</td>
                         <td className="px-4 py-3 text-sm font-mono text-right">
                           <span className={balance > 0 ? 'text-warning font-semibold' : 'text-vintage-500'}>
-                            {formatCurrency(balance, 'MXN')}
+                            {formatCurrency(balance, 'NIO')}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center">

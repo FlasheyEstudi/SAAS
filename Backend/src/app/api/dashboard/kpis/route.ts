@@ -245,11 +245,11 @@ export async function GET(request: Request) {
 
     const accountsReceivable = pendingInvoices
       .filter(i => i.invoiceType === 'SALE')
-      .reduce((s, i) => s + i.balanceDue, 0);
+      .reduce((s, i) => s + (Number(i.balanceDue) || 0), 0);
 
     const accountsPayable = pendingInvoices
       .filter(i => i.invoiceType === 'PURCHASE')
-      .reduce((s, i) => s + i.balanceDue, 0);
+      .reduce((s, i) => s + (Number(i.balanceDue) || 0), 0);
 
     const now = new Date();
     const overdueCount = pendingInvoices.filter(i => i.dueDate && new Date(i.dueDate) < now).length;
@@ -258,7 +258,7 @@ export async function GET(request: Request) {
     const bankAccounts = await db.bankAccount.findMany({
       where: { companyId: { in: targetCompanyIds }, isActive: true },
     });
-    const cashBalance = bankAccounts.reduce((s, a) => s + a.currentBalance, 0);
+    const cashBalance = bankAccounts.reduce((s, a) => s + (Number(a.currentBalance) || 0), 0);
 
     // ---- Pending Journal Entries ----
     const pendingEntriesCount = await db.journalEntry.count({

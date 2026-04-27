@@ -8,7 +8,7 @@ export async function GET(_request: Request, context: RouteContext) {
     const { id } = await context.params;
     const asset = await db.fixedAsset.findUnique({
       where: { id },
-      include: { _count: { select: { depreciations: true } } },
+      include: { _count: { select: { depreciationEntries: true } } },
     });
     if (!asset) return notFound('Activo fijo no encontrado');
     return success(asset);
@@ -51,11 +51,11 @@ export async function DELETE(_request: Request, context: RouteContext) {
     const { id } = await context.params;
     const asset = await db.fixedAsset.findUnique({
       where: { id },
-      include: { _count: { select: { depreciations: true } } },
+      include: { _count: { select: { depreciationEntries: true } } },
     });
     if (!asset) return notFound('Activo fijo no encontrado');
     if (asset.status !== 'ACTIVE') return error('Solo se pueden eliminar activos en estado ACTIVE');
-    if (asset._count.depreciations > 0) return error('No se puede eliminar un activo con depreciaciones registradas');
+    if (asset._count.depreciationEntries > 0) return error('No se puede eliminar un activo con depreciaciones registradas');
 
     await db.fixedAsset.delete({ where: { id } });
     return success({ deleted: true, id });

@@ -9,6 +9,8 @@ export interface TrialBalanceRow {
   totalDebit: number;
   totalCredit: number;
   balance: number;
+  level: number;
+  isGroup: boolean;
 }
 
 export interface BalanceSheetRow {
@@ -18,6 +20,8 @@ export interface BalanceSheetRow {
   totalDebit: number;
   totalCredit: number;
   balance: number;
+  level: number;
+  isGroup: boolean;
 }
 
 export interface IncomeStatementRow {
@@ -27,10 +31,13 @@ export interface IncomeStatementRow {
   totalDebit: number;
   totalCredit: number;
   balance: number;
+  level: number;
+  isGroup: boolean;
 }
 
-function roundTwo(n: number): number {
-  return Math.round(n * 100) / 100;
+function roundTwo(n: any): number {
+  const val = (n !== null && typeof n === 'object') ? Number(n) : n;
+  return Math.round((val || 0) * 100) / 100;
 }
 
 export async function resolvePeriod(
@@ -66,7 +73,6 @@ export async function getTrialBalance(companyId: string, periodId: string, conso
   const period = await db.accountingPeriod.findUnique({ where: { id: periodId } });
   if (!period) throw new Error('Período no encontrado');
 
-  // Si es consolidado, obtenemos los IDs de todas las sucursales
   let targetCompanyIds = [companyId];
   if (consolidated) {
     const branches = await db.company.findMany({ where: { parentId: companyId } as any, select: { id: true } });
@@ -75,7 +81,7 @@ export async function getTrialBalance(companyId: string, periodId: string, conso
 
   const accounts = await db.account.findMany({
     where: { companyId: { in: targetCompanyIds }, isActive: true },
-    select: { id: true, code: true, name: true, accountType: true, isGroup: true },
+    select: { id: true, code: true, name: true, accountType: true, isGroup: true, level: true, parentId: true },
     orderBy: { code: 'asc' },
   });
 
@@ -87,7 +93,7 @@ export async function getTrialBalance(companyId: string, periodId: string, conso
         where: {
           accountId: { in: leafAccountIds },
           journalEntry: { 
-            period: { year: period.year, month: period.month }, // Consolidado usa mismo período temporal en todas
+            period: { year: period.year, month: period.month },
             status: 'POSTED' 
           },
         },
@@ -95,12 +101,45 @@ export async function getTrialBalance(companyId: string, periodId: string, conso
       })
     : [];
 
-  const lineMap = new Map<string, { totalDebit: number; totalCredit: number }>();
+  const balanceMap = new Map<string, { totalDebit: number; totalCredit: number; balance: number }>();
+  for (const acc of accounts) {
+    balanceMap.set(acc.id, { totalDebit: 0, totalCredit: 0, balance: 0 });
+  }
+
   for (const agg of lineAggregates) {
-    lineMap.set(agg.accountId, {
-      totalDebit: roundTwo(agg._sum.debit ?? 0),
-      totalCredit: roundTwo(agg._sum.credit ?? 0),
+    const debit = Number(agg._sum.debit || 0);
+    const credit = Number(agg._sum.credit || 0);
+    const acc = accounts.find(a => a.id === agg.accountId);
+    if (!acc) continue;
+
+    // Balance neto
+    let balance: number;
+    if (acc.accountType === 'INCOME' || acc.accountType === 'LIABILITY' || acc.accountType === 'EQUITY') {
+      balance = credit - debit;
+    } else {
+      balance = debit - credit;
+    }
+
+    balanceMap.set(agg.accountId, { 
+      totalDebit: roundTwo(debit), 
+      totalCredit: roundTwo(credit), 
+      balance: roundTwo(balance) 
     });
+  }
+
+  // Propagación jerárquica
+  const sortedByLevel = [...accounts].sort((a, b) => b.level - a.level);
+  for (const account of sortedByLevel) {
+    if (account.parentId && balanceMap.has(account.id)) {
+      const current = balanceMap.get(account.id)!;
+      const parent = balanceMap.get(account.parentId);
+      if (parent) {
+        parent.totalDebit += current.totalDebit;
+        parent.totalCredit += current.totalCredit;
+        // El balance del padre es la suma de los balances hijos ya procesados
+        parent.balance += current.balance;
+      }
+    }
   }
 
   const trialBalanceRows: TrialBalanceRow[] = [];
@@ -109,30 +148,26 @@ export async function getTrialBalance(companyId: string, periodId: string, conso
   let totalBalanceSum = 0;
 
   for (const account of accounts) {
-    if (account.isGroup) continue;
-    const totals = lineMap.get(account.id) || { totalDebit: 0, totalCredit: 0 };
-    if (totals.totalDebit === 0 && totals.totalCredit === 0) continue;
-
-    let balance: number;
-    if (account.accountType === 'INCOME') {
-      balance = roundTwo(totals.totalCredit - totals.totalDebit);
-    } else {
-      balance = roundTwo(totals.totalDebit - totals.totalCredit);
-    }
+    const totals = balanceMap.get(account.id)!;
+    if (!account.isGroup && totals.totalDebit === 0 && totals.totalCredit === 0) continue;
 
     trialBalanceRows.push({
       accountId: account.id,
       accountCode: account.code,
       accountName: account.name,
       accountType: account.accountType,
-      totalDebit: totals.totalDebit,
-      totalCredit: totals.totalCredit,
-      balance,
+      totalDebit: roundTwo(totals.totalDebit),
+      totalCredit: roundTwo(totals.totalCredit),
+      balance: roundTwo(totals.balance),
+      level: account.level,
+      isGroup: account.isGroup,
     });
 
-    totalDebitSum += totals.totalDebit;
-    totalCreditSum += totals.totalCredit;
-    totalBalanceSum += balance;
+    if (account.level === 1) {
+      totalDebitSum += totals.totalDebit;
+      totalCreditSum += totals.totalCredit;
+      totalBalanceSum += totals.balance;
+    }
   }
 
   return {
@@ -156,24 +191,24 @@ export async function getBalanceSheet(companyId: string, periodId: string, conso
     targetCompanyIds = [companyId, ...branches.map(b => b.id)];
   }
 
-  const accounts = await db.account.findMany({
+  // Obtenemos todas las cuentas de Activo, Pasivo y Patrimonio (incluyendo grupos)
+  const allAccounts = await db.account.findMany({
     where: {
       companyId: { in: targetCompanyIds },
       isActive: true,
-      isGroup: false,
       accountType: { in: ['ASSET', 'LIABILITY', 'EQUITY'] },
     },
-    select: { id: true, code: true, name: true, accountType: true },
+    select: { id: true, code: true, name: true, accountType: true, isGroup: true, level: true, parentId: true },
     orderBy: { code: 'asc' },
   });
 
-  const accountIds = accounts.map((a) => a.id);
+  const leafAccountIds = allAccounts.filter((a) => !a.isGroup).map((a) => a.id);
 
-  const lineAggregates = accountIds.length > 0
+  const lineAggregates = leafAccountIds.length > 0
     ? await db.journalEntryLine.groupBy({
         by: ['accountId'],
         where: {
-          accountId: { in: accountIds },
+          accountId: { in: leafAccountIds },
           journalEntry: { 
             period: { year: period.year, month: period.month },
             status: 'POSTED' 
@@ -183,12 +218,45 @@ export async function getBalanceSheet(companyId: string, periodId: string, conso
       })
     : [];
 
-  const lineMap = new Map<string, { totalDebit: number; totalCredit: number }>();
+  const balanceMap = new Map<string, { totalDebit: number; totalCredit: number; balance: number }>();
+  
+  // 1. Inicializamos todas las cuentas (incluyendo grupos) en 0
+  for (const acc of allAccounts) {
+    balanceMap.set(acc.id, { totalDebit: 0, totalCredit: 0, balance: 0 });
+  }
+
+  // 2. Cargamos saldos en las cuentas hijas (movimientos)
   for (const agg of lineAggregates) {
-    lineMap.set(agg.accountId, {
-      totalDebit: roundTwo(agg._sum.debit ?? 0),
-      totalCredit: roundTwo(agg._sum.credit ?? 0),
+    const debit = Number(agg._sum.debit || 0);
+    const credit = Number(agg._sum.credit || 0);
+    const acc = allAccounts.find(a => a.id === agg.accountId);
+    if (!acc) continue;
+
+    // El balance depende del tipo de cuenta (Naturaleza)
+    // Activo: Debe - Haber
+    // Pasivo/Patrimonio: Haber - Debe
+    const balance = acc.accountType === 'ASSET' ? (debit - credit) : (credit - debit);
+
+    balanceMap.set(agg.accountId, { 
+      totalDebit: roundTwo(debit), 
+      totalCredit: roundTwo(credit), 
+      balance: roundTwo(balance) 
     });
+  }
+
+  // 3. Propagación jerárquica de saldos (de abajo hacia arriba)
+  // Ordenamos por nivel descendente para procesar hojas antes que padres
+  const sortedByLevel = [...allAccounts].sort((a, b) => b.level - a.level);
+  for (const account of sortedByLevel) {
+    if (account.parentId && balanceMap.has(account.id)) {
+      const current = balanceMap.get(account.id)!;
+      const parent = balanceMap.get(account.parentId);
+      if (parent) {
+        parent.totalDebit += current.totalDebit;
+        parent.totalCredit += current.totalCredit;
+        parent.balance += current.balance;
+      }
+    }
   }
 
   const assets: BalanceSheetRow[] = [];
@@ -198,32 +266,35 @@ export async function getBalanceSheet(companyId: string, periodId: string, conso
   let totalLiabilities = 0;
   let totalEquity = 0;
 
-  for (const account of accounts) {
-    const totals = lineMap.get(account.id) || { totalDebit: 0, totalCredit: 0 };
-    if (totals.totalDebit === 0 && totals.totalCredit === 0) continue;
+  for (const account of allAccounts) {
+    const totals = balanceMap.get(account.id)!;
+    
+    // Omitimos cuentas vacías si son hojas para no llenar el reporte
+    if (!account.isGroup && totals.totalDebit === 0 && totals.totalCredit === 0) continue;
 
-    const balance = roundTwo(totals.totalDebit - totals.totalCredit);
     const row: BalanceSheetRow = {
       accountId: account.id,
       accountCode: account.code,
       accountName: account.name,
-      totalDebit: totals.totalDebit,
-      totalCredit: totals.totalCredit,
-      balance,
+      totalDebit: roundTwo(totals.totalDebit),
+      totalCredit: roundTwo(totals.totalCredit),
+      balance: roundTwo(totals.balance),
+      level: account.level,
+      isGroup: account.isGroup,
     };
 
     switch (account.accountType) {
       case 'ASSET':
         assets.push(row);
-        totalAssets += balance;
+        if (account.level === 1) totalAssets += row.balance;
         break;
       case 'LIABILITY':
         liabilities.push(row);
-        totalLiabilities += balance;
+        if (account.level === 1) totalLiabilities += row.balance;
         break;
       case 'EQUITY':
         equity.push(row);
-        totalEquity += balance;
+        if (account.level === 1) totalEquity += row.balance;
         break;
     }
   }
@@ -252,24 +323,24 @@ export async function getIncomeStatement(companyId: string, periodId: string, co
     targetCompanyIds = [companyId, ...branches.map(b => b.id)];
   }
 
-  const accounts = await db.account.findMany({
+  // Obtenemos cuentas de Ingresos y Gastos
+  const allAccounts = await db.account.findMany({
     where: {
       companyId: { in: targetCompanyIds },
       isActive: true,
-      isGroup: false,
       accountType: { in: ['INCOME', 'EXPENSE'] },
     },
-    select: { id: true, code: true, name: true, accountType: true },
+    select: { id: true, code: true, name: true, accountType: true, isGroup: true, level: true, parentId: true },
     orderBy: { code: 'asc' },
   });
 
-  const accountIds = accounts.map((a) => a.id);
+  const leafAccountIds = allAccounts.filter((a) => !a.isGroup).map((a) => a.id);
 
-  const lineAggregates = accountIds.length > 0
+  const lineAggregates = leafAccountIds.length > 0
     ? await db.journalEntryLine.groupBy({
         by: ['accountId'],
         where: {
-          accountId: { in: accountIds },
+          accountId: { in: leafAccountIds },
           journalEntry: { 
             period: { year: period.year, month: period.month },
             status: 'POSTED' 
@@ -279,12 +350,41 @@ export async function getIncomeStatement(companyId: string, periodId: string, co
       })
     : [];
 
-  const lineMap = new Map<string, { totalDebit: number; totalCredit: number }>();
+  const balanceMap = new Map<string, { totalDebit: number; totalCredit: number; balance: number }>();
+  
+  for (const acc of allAccounts) {
+    balanceMap.set(acc.id, { totalDebit: 0, totalCredit: 0, balance: 0 });
+  }
+
   for (const agg of lineAggregates) {
-    lineMap.set(agg.accountId, {
-      totalDebit: roundTwo(agg._sum.debit ?? 0),
-      totalCredit: roundTwo(agg._sum.credit ?? 0),
+    const debit = Number(agg._sum.debit || 0);
+    const credit = Number(agg._sum.credit || 0);
+    const acc = allAccounts.find(a => a.id === agg.accountId);
+    if (!acc) continue;
+
+    // Ingresos: Haber - Debe
+    // Gastos: Debe - Haber
+    const balance = acc.accountType === 'INCOME' ? (credit - debit) : (debit - credit);
+
+    balanceMap.set(agg.accountId, { 
+      totalDebit: roundTwo(debit), 
+      totalCredit: roundTwo(credit), 
+      balance: roundTwo(balance) 
     });
+  }
+
+  // Propagación jerárquica
+  const sortedByLevel = [...allAccounts].sort((a, b) => b.level - a.level);
+  for (const account of sortedByLevel) {
+    if (account.parentId && balanceMap.has(account.id)) {
+      const current = balanceMap.get(account.id)!;
+      const parent = balanceMap.get(account.parentId);
+      if (parent) {
+        parent.totalDebit += current.totalDebit;
+        parent.totalCredit += current.totalCredit;
+        parent.balance += current.balance;
+      }
+    }
   }
 
   const income: IncomeStatementRow[] = [];
@@ -292,29 +392,27 @@ export async function getIncomeStatement(companyId: string, periodId: string, co
   let totalIncome = 0;
   let totalExpenses = 0;
 
-  for (const account of accounts) {
-    const totals = lineMap.get(account.id) || { totalDebit: 0, totalCredit: 0 };
-    if (totals.totalDebit === 0 && totals.totalCredit === 0) continue;
-
-    const balance = account.accountType === 'INCOME'
-      ? roundTwo(totals.totalCredit - totals.totalDebit)
-      : roundTwo(totals.totalDebit - totals.totalCredit);
+  for (const account of allAccounts) {
+    const totals = balanceMap.get(account.id)!;
+    if (!account.isGroup && totals.totalDebit === 0 && totals.totalCredit === 0) continue;
 
     const row: IncomeStatementRow = {
       accountId: account.id,
       accountCode: account.code,
       accountName: account.name,
-      totalDebit: totals.totalDebit,
-      totalCredit: totals.totalCredit,
-      balance,
+      totalDebit: roundTwo(totals.totalDebit),
+      totalCredit: roundTwo(totals.totalCredit),
+      balance: roundTwo(totals.balance),
+      level: account.level,
+      isGroup: account.isGroup,
     };
 
     if (account.accountType === 'INCOME') {
       income.push(row);
-      totalIncome += balance;
+      if (account.level === 1) totalIncome += row.balance;
     } else {
       expenses.push(row);
-      totalExpenses += balance;
+      if (account.level === 1) totalExpenses += row.balance;
     }
   }
 
@@ -384,7 +482,7 @@ export async function getAgingReport(companyId: string, invoiceType?: 'SALE' | '
     }
 
     buckets[bucket].count += 1;
-    buckets[bucket].total = roundTwo(buckets[bucket].total + inv.balanceDue);
+    buckets[bucket].total = roundTwo(buckets[bucket].total + Number(inv.balanceDue));
 
     return {
       thirdPartyId: inv.thirdParty.id,
@@ -430,8 +528,8 @@ export async function getCashFlow(companyId: string, periodId?: string, year?: n
 
   let netIncome = 0;
   for (const line of allLines) {
-    if (line.account.accountType === 'INCOME') netIncome += line.credit - line.debit;
-    if (line.account.accountType === 'EXPENSE') netIncome -= line.debit - line.credit;
+    if (line.account.accountType === 'INCOME') netIncome += Number(line.credit || 0) - Number(line.debit || 0);
+    if (line.account.accountType === 'EXPENSE') netIncome -= Number(line.debit || 0) - Number(line.credit || 0);
   }
   netIncome = roundTwo(netIncome);
 
@@ -443,17 +541,17 @@ export async function getCashFlow(companyId: string, periodId?: string, year?: n
   for (const line of allLines) {
     if (line.account.accountType === 'ASSET') {
       const code = line.account.code;
-      if (code.startsWith('1.3')) changeInReceivables += line.debit - line.credit;
+      if (code.startsWith('1.3')) changeInReceivables += Number(line.debit || 0) - Number(line.credit || 0);
     }
     if (line.account.accountType === 'LIABILITY') {
       const code = line.account.code;
-      if (code.startsWith('2.1')) changeInPayables += line.credit - line.debit;
+      if (code.startsWith('2.1')) changeInPayables += Number(line.credit || 0) - Number(line.debit || 0);
     }
     if (line.account.accountType === 'ASSET' && line.account.code.startsWith('1.2')) {
-      changeInInventory += line.debit - line.credit;
+      changeInInventory += Number(line.debit || 0) - Number(line.credit || 0);
     }
     if (line.account.code.toLowerCase().includes('depreciacion') || line.account.code.toLowerCase().includes('depreciación')) {
-      depreciationExpense += line.debit - line.credit;
+      depreciationExpense += Number(line.debit || 0) - Number(line.credit || 0);
     }
   }
 

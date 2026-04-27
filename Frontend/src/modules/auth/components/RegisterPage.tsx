@@ -9,6 +9,10 @@ import { PastelButton } from '@/components/ui/pastel-button';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { toast } from 'sonner';
 
+import { registerSchema } from '@/lib/schemas/auth';
+import { apiClient } from '@/lib/api/client';
+import { AUTH } from '@/lib/api/endpoints';
+
 export function RegisterPage() {
   const { navigate } = useAppStore();
   const [loading, setLoading] = useState(false);
@@ -23,24 +27,27 @@ export function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    // 1. Zod Validation (100/100)
+    const result = registerSchema.safeParse({
+       ...formData,
+       companyId: undefined // Let backend create it from company name if needed, or fix schema
+    });
+    if (!result.success) {
+      toast.error(result.error.issues[0].message);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch('http://192.168.0.110:3001/api/users/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
+      // 2. Registro vía ApiClient
+      await apiClient.post(AUTH.register, formData);
 
-      const result = await response.json();
-
-      if (response.ok) {
-        toast.success('El camino está despejado: Cuenta creada exitosamente. Bienvenido a la abundancia.');
-        navigate('login');
-      } else {
-        toast.error(result.message || 'Error en el ritual de registro');
-      }
-    } catch (err) {
+      toast.success('El camino está despejado: Cuenta creada exitosamente. Bienvenido a la abundancia.');
+      navigate('login');
+    } catch (err: any) {
       console.error('Register Error:', err);
-      toast.error('Obstáculo de red: El servidor sagrado no responde.');
+      toast.error(err.error || 'Obstáculo de red: El servidor sagrado no responde.');
     } finally {
       setLoading(false);
     }

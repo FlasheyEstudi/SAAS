@@ -25,8 +25,8 @@ export async function GET(request: Request) {
       if (!supplierTotals[inv.thirdPartyId]) {
         supplierTotals[inv.thirdPartyId] = { name: inv.thirdParty.name, taxId: inv.thirdParty.taxId, totalAmount: 0, paidAmount: 0, invoiceCount: 0 };
       }
-      supplierTotals[inv.thirdPartyId].totalAmount += inv.totalAmount;
-      supplierTotals[inv.thirdPartyId].paidAmount += inv.totalAmount - inv.balanceDue;
+      supplierTotals[inv.thirdPartyId].totalAmount += Number(inv.totalAmount) || 0;
+      supplierTotals[inv.thirdPartyId].paidAmount += (Number(inv.totalAmount) || 0) - (Number(inv.balanceDue) || 0);
       supplierTotals[inv.thirdPartyId].invoiceCount++;
     }
 

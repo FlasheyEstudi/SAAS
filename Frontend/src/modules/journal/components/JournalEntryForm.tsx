@@ -21,6 +21,7 @@ import { formatCurrency } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { JournalEntryLine } from '@/lib/api/types';
+import { journalEntrySchema } from '@/lib/schemas/journal';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -60,8 +61,17 @@ const entryTypeOptions = [
 ];
 
 export function JournalEntryForm() {
-  const navigate = useAppStore((s) => s.navigate);
-  const { accounts, costCenters, periods, createEntry, validateEntry } = useJournalEntries();
+  const { viewParams, navigate } = useAppStore();
+  const entryId = viewParams?.id;
+  const { 
+    accounts, 
+    costCenters, 
+    periods, 
+    createEntry, 
+    updateEntry,
+    validateEntry,
+    getEntry 
+  } = useJournalEntries();
 
   const [description, setDescription] = useState('');
   const [entryDate, setEntryDate] = useState(() => {
@@ -72,6 +82,28 @@ export function JournalEntryForm() {
   const [periodId, setPeriodId] = useState(periods.length > 0 ? periods[periods.length - 1].id : '');
 
   const [lines, setLines] = useState<FormLine[]>([emptyLine(), emptyLine()]);
+  const [isLoading, setIsLoading] = useState(!!entryId);
+
+  useEffect(() => {
+    if (entryId) {
+      const existing = getEntry(entryId);
+      if (existing) {
+        setDescription(existing.description);
+        setEntryDate(new Date(existing.entryDate).toISOString().split('T')[0]);
+        setEntryType(existing.entryType);
+        setPeriodId(existing.periodId);
+        setLines(existing.lines.map((l: any) => ({
+          _uid: generateUid(),
+          accountId: l.accountId,
+          costCenterId: l.costCenterId || '',
+          description: l.description,
+          debit: Number(l.debit),
+          credit: Number(l.credit)
+        })));
+        setIsLoading(false);
+      }
+    }
+  }, [entryId, getEntry]);
 
   const [saving, setSaving] = useState(false);
   const [posting, setPosting] = useState(false);
@@ -93,8 +125,8 @@ export function JournalEntryForm() {
   }, [accountSearch, accounts]);
 
   // Totals
-  const totalDebit = useMemo(() => lines.reduce((s, l) => s + l.debit, 0), [lines]);
-  const totalCredit = useMemo(() => lines.reduce((s, l) => s + l.credit, 0), [lines]);
+  const totalDebit = useMemo(() => lines.reduce((s, l) => s + Number(l.debit || 0), 0), [lines]);
+  const totalCredit = useMemo(() => lines.reduce((s, l) => s + Number(l.credit || 0), 0), [lines]);
   const difference = useMemo(() => Math.abs(totalDebit - totalCredit), [totalDebit, totalCredit]);
   const isBalanced = difference <= 0.01;
   const hasLines = lines.some((l) => l.accountId && (l.debit > 0 || l.credit > 0));
@@ -139,38 +171,60 @@ export function JournalEntryForm() {
     setAccountSearch('');
   }, [accounts, updateLine]);
 
+
+
   // ─── Validation ─────────────────────────────────────────────────
   const handleValidate = useCallback(async () => {
     setValidating(true);
     setValidationShown(true);
-    try {
-      const lineData: Omit<JournalEntryLine, 'id' | 'journalEntryId'>[] = lines.map((l) => ({
+    setValidationErrors([]);
+
+    const companyId = useAppStore.getState().companyId;
+    const dataToValidate: any = {
+      companyId: companyId || '',
+      description,
+      entryDate,
+      entryType,
+      periodId,
+      lines: lines.map(l => ({
         accountId: l.accountId,
-        costCenterId: l.costCenterId || undefined,
+        costCenterId: l.costCenterId || null,
         description: l.description,
         debit: l.debit,
-        credit: l.credit,
-      }));
-      const result = await validateEntry({ 
-        description, 
-        entryDate, 
-        entryType, 
-        periodId, 
-        lines: lineData 
-      });
+        credit: l.credit
+      }))
+    };
+
+    // 1. Client-side Zod Validation
+    const zodResult = journalEntrySchema.safeParse(dataToValidate);
+    if (!zodResult.success) {
+      const errors = zodResult.error.issues.map(i => i.message);
+      setValidationErrors(errors);
+      toast.error('Errores en la estructura de la póliza');
+      setValidating(false);
+      return { valid: false, errors };
+    }
+
+    try {
+      // 2. Server-side Business Logic Validation
+      const result = await validateEntry(dataToValidate);
       if (result.valid) {
         toast.success('✓ Póliza válida. Lista para guardar o publicar.');
         setValidationErrors([]);
+        return { valid: true };
       } else {
-        toast.error('Póliza con errores de validación');
-        setValidationErrors(result.errors || ['La póliza no está cuadrada']);
+        toast.error('Póliza con errores de negocio');
+        const errors = result.errors || ['La póliza no está cuadrada'];
+        setValidationErrors(errors);
+        return { valid: false, errors };
       }
     } catch {
       toast.error('Error al validar la póliza');
+      return { valid: false };
     } finally {
       setValidating(false);
     }
-  }, [lines, description, validateEntry]);
+  }, [lines, description, entryDate, entryType, periodId, validateEntry]);
 
   // ─── Save as draft ──────────────────────────────────────────────
   const handleSaveDraft = useCallback(async () => {
@@ -199,14 +253,26 @@ export function JournalEntryForm() {
         credit: l.credit,
       }));
 
-      await createEntry({
-        description,
-        entryDate,
-        entryType,
-        periodId,
-        lines: lineData,
-        status: 'DRAFT',
-      });
+      if (entryId) {
+        await updateEntry({
+          id: entryId,
+          description,
+          entryDate,
+          entryType,
+          periodId,
+          lines: lineData as any,
+          status: 'DRAFT'
+        });
+      } else {
+        await createEntry({
+          description,
+          entryDate,
+          entryType,
+          periodId,
+          lines: lineData,
+          status: 'DRAFT',
+        });
+      }
 
       toast.success('Póliza guardada como borrador');
       navigate('journal');
@@ -244,14 +310,26 @@ export function JournalEntryForm() {
         credit: l.credit,
       }));
 
-      await createEntry({
-        description,
-        entryDate,
-        entryType,
-        periodId,
-        lines: lineData,
-        status: 'POSTED',
-      });
+      if (entryId) {
+        await updateEntry({
+          id: entryId,
+          description,
+          entryDate,
+          entryType,
+          periodId,
+          lines: lineData as any,
+          status: 'POSTED'
+        });
+      } else {
+        await createEntry({
+          description,
+          entryDate,
+          entryType,
+          periodId,
+          lines: lineData,
+          status: 'POSTED',
+        });
+      }
 
       toast.success('Póliza creada y publicada correctamente');
       navigate('journal');
@@ -290,8 +368,8 @@ export function JournalEntryForm() {
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <h1 className="text-2xl font-playfair text-vintage-800">Nueva Póliza</h1>
-            <p className="text-sm text-vintage-500">Capture los datos de la póliza contable</p>
+            <h1 className="text-2xl font-playfair text-vintage-800">{entryId ? 'Editar Póliza' : 'Nueva Póliza'}</h1>
+            <p className="text-sm text-vintage-500">{entryId ? 'Modifique los datos de la póliza' : 'Capture los datos de la póliza contable'}</p>
           </div>
         </div>
       </motion.div>

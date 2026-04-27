@@ -2,16 +2,17 @@ import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import {
   success,
-  created,
   error,
   serverError,
   parsePagination,
-  validateDoubleEntry,
   validateLeafAccounts,
   validatePeriodOpen,
   generateEntryNumber,
-  type LineItem,
+  validateAuth,
+  requireAuth,
 } from '@/lib/api-helpers';
+import { journalEntrySchema } from '@/lib/schemas/journal';
+import { logAuditTx } from '@/lib/audit-service';
 
 // ============================================================
 // GET /api/journal-entries — Listar pólizas con paginación y filtros
@@ -20,33 +21,30 @@ import {
 // ============================================================
 export async function GET(request: NextRequest) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
     const { searchParams } = request.nextUrl;
-    const { page, limit } = parsePagination(searchParams);
+    const { page, limit, sortBy, sortOrder } = parsePagination(searchParams);
 
     // Filtros
     const companyId = searchParams.get('companyId');
     const periodId = searchParams.get('periodId');
     const status = searchParams.get('status');
     const entryType = searchParams.get('entryType');
-    const dateFrom = searchParams.get('dateFrom');
-    const dateTo = searchParams.get('dateTo');
     const search = searchParams.get('search');
 
-    const where: Record<string, unknown> = {};
-
+    const where: any = {};
     if (companyId) where.companyId = companyId;
     if (periodId) where.periodId = periodId;
-    if (status) where.status = status;
-    if (entryType) where.entryType = entryType;
-    if (dateFrom || dateTo) {
-      where.entryDate = {} as Record<string, unknown>;
-      if (dateFrom) (where.entryDate as Record<string, unknown>).gte = new Date(dateFrom + 'T00:00:00.000Z');
-      if (dateTo) (where.entryDate as Record<string, unknown>).lte = new Date(dateTo + 'T23:59:59.999Z');
-    }
+    if (status) where.status = status as any;
+    if (entryType) where.entryType = entryType as any;
+    
     if (search) {
       where.OR = [
-        { description: { contains: search } },
-        { entryNumber: { contains: search } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { entryNumber: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -57,7 +55,7 @@ export async function GET(request: NextRequest) {
           _count: { select: { lines: true } },
           period: { select: { id: true, year: true, month: true, status: true } },
         },
-        orderBy: [{ entryDate: 'desc' }, { entryNumber: 'desc' }],
+        orderBy: { [sortBy]: sortOrder },
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -89,69 +87,38 @@ export async function GET(request: NextRequest) {
 // ============================================================
 export async function POST(request: NextRequest) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
     const body = await request.json();
-    const { companyId, periodId, description, entryDate, entryType, lines } = body as {
-      companyId?: string;
-      periodId?: string;
-      description?: string;
-      entryDate?: string;
-      entryType?: string;
-      lines?: LineItem[];
-    };
+    
+    // 1. Validar con Zod (100/100)
+    const result = journalEntrySchema.safeParse(body);
+    if (!result.success) {
+      return error(result.error.issues[0].message);
+    }
+    const { companyId, periodId, description, entryDate, entryType, lines } = result.data;
 
-    // --- Validaciones básicas ---
-    if (!companyId) return error('El campo companyId es obligatorio.');
-    if (!periodId) return error('El campo periodId es obligatorio.');
-    if (!description || !description.trim()) return error('El campo description es obligatorio.');
-    if (!entryDate) return error('El campo entryDate es obligatorio.');
-    if (!entryType) return error('El campo entryType es obligatorio.');
-    if (!['DIARIO', 'EGRESO', 'INGRESO', 'TRASPASO'].includes(entryType)) {
-      return error('entryType debe ser DIARIO, EGRESO, INGRESO o TRASPASO.');
-    }
-    if (!lines || !Array.isArray(lines) || lines.length === 0) {
-      return error('La póliza debe tener al menos una partida.');
-    }
-    if (lines.length < 2) {
-      return error('La póliza debe tener al menos 2 partidas.');
-    }
-
-    // Validar que cada línea tenga los campos requeridos
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line.accountId) return error(`La partida ${i + 1} no tiene cuenta (accountId).`);
-      if (typeof line.debit !== 'number' || typeof line.credit !== 'number') {
-        return error(`La partida ${i + 1} debe tener valores numéricos para debit y credit.`);
-      }
-      if (line.debit < 0 || line.credit < 0) {
-        return error(`La partida ${i + 1} no puede tener valores negativos.`);
-      }
-    }
-
-    // --- Validar período abierto ---
+    // 2. Validar reglas de negocio contables
     const periodValidation = await validatePeriodOpen(periodId);
-    if (!periodValidation.valid) {
-      return error(periodValidation.error!);
+    if (!periodValidation.valid) return error(periodValidation.error!);
+
+    const leafValidation = await validateLeafAccounts(lines as any);
+    if (!leafValidation.valid) return error(leafValidation.errors.join(' | '));
+
+    // Validar partida doble
+    const totalDebit = lines.reduce((sum, l) => sum + Number(l.debit || 0), 0);
+    const totalCredit = lines.reduce((sum, l) => sum + Number(l.credit || 0), 0);
+    const diff = Math.abs(totalDebit - totalCredit);
+    
+    if (diff > 0.001) {
+      return error(`La póliza no cuadra. Diferencia: ${diff.toFixed(2)}`);
     }
 
-    // --- Validar cuentas hoja ---
-    const leafValidation = await validateLeafAccounts(lines);
-    if (!leafValidation.valid) {
-      return error(leafValidation.errors.join(' | '));
-    }
-
-    // --- Validar partida doble ---
-    const doubleEntry = validateDoubleEntry(lines);
-    if (!doubleEntry.valid) {
-      return error(
-        `La póliza no cuadra. Diferencia: $${doubleEntry.difference.toFixed(2)}. ` +
-        `Total Débitos: $${doubleEntry.totalDebit.toFixed(2)}, Total Créditos: $${doubleEntry.totalCredit.toFixed(2)}.`
-      );
-    }
-
-    // --- Generar número de póliza secuencial ---
     const entryNumber = await generateEntryNumber(periodId, companyId);
 
-    // --- Crear en transacción ---
+    // 3. Persistir en transacción con Auditoría
     const entry = await db.$transaction(async (tx) => {
       const journalEntry = await tx.journalEntry.create({
         data: {
@@ -159,11 +126,11 @@ export async function POST(request: NextRequest) {
           periodId,
           entryNumber,
           description: description.trim(),
-          entryDate: new Date(entryDate + 'T12:00:00.000Z'),
-          entryType,
+          entryDate: new Date(entryDate),
+          entryType: entryType as any,
           status: 'DRAFT',
-          totalDebit: doubleEntry.totalDebit,
-          totalCredit: doubleEntry.totalCredit,
+          totalDebit,
+          totalCredit,
           difference: 0,
           lines: {
             create: lines.map((line) => ({
@@ -176,26 +143,28 @@ export async function POST(request: NextRequest) {
           },
         },
         include: {
-          lines: {
-            include: {
-              account: { select: { id: true, code: true, name: true } },
-              costCenter: { select: { id: true, code: true, name: true } },
-            },
-            orderBy: { createdAt: 'asc' },
-          },
-          period: { select: { id: true, year: true, month: true, status: true } },
+          lines: true,
+          period: true,
         },
+      });
+
+      // Registro de auditoría (100/100 traceability)
+      await logAuditTx(tx, {
+        companyId,
+        userId: user!.id,
+        action: 'CREATE',
+        entityType: 'JournalEntry',
+        entityId: journalEntry.id,
+        entityLabel: `Póliza ${entryNumber}`,
+        newValues: journalEntry,
       });
 
       return journalEntry;
     });
 
-    return created(entry);
-  } catch (err: unknown) {
+    return success(entry, 201);
+  } catch (err) {
     console.error('[POST /api/journal-entries]', err);
-    if (err instanceof Error && err.message.includes('Unique constraint')) {
-      return error('Error de conflicto al generar el número de póliza. Intente de nuevo.');
-    }
     return serverError();
   }
 }

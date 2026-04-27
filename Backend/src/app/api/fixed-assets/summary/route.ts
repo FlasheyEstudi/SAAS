@@ -17,9 +17,9 @@ export async function GET(request: Request) {
       }),
     ]);
 
-    const totalPurchaseAmount = assets.reduce((s, a) => s + a.purchaseAmount, 0);
-    const totalBookValue = assets.reduce((s, a) => s + a.currentBookValue, 0);
-    const totalAccumulated = assets.reduce((s, a) => s + a.accumulatedDepreciation, 0);
+    const totalPurchaseAmount = assets.reduce((s, a) => s + Number(a.purchaseAmount || 0), 0);
+    const totalBookValue = assets.reduce((s, a) => s + Number(a.currentBookValue || 0), 0);
+    const totalAccumulated = assets.reduce((s, a) => s + Number(a.accumulatedDepreciation || 0), 0);
 
     const byTypeSummary = byType.map(b => ({
       assetType: b.assetType,

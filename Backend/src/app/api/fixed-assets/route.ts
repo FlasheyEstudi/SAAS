@@ -45,6 +45,19 @@ export async function GET(request: Request) {
   }
 }
 
+async function generateAssetCode(companyId: string): Promise<string> {
+  const lastAsset = await db.fixedAsset.findFirst({
+    where: { companyId },
+    orderBy: { createdAt: 'desc' },
+    select: { code: true },
+  });
+
+  if (!lastAsset) return 'FA-0001';
+
+  const lastNum = parseInt(lastAsset.code.split('-')[1] || '0');
+  return `FA-${String(lastNum + 1).padStart(4, '0')}`;
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -57,9 +70,11 @@ export async function POST(request: Request) {
     const validTypes = ['BUILDING', 'FURNITURE', 'COMPUTER', 'VEHICLE', 'MACHINERY', 'OTHER'];
     if (!validTypes.includes(assetType)) return error('assetType inválido');
 
+    const code = await generateAssetCode(companyId);
+
     const asset = await db.fixedAsset.create({
       data: {
-        companyId, name, description: description || null,
+        companyId, code, name, description: description || null,
         assetType, purchaseDate: new Date(purchaseDate),
         purchaseAmount: parseFloat(purchaseAmount),
         salvageValue: parseFloat(salvageValue || 0),

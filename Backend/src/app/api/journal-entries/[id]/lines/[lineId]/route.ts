@@ -3,6 +3,98 @@ import { db } from '@/lib/db';
 import { success, error, notFound, serverError } from '@/lib/api-helpers';
 
 // ============================================================
+// GET /api/journal-entries/[id]/lines/[lineId] — Obtener partida individual
+// ============================================================
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string; lineId: string }> }
+) {
+  try {
+    const { id, lineId } = await params;
+    const line = await db.journalEntryLine.findUnique({
+      where: { id: lineId },
+      include: {
+        account: { select: { id: true, code: true, name: true } },
+        costCenter: { select: { id: true, code: true, name: true } },
+      },
+    });
+
+    if (!line || line.journalEntryId !== id) return notFound('Partida no encontrada');
+    return success(line);
+  } catch (err) {
+    console.error('[GET /api/journal-entries/[id]/lines/[lineId]]', err);
+    return serverError();
+  }
+}
+
+// ============================================================
+// PUT /api/journal-entries/[id]/lines/[lineId] — Actualizar partida
+// Solo permite modificar si la póliza está en DRAFT.
+// Recalcula totales después de actualizar.
+// ============================================================
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string; lineId: string }> }
+) {
+  try {
+    const { id, lineId } = await params;
+    const body = await request.json();
+    const { accountId, costCenterId, description, debit, credit } = body;
+
+    // Verificar que la póliza existe y está en DRAFT
+    const entry = await db.journalEntry.findUnique({
+      where: { id },
+      select: { id: true, status: true },
+    });
+
+    if (!entry) return notFound('Póliza no encontrada');
+    if (entry.status !== 'DRAFT') {
+      return error('No se pueden modificar partidas de una póliza publicada (POSTED).');
+    }
+
+    // Actualizar en transacción y recalcular totales
+    const result = await db.$transaction(async (tx) => {
+      const line = await tx.journalEntryLine.update({
+        where: { id: lineId },
+        data: {
+          ...(accountId !== undefined ? { accountId } : {}),
+          ...(costCenterId !== undefined ? { costCenterId: costCenterId || null } : {}),
+          ...(description !== undefined ? { description } : {}),
+          ...(debit !== undefined ? { debit } : {}),
+          ...(credit !== undefined ? { credit } : {}),
+        },
+        include: {
+          account: { select: { id: true, code: true, name: true } },
+          costCenter: { select: { id: true, code: true, name: true } },
+        },
+      });
+
+      // Recalcular totales
+      const allLines = await tx.journalEntryLine.findMany({
+        where: { journalEntryId: id },
+        select: { debit: true, credit: true },
+      });
+
+      const totalDebit = allLines.reduce((sum, l) => sum + Number(l.debit || 0), 0);
+      const totalCredit = allLines.reduce((sum, l) => sum + Number(l.credit || 0), 0);
+      const difference = Math.round((totalDebit - totalCredit) * 100) / 100;
+
+      const updatedEntry = await tx.journalEntry.update({
+        where: { id },
+        data: { totalDebit, totalCredit, difference },
+      });
+
+      return { line, totals: updatedEntry };
+    });
+
+    return success(result);
+  } catch (err) {
+    console.error('[PUT /api/journal-entries/[id]/lines/[lineId]]', err);
+    return serverError();
+  }
+}
+
+// ============================================================
 // DELETE /api/journal-entries/[id]/lines/[lineId] — Eliminar partida
 // Solo permite eliminar si la póliza está en DRAFT.
 // Recalcula totales después de eliminar.
@@ -54,8 +146,8 @@ export async function DELETE(
         select: { debit: true, credit: true },
       });
 
-      const totalDebit = remainingLines.reduce((sum, l) => sum + (l.debit || 0), 0);
-      const totalCredit = remainingLines.reduce((sum, l) => sum + (l.credit || 0), 0);
+      const totalDebit = remainingLines.reduce((sum, l) => sum + Number(l.debit || 0), 0);
+      const totalCredit = remainingLines.reduce((sum, l) => sum + Number(l.credit || 0), 0);
       const difference = Math.round((totalDebit - totalCredit) * 100) / 100;
 
       const updatedEntry = await tx.journalEntry.update({

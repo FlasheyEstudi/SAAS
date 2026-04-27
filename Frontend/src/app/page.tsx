@@ -36,6 +36,7 @@ import { PaymentTermsView } from '@/modules/payment-terms/components/PaymentTerm
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
@@ -60,19 +61,32 @@ function ViewRouter() {
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const navigate = useAppStore((s) => s.navigate);
 
-  // Redirección centralizada
+  // Redirección centralizada y manejo de sesión
   useEffect(() => {
     const isAuthView = currentView === 'login' || currentView === 'register' || currentView === 'landing';
     
+    // Escuchar eventos globales de logout (ej: desde apiClient)
+    const handleGlobalLogout = () => {
+      useAppStore.getState().logout();
+      navigate('login');
+      toast.error('Tu sesión ha expirado por seguridad.');
+    };
+
+    window.addEventListener('auth:logout', handleGlobalLogout);
+
     if (isAuthenticated && isAuthView) {
-      // El pequeño delay previene bucles de navegación infinitos si el estado aún no es estable
       const timer = setTimeout(() => navigate('dashboard'), 0);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('auth:logout', handleGlobalLogout);
+      };
     }
     
     if (!isAuthenticated && !isAuthView) {
       navigate('landing');
     }
+
+    return () => window.removeEventListener('auth:logout', handleGlobalLogout);
   }, [isAuthenticated, currentView, navigate]);
 
   const renderView = () => {

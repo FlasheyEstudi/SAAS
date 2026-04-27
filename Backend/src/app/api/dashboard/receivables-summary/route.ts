@@ -32,15 +32,15 @@ export async function GET(request: Request) {
         : buckets[3];
 
       bucket.invoices.push(inv);
-      bucket.total += inv.balanceDue;
+      bucket.total += (Number(inv.balanceDue) || 0);
     }
 
-    const totalReceivables = invoices.reduce((s, i) => s + i.balanceDue, 0);
+    const totalReceivables = invoices.reduce((s, i) => s + (Number(i.balanceDue) || 0), 0);
     const overdueInvoices = invoices.filter(i => {
       const dueDate = i.dueDate ? new Date(i.dueDate) : new Date(i.issueDate);
       return dueDate < now;
     });
-    const totalOverdue = overdueInvoices.reduce((s, i) => s + i.balanceDue, 0);
+    const totalOverdue = overdueInvoices.reduce((s, i) => s + (Number(i.balanceDue) || 0), 0);
 
     return success({
       totalReceivables: Math.round(totalReceivables * 100) / 100,

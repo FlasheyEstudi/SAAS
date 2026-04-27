@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { apiClient } from '@/lib/api/client';
 import { AI } from '@/lib/api/endpoints';
 import { toast } from 'sonner';
@@ -35,12 +35,50 @@ export interface AITools {
 }
 
 export function useAI() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const companyId = useAppStore((state) => state.companyId);
+  const storageKey = companyId ? `ganesha_chat_${companyId}` : null;
+
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    if (typeof window !== 'undefined' && storageKey) {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {
+          return [];
+        }
+      }
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    if (!storageKey) {
+      setMessages([]);
+      return;
+    }
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        setMessages(JSON.parse(saved));
+      } catch {
+        setMessages([]);
+      }
+    } else {
+      setMessages([]);
+    }
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (storageKey) {
+      localStorage.setItem(storageKey, JSON.stringify(messages));
+    }
+  }, [messages, storageKey]);
+
   const [models, setModels] = useState<AIModel[]>([]);
   const [tools, setTools] = useState<AITools | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [status, setStatus] = useState<'online' | 'offline' | 'busy'>('offline');
-  const companyId = useAppStore((state) => state.companyId);
 
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim()) return null;
@@ -147,7 +185,10 @@ export function useAI() {
 
   const clearConversation = useCallback(() => {
     setMessages([]);
-  }, []);
+    if (storageKey) {
+      localStorage.removeItem(storageKey);
+    }
+  }, [storageKey]);
 
   return {
     messages,

@@ -17,17 +17,27 @@ export function AssetsView() {
   const { assets = [], summary: rawSummary, loading, depreciating, refreshAssets, depreciateAsset, bulkDepreciate, getAssetHistory, createAsset, updateAsset, deleteAsset } = useFixedAssets();
 
   // Compute summary from real data — prefer hook summary, fallback to computing from assets array
-  const totalValue = rawSummary?.totalCost || assets.reduce((s: number, a: any) => s + (a.purchaseAmount || 0), 0);
-  const totalDepreciation = rawSummary?.totalAccumulatedDepreciation || assets.reduce((s: number, a: any) => s + (a.accumulatedDepreciation || 0), 0);
-  const bookValue = rawSummary?.totalBookValue || assets.reduce((s: number, a: any) => s + (a.currentBookValue || 0), 0);
-  
+  const summary = {
+    totalValue: Number(rawSummary?.totalPurchaseAmount ?? assets?.reduce((s: number, a: any) => s + Number(a.purchaseAmount || 0), 0) ?? 0),
+    totalDepreciation: Number(rawSummary?.totalAccumulatedDepreciation ?? assets?.reduce((s: number, a: any) => s + Number(a.accumulatedDepreciation || 0), 0) ?? 0),
+    bookValue: Number(rawSummary?.totalBookValue ?? assets?.reduce((s: number, a: any) => s + Number(a.currentBookValue || 0), 0) ?? 0),
+    totalAssets: Number(rawSummary?.totalAssets ?? assets?.length ?? 0),
+    activeAssets: Number(rawSummary?.activeAssets ?? assets?.filter(a => a.status === 'ACTIVE').length ?? 0),
+    fullyDepreciated: Number(rawSummary?.fullyDepreciated ?? assets?.filter(a => a.status === 'FULLY_DEPRECIATED').length ?? 0),
+  };
 
   const companyId = useAppStore((state) => state.companyId);
   const [viewingHistory, setViewingHistory] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [showDepreciateModal, setShowDepreciateModal] = useState<'single' | 'bulk' | null>(null);
+  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [editing, setEditing] = useState<FixedAsset | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   
+  const [depParams, setDepParams] = useState({
+    year: new Date().getFullYear(),
+    month: new Date().getMonth() + 1,
+  });
   const [form, setForm] = useState<Partial<FixedAsset>>({
     name: '',
     assetType: 'OTHER',
@@ -40,23 +50,12 @@ export function AssetsView() {
     location: '',
   });
 
-  const handleBulkDepreciate = async () => {
+  const handleBulkDepreciate = () => {
     if (!companyId) {
       toast.error('Seleccione una empresa primero');
       return;
     }
-    const year = prompt('Ingrese el año (ej: 2024)', new Date().getFullYear().toString());
-    const month = prompt('Ingrese el mes (1-12)', (new Date().getMonth() + 1).toString());
-
-    if (!year || !month) return;
-
-    if (!confirm(`¿Está seguro de calcular la depreciación de ${month}/${year} para todos los activos?`)) return;
-    
-    await bulkDepreciate({ 
-      companyId, 
-      year: parseInt(year), 
-      month: parseInt(month) 
-    });
+    setShowDepreciateModal('bulk');
   };
 
   const handleShowHistory = async (assetId: string) => {
@@ -135,12 +134,12 @@ export function AssetsView() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          <VintageCard><p className="text-xs text-vintage-500">Costo Total</p><p className="text-lg font-bold text-vintage-800">{formatCurrency(totalValue)}</p></VintageCard>
-          <VintageCard><p className="text-xs text-vintage-500">Valor en Libros</p><p className="text-lg font-bold text-success">{formatCurrency(bookValue)}</p></VintageCard>
-          <VintageCard><p className="text-xs text-vintage-500">Depreciación Acumulada</p><p className="text-lg font-bold text-error">{formatCurrency(totalDepreciation)}</p></VintageCard>
-          <VintageCard><p className="text-xs text-vintage-500">Total Activos</p><p className="text-lg font-bold text-vintage-800">{rawSummary?.totalAssets ?? assets.length}</p></VintageCard>
-          <VintageCard><p className="text-xs text-vintage-500">Activos</p><p className="text-lg font-bold text-success">{rawSummary?.activeAssets ?? assets.filter((a: any) => a.status === 'ACTIVE').length}</p></VintageCard>
-          <VintageCard><p className="text-xs text-vintage-500">Depreciados</p><p className="text-lg font-bold text-info">{rawSummary?.fullyDepreciated ?? assets.filter((a: any) => a.status === 'FULLY_DEPRECIATED').length}</p></VintageCard>
+          <VintageCard><p className="text-xs text-vintage-500">Costo Total</p><p className="text-lg font-bold text-vintage-800">{formatCurrency(summary.totalValue)}</p></VintageCard>
+          <VintageCard><p className="text-xs text-vintage-500">Valor en Libros</p><p className="text-lg font-bold text-success">{formatCurrency(summary.bookValue)}</p></VintageCard>
+          <VintageCard><p className="text-xs text-vintage-500">Depreciación Acumulada</p><p className="text-lg font-bold text-error">{formatCurrency(summary.totalDepreciation)}</p></VintageCard>
+          <VintageCard><p className="text-xs text-vintage-500">Total Activos</p><p className="text-lg font-bold text-vintage-800">{summary.totalAssets}</p></VintageCard>
+          <VintageCard><p className="text-xs text-vintage-500">Activos</p><p className="text-lg font-bold text-success">{summary.activeAssets}</p></VintageCard>
+          <VintageCard><p className="text-xs text-vintage-500">Depreciados</p><p className="text-lg font-bold text-info">{summary.fullyDepreciated}</p></VintageCard>
         </div>
 
       <VintageCard className="p-0 overflow-hidden">
@@ -176,7 +175,7 @@ export function AssetsView() {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <button onClick={() => depreciateAsset(a.id)} disabled={a.status !== 'ACTIVE'} className="p-1.5 rounded-lg hover:bg-vintage-100 text-vintage-600 disabled:opacity-30" title="Calcular depreciación"><TrendingDown className="w-4 h-4" /></button>
+                        <button onClick={() => { setSelectedAssetId(a.id); setShowDepreciateModal('single'); }} disabled={a.status !== 'ACTIVE'} className="p-1.5 rounded-lg hover:bg-vintage-100 text-vintage-600 disabled:opacity-30" title="Calcular depreciación"><TrendingDown className="w-4 h-4" /></button>
                         <button onClick={() => openEdit(a)} className="p-1.5 rounded-lg hover:bg-vintage-100 text-vintage-600" title="Editar"><Edit2 className="w-3.5 h-3.5" /></button>
                         <button onClick={() => handleShowHistory(a.id)} className="p-1.5 rounded-lg hover:bg-vintage-100 text-vintage-600" title="Ver historial"><History className="w-4 h-4" /></button>
                         <button onClick={() => setDeleteId(a.id)} className="p-1.5 rounded-lg hover:bg-error/10 text-vintage-500 hover:text-error" title="Eliminar"><Trash2 className="w-3.5 h-3.5" /></button>
@@ -218,7 +217,7 @@ export function AssetsView() {
                 <div className="relative">
                   <select value={form.depreciationMethod} onChange={(e) => setForm({ ...form, depreciationMethod: e.target.value as any })} className="peer w-full px-3 pt-5 pb-2 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400 appearance-none">
                     <option value="STRAIGHT_LINE">Línea Recta</option>
-                    <option value="DECLINING_BALANCE">Saldos Decrecientes</option>
+                    <option value="DECLINING">Saldos Decrecientes</option>
                   </select>
                   <label className="absolute left-3 top-1.5 text-xs text-vintage-500 font-medium pointer-events-none">Método de Depreciación</label>
                 </div>
@@ -234,6 +233,55 @@ export function AssetsView() {
       )}
 
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={handleDelete} title="Eliminar activo" description="¿Está seguro de eliminar este activo? Esta acción no se puede deshacer y puede afectar los estados financieros." variant="destructive" />
+
+      {showDepreciateModal && (
+        <ConfirmDialog
+          open={!!showDepreciateModal}
+          onClose={() => { setShowDepreciateModal(null); setSelectedAssetId(null); }}
+          onConfirm={async () => {
+            if (showDepreciateModal === 'single' && selectedAssetId) {
+              await depreciateAsset(selectedAssetId, depParams);
+            } else if (showDepreciateModal === 'bulk' && companyId) {
+              await bulkDepreciate({ ...depParams, companyId });
+            }
+            setShowDepreciateModal(null);
+            setSelectedAssetId(null);
+          }}
+          title={showDepreciateModal === 'bulk' ? 'Depreciación Masiva' : 'Calcular depreciación'}
+          description=""
+          variant={showDepreciateModal === 'bulk' ? 'default' : 'default'}
+          loading={depreciating}
+        >
+          <div className="space-y-4 pt-2">
+            <p className="text-sm text-vintage-600">
+              {showDepreciateModal === 'bulk' 
+                ? '¿Está seguro de calcular la depreciación para TODOS los activos activos en el período seleccionado?' 
+                : `Seleccione el período para calcular la depreciación de ${assets.find(a => a.id === selectedAssetId)?.name}.`
+              }
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <FloatingInput 
+                label="Año" 
+                type="number" 
+                value={depParams.year} 
+                onChange={(e) => setDepParams({ ...depParams, year: Number(e.target.value) })} 
+              />
+              <div className="relative">
+                <select 
+                  value={depParams.month} 
+                  onChange={(e) => setDepParams({ ...depParams, month: Number(e.target.value) })} 
+                  className="peer w-full px-3 pt-5 pb-2 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400 appearance-none"
+                >
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('es', { month: 'long' })}</option>
+                  ))}
+                </select>
+                <label className="absolute left-3 top-1.5 text-xs text-vintage-500 font-medium pointer-events-none">Mes</label>
+              </div>
+            </div>
+          </div>
+        </ConfirmDialog>
+      )}
     </div>
   );
 }

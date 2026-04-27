@@ -51,7 +51,7 @@ export async function POST(_request: Request, context: RouteContext) {
 
     // Calcular pagos realizados (por programa de pagos o por balanceDue histórico)
     const schedulePaid = invoice.paymentSchedules.reduce(
-      (sum, s) => sum + s.paidAmount, 0
+      (sum, s) => sum + Number(s.paidAmount || 0), 0
     );
     const totalPaid = Math.round(schedulePaid * 100) / 100;
 

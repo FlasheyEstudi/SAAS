@@ -58,8 +58,8 @@ export async function PUT(request: Request, context: RouteContext) {
     const body = await request.json();
     const { name, isActive } = body;
 
-    // Check for immutable fields
-    const immutableFields = ['code', 'companyId', 'parentId', 'level'];
+    // Check for immutable fields (code is now mutable)
+    const immutableFields = ['companyId', 'parentId', 'level'];
     for (const field of immutableFields) {
       if (body[field] !== undefined) {
         return error(`El campo "${field}" no puede ser modificado después de la creación`);
@@ -74,6 +74,22 @@ export async function PUT(request: Request, context: RouteContext) {
 
     // Build update data
     const updateData: Record<string, unknown> = {};
+
+    if (body.code !== undefined) {
+      const newCode = String(body.code).trim();
+      if (newCode.length === 0) return error('El código no puede estar vacío');
+      
+      // If code is changing, check uniqueness
+      if (newCode !== existing.code) {
+        const duplicate = await db.costCenter.findFirst({
+          where: { companyId: existing.companyId, code: newCode },
+          select: { id: true }
+        });
+        if (duplicate) return error(`Ya existe otro centro con el código "${newCode}"`);
+        updateData.code = newCode;
+      }
+    }
+
     if (name !== undefined) {
       if (typeof name !== 'string' || name.trim().length === 0) {
         return error('El nombre del centro de costo no puede estar vacío');

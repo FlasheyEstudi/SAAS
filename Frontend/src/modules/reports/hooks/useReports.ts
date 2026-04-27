@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
 import { REPORTS } from '@/lib/api/endpoints';
 
+import { useAppStore } from '@/lib/stores/useAppStore';
+
 export interface ReportParams {
   startDate?: string;
   endDate?: string;
@@ -16,7 +18,10 @@ export interface ReportParams {
  * Hook for reports - consumes real Backend APIs
  */
 export function useReports(year?: number | string, month?: number | string) {
+  const companyId = useAppStore(s => s.companyId);
+
   const queryParams = { 
+    ...(companyId ? { companyId } : {}),
     ...(year ? { year } : {}),
     ...(month ? { month } : {})
   };

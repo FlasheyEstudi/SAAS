@@ -135,7 +135,6 @@ export const useAppStore = create<AppState>()(
 
       // Auth actions
       login: (user, token, companyId, company = null) => {
-        localStorage.setItem('auth_token', token);
         localStorage.setItem('current_company_id', companyId);
         localStorage.setItem('user', JSON.stringify(user));
         set({
@@ -150,7 +149,6 @@ export const useAppStore = create<AppState>()(
       },
 
       logout: () => {
-        localStorage.removeItem('auth_token');
         localStorage.removeItem('current_company_id');
         localStorage.removeItem('user');
         set({
@@ -243,7 +241,6 @@ export const useAppStore = create<AppState>()(
       name: 'erp-app-store',
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
-        token: state.token,
         companyId: state.companyId,
         availableCompanies: state.availableCompanies,
         currentView: state.currentView,

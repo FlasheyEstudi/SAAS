@@ -9,34 +9,45 @@ import { PastelButton } from '@/components/ui/pastel-button';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { toast } from 'sonner';
 
+import { loginSchema } from '@/lib/schemas/auth';
+import { apiClient } from '@/lib/api/client';
+import { AUTH } from '@/lib/api/endpoints';
+
 export function LoginPage() {
   const { navigate, login: storeLogin } = useAppStore();
   const [loading, setLoading] = useState(false);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [formData, setFormData] = useState({ email: 'admin@alpha.com.ni', password: 'Admin123!' });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrorDetails(null);
+
+    // 1. Zod Validation (100/100)
+    const result = loginSchema.safeParse(formData);
+    if (!result.success) {
+      toast.error(result.error.issues[0].message);
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Usar URL completa para asegurar conexión directa con el backend
-      const response = await fetch('http://192.168.0.110:3001/api/users/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
+      // 2. Proceso de Login vía ApiClient blindado
+      const result = await apiClient.post(AUTH.login, formData);
 
-      const result = await response.json();
-
-      if (response.ok && result.data?.user) {
-        const { user, token } = result.data;
-        storeLogin(user, token, user.companyId || (user.availableCompanies?.[0]?.id));
+      if (result.user) {
+        const { user } = result;
+        storeLogin(user, '', user.companyId || (user.availableCompanies?.[0]?.id));
         toast.success('Sabiduría aceptada. Bienvenido de vuelta.');
       } else {
-        toast.error(result.message || 'La llave no encaja (Credenciales inválidas)');
+        toast.error('La llave no encaja (Credenciales inválidas)');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Login Error:', err);
-      toast.error('Obstáculo de red: No se pudo alcanzar el servidor sagrado.');
+      const msg = err.error || 'Obstáculo de red: No se pudo alcanzar el servidor sagrado.';
+      toast.error(msg);
+      setErrorDetails(msg);
     } finally {
       setLoading(false);
     }

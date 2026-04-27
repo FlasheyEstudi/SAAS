@@ -57,6 +57,69 @@ function VintageTooltip({ active, payload, label }: any) {
   );
 }
 
+function BalanceSection({ title, color, total, items }: any) {
+  return (
+    <VintageCard hover={false} className="p-4">
+      <h4 className="text-sm font-semibold text-vintage-800 dark:text-zinc-100 mb-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className={cn("w-3 h-3 rounded-full", color)} />
+          {title}
+        </div>
+        <span className="text-base font-playfair">{formatCurrency(total, 'NIO')}</span>
+      </h4>
+      <div className="space-y-1">
+        {(items || []).map((item: any, idx: number) => (
+          <div 
+            key={`${item.accountId}-${idx}`} 
+            className={cn(
+              "flex justify-between items-center py-1 group transition-colors hover:bg-vintage-50/50 dark:hover:bg-zinc-800/30 px-2 rounded-lg",
+              item.isGroup ? "font-bold text-vintage-900 dark:text-zinc-100" : "text-vintage-600 dark:text-zinc-400 text-sm"
+            )}
+            style={{ paddingLeft: `${(item.level - 1) * 16 + 8}px` }}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono opacity-50">{item.accountCode}</span>
+              <span>{item.accountName}</span>
+            </div>
+            <span className="font-mono">{formatCurrency(item.balance, 'NIO')}</span>
+          </div>
+        ))}
+      </div>
+    </VintageCard>
+  );
+}
+function IncomeSection({ title, color, total, items }: any) {
+  return (
+    <VintageCard hover={false} className="p-4">
+      <h4 className="text-sm font-semibold text-vintage-800 dark:text-zinc-100 mb-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className={cn("w-3 h-3 rounded-full", color)} />
+          {title}
+        </div>
+        <span className="text-base font-playfair">{formatCurrency(total, 'NIO')}</span>
+      </h4>
+      <div className="space-y-1">
+        {(items || []).map((item: any, idx: number) => (
+          <div 
+            key={`${item.accountId}-${idx}`} 
+            className={cn(
+              "flex justify-between items-center py-1 group transition-colors hover:bg-vintage-50/50 dark:hover:bg-zinc-800/30 px-2 rounded-lg",
+              item.isGroup ? "font-bold text-vintage-900 dark:text-zinc-100" : "text-vintage-600 dark:text-zinc-400 text-sm"
+            )}
+            style={{ paddingLeft: `${(item.level - 1) * 16 + 8}px` }}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono opacity-50">{item.accountCode}</span>
+              <span>{item.accountName}</span>
+            </div>
+            <span className="font-mono">{formatCurrency(item.balance, 'NIO')}</span>
+          </div>
+        ))}
+      </div>
+    </VintageCard>
+  );
+}
+
 export function ReportsView() {
   const { periods: dynamicPeriods = [] } = usePeriods();
   const [year, setYear] = useState(new Date().getFullYear().toString());
@@ -69,62 +132,45 @@ export function ReportsView() {
     incomeStatement: incomeStatementData,
   } = useReports(year, period.split('-')[1]) as any;
 
-  // Auto-select latest period if data is empty and periods are available
+  // Auto-select latest period if empty
   useEffect(() => {
-    if (dynamicPeriods.length > 0 && (!trialBalanceData || trialBalanceData.accounts?.length === 0)) {
-      const latest = dynamicPeriods[dynamicPeriods.length - 1]; // Assuming sorted
-      if (latest && (latest.year.toString() !== year || `${latest.year}-${latest.month.toString().padStart(2, '0')}` !== period)) {
+    if (dynamicPeriods.length > 0 && dynamicPeriods.length > 0 && !dynamicPeriods.some(p => `${p.year}-${p.month.toString().padStart(2, '0')}` === period)) {
+      const latest = dynamicPeriods[dynamicPeriods.length - 1];
+      if (latest) {
         setYear(latest.year.toString());
         setPeriod(`${latest.year}-${latest.month.toString().padStart(2, '0')}`);
       }
     }
-  }, [dynamicPeriods, trialBalanceData, year, period]);
+  }, [dynamicPeriods, period]);
 
-  // GANESHA MOCK DATA for financial reports
-  const mockTrialBalance = {
-    accounts: [
-      { accountId: '1', accountCode: '1101-01', accountName: 'Caja General', accountType: 'ASSET', debitBalance: 12500, creditBalance: 0, netBalance: 12500 },
-      { accountId: '2', accountCode: '1102-01', accountName: 'BAC Credomatic NIO', accountType: 'ASSET', debitBalance: 145800, creditBalance: 0, netBalance: 145800 },
-      { accountId: '3', accountCode: '1201-01', accountName: 'Cuentas por Cobrar Clientes', accountType: 'ASSET', debitBalance: 45000, creditBalance: 0, netBalance: 45000 },
-      { accountId: '4', accountCode: '2101-01', accountName: 'Proveedores Locales', accountType: 'LIABILITY', debitBalance: 0, creditBalance: 25400, netBalance: -25400 },
-      { accountId: '5', accountCode: '3101-01', accountName: 'Capital Social', accountType: 'EQUITY', debitBalance: 0, creditBalance: 150000, netBalance: -150000 },
-      { accountId: '6', accountCode: '4101-01', accountName: 'Ventas de Servicios', accountType: 'INCOME', debitBalance: 0, creditBalance: 85600, netBalance: -85600 },
-      { accountId: '7', accountCode: '5101-01', accountName: 'Gastos de Operación', accountType: 'EXPENSE', debitBalance: 57700, creditBalance: 0, netBalance: 57700 },
-    ],
-    totals: { totalDebit: 261000, totalCredit: 261000 }
-  };
+  // Extract unique years from dynamic periods
+  const years: string[] = dynamicPeriods.map((p: any) => p.year.toString()).filter((v: string, i: number, a: string[]) => a.indexOf(v) === i).sort().reverse();
+  const availablePeriods: string[] = dynamicPeriods
+    .filter(p => !year || p.year.toString() === year)
+    .map(p => `${p.year}-${p.month.toString().padStart(2, '0')}`);
 
-  const mockBalanceSheet = {
-    totalAssets: 203300,
-    totalLiabilities: 25400,
-    totalEquity: 177900,
-    assets: [{ name: 'Circulante', amount: 203300 }, { name: 'Fijo', amount: 0 }],
-    liabilities: [{ name: 'Corto Plazo', amount: 25400 }, { name: 'Largo Plazo', amount: 0 }],
-    equity: [{ name: 'Capital', amount: 150000 }, { name: 'Resultados', amount: 27900 }],
-  };
-
-  const mockIncomeStatement = {
-    totalIncome: 85600,
-    totalExpenses: 57700,
-    netIncome: 27900,
-    grossProfit: 85600,
-    incomeDetails: [{ name: 'Ventas', amount: 85600 }],
-    expenseDetails: [{ name: 'Operativos', amount: 45000 }, { name: 'Servicios', amount: 12700 }],
-  };
-
-  const trialBalance = (trialBalanceData?.accounts?.length > 0) ? trialBalanceData.accounts : mockTrialBalance.accounts;
-  const totals = (trialBalanceData?.accounts?.length > 0) ? trialBalanceData.totals : mockTrialBalance.totals;
+  const trialBalance = trialBalanceData?.accounts || [];
+  const totals = trialBalanceData?.totals || { totalDebit: 0, totalCredit: 0 };
   const totalDebit = totals.totalDebit;
   const totalCredit = totals.totalCredit;
 
-  const balanceSheet = (balanceSheetData?.totalAssets > 0) ? balanceSheetData : mockBalanceSheet;
-  const incomeStatement = (incomeStatementData?.totalIncome > 0) ? incomeStatementData : mockIncomeStatement;
+  const balanceSheet = balanceSheetData || { 
+    totalAssets: 0, 
+    totalLiabilities: 0, 
+    totalEquity: 0, 
+    assets: [], 
+    liabilities: [], 
+    equity: [] 
+  };
+  
+  const incomeStatement = incomeStatementData || { 
+    totalIncome: 0, 
+    totalExpenses: 0, 
+    netIncome: 0, 
+    income: [], 
+    expenses: [] 
+  };
 
-  // Extract unique years from dynamic periods
-  const years = Array.from(new Set(dynamicPeriods.map(p => p.year.toString()))).sort().reverse();
-  const availablePeriods = dynamicPeriods
-    .filter(p => !year || p.year.toString() === year)
-    .map(p => `${p.year}-${p.month.toString().padStart(2, '0')}`);
 
   const [activeTab, setActiveTab] = useState('trial-balance');
 
@@ -147,9 +193,9 @@ export function ReportsView() {
         }
       } else if (activeTab === 'income-statement') {
         if (format === 'excel') {
-          await exportIncomeStatementExcel(incomeStatement.incomeDetails || [], incomeStatement.expenseDetails || [], incomeStatement.netIncome || 0, companyName, period);
+          await exportIncomeStatementExcel(incomeStatement.income || [], incomeStatement.expenses || [], incomeStatement.netIncome || 0, companyName, period);
         } else {
-          await exportIncomeStatementPDF(incomeStatement.incomeDetails || [], incomeStatement.expenseDetails || [], incomeStatement.netIncome || 0, companyName, period);
+          await exportIncomeStatementPDF(incomeStatement.income || [], incomeStatement.expenses || [], incomeStatement.netIncome || 0, companyName, period);
         }
       }
       
@@ -321,9 +367,13 @@ export function ReportsView() {
                 keyExtractor={(row: any) => row.accountId}
                 renderRow={(row: any) => (
                   <>
-                    <td className="px-4 py-2.5 text-sm font-mono text-vintage-600 dark:text-zinc-400">{row.accountCode}</td>
+                    <td className="px-4 py-2.5 text-sm font-mono text-vintage-600 dark:text-zinc-400">
+                      <div style={{ paddingLeft: `${(row.level - 1) * 12}px` }}>
+                        {row.accountCode}
+                      </div>
+                    </td>
                     <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2" style={{ paddingLeft: `${(row.level - 1) * 12}px` }}>
                         <span className={cn(
                           'w-2 h-2 rounded-full',
                           row.accountType === 'ASSET' && 'bg-info',
@@ -332,20 +382,23 @@ export function ReportsView() {
                           row.accountType === 'INCOME' && 'bg-success',
                           row.accountType === 'EXPENSE' && 'bg-error/70',
                         )} />
-                        <span className="text-sm text-vintage-700 dark:text-zinc-300">{row.accountName}</span>
+                        <span className={cn(
+                          "text-sm",
+                          row.isGroup ? "font-bold text-vintage-800 dark:text-zinc-100" : "text-vintage-700 dark:text-zinc-300"
+                        )}>{row.accountName}</span>
                       </div>
                     </td>
                     <td className="px-4 py-2.5 text-right text-sm font-mono text-vintage-700 dark:text-zinc-400">
-                      {row.debitBalance > 0 ? formatCurrency(row.debitBalance, 'NIO') : '—'}
+                      {row.totalDebit > 0 || row.isGroup ? formatCurrency(row.totalDebit, 'NIO') : '—'}
                     </td>
                     <td className="px-4 py-2.5 text-right text-sm font-mono text-vintage-700 dark:text-zinc-400">
-                      {row.creditBalance > 0 ? formatCurrency(row.creditBalance, 'NIO') : '—'}
+                      {row.totalCredit > 0 || row.isGroup ? formatCurrency(row.totalCredit, 'NIO') : '—'}
                     </td>
                     <td className={cn(
                       'px-4 py-2.5 text-right text-sm font-mono font-semibold',
-                      row.netBalance > 0 ? 'text-success dark:text-emerald-400' : row.netBalance < 0 ? 'text-error dark:text-red-400' : 'text-vintage-500 dark:text-zinc-600',
+                      row.balance > 0 ? 'text-success dark:text-emerald-400' : row.balance < 0 ? 'text-error dark:text-red-400' : 'text-vintage-500 dark:text-zinc-600',
                     )}>
-                      {formatCurrency(row.netBalance, 'NIO')}
+                      {formatCurrency(row.balance, 'NIO')}
                     </td>
                   </>
                 )}
@@ -416,47 +469,24 @@ export function ReportsView() {
 
                 {/* Breakdown */}
                 <div className="space-y-4">
-                  <VintageCard hover={false} className="p-4">
-                    <h4 className="text-sm font-semibold text-vintage-800 dark:text-zinc-100 mb-3 flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-success" />
-                      Activos ({formatCurrency(balanceSheet.totalAssets, 'NIO')})
-                    </h4>
-                    <div className="space-y-2">
-                      {(balanceSheet.assets || []).map((section: any, sIdx: number) => (
-                        <div key={`asset-section-${section.name}-${sIdx}`}>
-                          <p className="text-sm font-medium text-vintage-700 dark:text-zinc-300">{section.name}: {formatCurrency(section.amount, 'NIO')}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </VintageCard>
-
-                  <VintageCard hover={false} className="p-4">
-                    <h4 className="text-sm font-semibold text-vintage-800 dark:text-zinc-100 mb-3 flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-error" />
-                      Pasivos ({formatCurrency(balanceSheet.totalLiabilities, 'NIO')})
-                    </h4>
-                    <div className="space-y-2">
-                      {(balanceSheet.liabilities || []).map((section: any, sIdx: number) => (
-                        <div key={`liability-section-${section.name}-${sIdx}`}>
-                          <p className="text-sm font-medium text-vintage-700 dark:text-zinc-300">{section.name}: {formatCurrency(section.amount, 'NIO')}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </VintageCard>
-
-                  <VintageCard hover={false} className="p-4">
-                    <h4 className="text-sm font-semibold text-vintage-800 dark:text-zinc-100 mb-3 flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-lavender" />
-                      Patrimonio ({formatCurrency(balanceSheet.totalEquity, 'NIO')})
-                    </h4>
-                    <div className="space-y-2">
-                      {(balanceSheet.equity || []).map((section: any, sIdx: number) => (
-                        <div key={`equity-section-${section.name}-${sIdx}`}>
-                          <p className="text-sm font-medium text-vintage-700 dark:text-zinc-300">{section.name}: {formatCurrency(section.amount, 'NIO')}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </VintageCard>
+                  <BalanceSection 
+                    title="Activos" 
+                    color="bg-success" 
+                    total={balanceSheet.totalAssets} 
+                    items={balanceSheet.assets} 
+                  />
+                  <BalanceSection 
+                    title="Pasivos" 
+                    color="bg-error" 
+                    total={balanceSheet.totalLiabilities} 
+                    items={balanceSheet.liabilities} 
+                  />
+                  <BalanceSection 
+                    title="Patrimonio" 
+                    color="bg-lavender" 
+                    total={balanceSheet.totalEquity} 
+                    items={balanceSheet.equity} 
+                  />
                 </div>
               </div>
             </div>
@@ -482,12 +512,12 @@ export function ReportsView() {
                   <AnimatedCounter value={incomeStatement.totalExpenses} prefix="$" decimals={0} className="text-xl font-playfair text-error dark:text-red-400" />
                 </VintageCard>
                 <VintageCard hover={false} className="p-4">
-                  <p className="text-xs text-vintage-500 dark:text-zinc-500 font-medium uppercase tracking-wider">Utilidad Bruta</p>
-                  <AnimatedCounter value={incomeStatement.grossProfit} prefix="$" decimals={0} className="text-xl font-playfair text-vintage-800 dark:text-zinc-100" />
+                  <p className="text-xs text-vintage-500 dark:text-zinc-500 font-medium uppercase tracking-wider">Margen Bruto</p>
+                  <AnimatedCounter value={incomeStatement.grossMargin || 0} suffix="%" decimals={1} className="text-xl font-playfair text-vintage-800 dark:text-zinc-100" />
                 </VintageCard>
                 <VintageCard hover={false} variant="gradient" className="p-4">
                   <p className="text-xs text-vintage-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Utilidad Neta</p>
-                  <AnimatedCounter value={incomeStatement.netIncome} prefix="$" decimals={0} className="text-2xl font-playfair text-success dark:text-emerald-400 font-bold" />
+                  <AnimatedCounter value={incomeStatement.netIncome || 0} prefix="$" decimals={0} className="text-2xl font-playfair text-success dark:text-emerald-400 font-bold" />
                 </VintageCard>
               </div>
 
@@ -510,20 +540,21 @@ export function ReportsView() {
                   </div>
                 </VintageCard>
 
-                <VintageCard hover={false} className="p-5">
-                  <h3 className="text-lg font-playfair text-vintage-800 dark:text-zinc-100 mb-4">Desglose de Gastos</h3>
-                  <div className="h-72">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={incomeBarData.filter((d) => d.type === 'Gasto')} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e8e0d8" className="dark:opacity-10" />
-                        <XAxis type="number" tick={{ fontSize: 11, fill: '#7a6f65' }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} className="font-sans dark:fill-zinc-500" />
-                        <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#7a6f65' }} width={90} className="font-sans dark:fill-zinc-500" />
-                        <Tooltip content={<VintageTooltip />} />
-                        <Bar dataKey="amount" fill={EXPENSE_COLOR} name="Monto" radius={[0, 6, 6, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </VintageCard>
+                {/* Breakdown lists */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <IncomeSection 
+                    title="Ingresos" 
+                    color="bg-success" 
+                    total={incomeStatement.totalIncome} 
+                    items={incomeStatement.income} 
+                  />
+                  <IncomeSection 
+                    title="Gastos" 
+                    color="bg-error" 
+                    total={incomeStatement.totalExpenses} 
+                    items={incomeStatement.expenses} 
+                  />
+                </div>
               </div>
             </div>
           )}

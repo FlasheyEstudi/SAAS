@@ -50,8 +50,8 @@ export async function POST(request: Request) {
           companyId,
           status: 'POSTED',
         },
-        bankMovement: null, // Not already reconciled to another bank movement
-      },
+        bankMovements: { none: {} }, // Not already reconciled to any bank movement
+      } as any,
       include: {
         journalEntry: {
           select: { entryDate: true, entryNumber: true, description: true },
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
           select: { id: true, code: true, name: true, accountType: true },
         },
       },
-    });
+    }) as any[];
 
     // Reconciliation logic: match by amount and date proximity (±3 days)
     const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
@@ -81,8 +81,10 @@ export async function POST(request: Request) {
         if (matchedJournalLineIds.has(line.id)) return false;
 
         // Check amount matches
-        const lineAmount = line[targetField];
-        if (Math.abs(lineAmount - movementAmount) > 0.01) return false;
+        const lineAmount = Number(line[targetField] || 0);
+        const movAmount = Number(movementAmount || 0);
+        
+        if (Math.abs(lineAmount - movAmount) > 0.01) return false;
 
         // Check date proximity (±3 days)
         const lineDate = new Date(line.journalEntry.entryDate);

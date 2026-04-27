@@ -59,22 +59,66 @@ export async function PUT(request: Request, context: RouteContext) {
     const body = await request.json();
     const { name, isActive, description } = body;
 
-    // Check for immutable fields
-    const immutableFields = ['code', 'accountType', 'nature', 'companyId', 'parentId', 'level', 'isGroup'];
-    for (const field of immutableFields) {
-      if (body[field] !== undefined) {
-        return error(`El campo "${field}" no puede ser modificado después de la creación`);
+    // Check account exists with counts
+    const existing = await db.account.findUnique({ 
+      where: { id },
+      include: {
+        _count: {
+          select: { journalLines: true, children: true }
+        }
       }
-    }
+    });
 
-    // Check account exists
-    const existing = await db.account.findUnique({ where: { id } });
     if (!existing) {
       return notFound('Cuenta no encontrada');
     }
 
+    // Check for strictly immutable fields
+    const strictlyImmutable = ['companyId', 'parentId', 'level'];
+    for (const field of strictlyImmutable) {
+      if (body[field] !== undefined) {
+        return error(`El campo "${field}" no puede ser modificado después de la creación por integridad de la jerarquía`);
+      }
+    }
+
+    const hasActivity = existing._count.journalLines > 0;
+
     // Build update data
     const updateData: Record<string, unknown> = {};
+    
+    // Code update (allowed)
+    if (body.code !== undefined) {
+      const newCode = String(body.code).trim();
+      if (newCode.length === 0) return error('El código no puede estar vacío');
+      if (newCode !== existing.code) {
+        const duplicate = await db.account.findFirst({
+          where: { companyId: existing.companyId, code: newCode },
+          select: { id: true }
+        });
+        if (duplicate) return error(`Ya existe otra cuenta con el código "${newCode}"`);
+        updateData.code = newCode;
+      }
+    }
+
+    // accountType and nature update (allowed ONLY if no activity)
+    if (body.accountType !== undefined && body.accountType !== existing.accountType) {
+      if (hasActivity) return error('No se puede cambiar el tipo de cuenta porque ya tiene movimientos contables');
+      updateData.accountType = body.accountType;
+    }
+
+    if (body.nature !== undefined && body.nature !== existing.nature) {
+      if (hasActivity) return error('No se puede cambiar la naturaleza de la cuenta porque ya tiene movimientos contables');
+      updateData.nature = body.nature;
+    }
+
+    // isGroup update (allowed ONLY if no activity)
+    if (body.isGroup !== undefined && body.isGroup !== existing.isGroup) {
+      if (body.isGroup === true && hasActivity) {
+        return error('No se puede convertir en cuenta de grupo porque ya tiene movimientos contables');
+      }
+      updateData.isGroup = body.isGroup;
+    }
+
     if (name !== undefined) {
       if (typeof name !== 'string' || name.trim().length === 0) {
         return error('El nombre de la cuenta no puede estar vacío');

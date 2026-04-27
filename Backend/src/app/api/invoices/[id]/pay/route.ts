@@ -13,11 +13,6 @@ export async function POST(request: Request, context: RouteContext) {
     const body = await request.json();
     const { amount, journalEntryId, description } = body;
 
-    // Validate amount
-    if (amount === undefined || amount === null || amount <= 0) {
-      return error('El monto del pago debe ser mayor a 0');
-    }
-
     // Get current invoice
     const invoice = await db.invoice.findUnique({
       where: { id },
@@ -27,20 +22,28 @@ export async function POST(request: Request, context: RouteContext) {
       return notFound('Factura no encontrada');
     }
 
+    // Default amount to balanceDue if not provided
+    const paymentAmount = (amount === undefined || amount === null) ? Number(invoice.balanceDue) : Number(amount);
+
+    // Validate amount
+    if (paymentAmount <= 0) {
+      return error('El monto del pago debe ser mayor a 0');
+    }
+
     // Cannot pay a cancelled invoice
     if (invoice.status === 'CANCELLED') {
       return error('No se puede registrar un pago en una factura cancelada');
     }
 
     // Cannot pay a fully paid invoice
-    if (invoice.status === 'PAID' || invoice.balanceDue <= 0) {
+    if (invoice.status === 'PAID' || Number(invoice.balanceDue) <= 0) {
       return error('La factura ya está completamente pagada');
     }
 
     // Validate amount does not exceed balance due
-    if (amount > invoice.balanceDue) {
+    if (paymentAmount > Number(invoice.balanceDue)) {
       return error(
-        `El monto del pago (${amount}) excede el saldo pendiente (${invoice.balanceDue})`
+        `El monto del pago (${paymentAmount}) excede el saldo pendiente (${Number(invoice.balanceDue)})`
       );
     }
 
@@ -53,10 +56,10 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     // Calculate new balance
-    const newBalanceDue = Math.round((invoice.balanceDue - amount) * 100) / 100;
+    const newBalanceDue = Math.round((Number(invoice.balanceDue) - paymentAmount) * 100) / 100;
 
     // Determine new status
-    let newStatus: string;
+    let newStatus: any;
     if (newBalanceDue <= 0) {
       newStatus = 'PAID';
     } else {
@@ -81,7 +84,7 @@ export async function POST(request: Request, context: RouteContext) {
     return success({
       ...updatedInvoice,
       paymentInfo: {
-        amount,
+        amount: paymentAmount,
         previousBalanceDue: invoice.balanceDue,
         newBalanceDue: Math.max(0, newBalanceDue),
         statusChanged: invoice.status !== newStatus,

@@ -12,7 +12,7 @@ export async function GET(request: Request) {
       orderBy: { bankName: 'asc' },
     });
 
-    const totalCurrent = bankAccounts.reduce((s, a) => s + a.currentBalance, 0);
+    const totalCurrent = bankAccounts.reduce((s, a) => s + (Number(a.currentBalance) || 0), 0);
 
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
@@ -33,10 +33,10 @@ export async function GET(request: Request) {
       },
     });
 
-    const currentInflows = currentMonthMovements.filter(m => m.movementType === 'CREDIT').reduce((s, m) => s + m.amount, 0);
-    const currentOutflows = currentMonthMovements.filter(m => m.movementType === 'DEBIT').reduce((s, m) => s + m.amount, 0);
-    const previousInflows = previousMonthMovements.filter(m => m.movementType === 'CREDIT').reduce((s, m) => s + m.amount, 0);
-    const previousOutflows = previousMonthMovements.filter(m => m.movementType === 'DEBIT').reduce((s, m) => s + m.amount, 0);
+    const currentInflows = currentMonthMovements.filter(m => m.movementType === 'CREDIT').reduce((s, m) => s + (Number(m.amount) || 0), 0);
+    const currentOutflows = currentMonthMovements.filter(m => m.movementType === 'DEBIT').reduce((s, m) => s + (Number(m.amount) || 0), 0);
+    const previousInflows = previousMonthMovements.filter(m => m.movementType === 'CREDIT').reduce((s, m) => s + (Number(m.amount) || 0), 0);
+    const previousOutflows = previousMonthMovements.filter(m => m.movementType === 'DEBIT').reduce((s, m) => s + (Number(m.amount) || 0), 0);
 
     return success({
       totalCash: Math.round(totalCurrent * 100) / 100,

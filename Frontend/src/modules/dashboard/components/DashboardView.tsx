@@ -775,7 +775,7 @@ export function DashboardView() {
               <span>Total facturado Top 5</span>
               <span className="font-semibold text-vintage-800">
                 {formatCurrency(
-                  topClients.reduce((sum, c) => sum + c.totalFacturado, 0),
+                  topClients.reduce((sum, c) => sum + (Number(c.totalFacturado) || 0), 0),
                   'NIO',
                   0
                 )}

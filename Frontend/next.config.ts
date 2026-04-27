@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
-  allowedDevOrigins: ['192.168.0.110', '172.16.27.22', '172.16.27.216', 'localhost'],
+  allowedDevOrigins: ['192.168.0.110', '172.16.27.22', '172.16.27.216', '192.168.1.*', '192.168.0.*', '10.0.0.*', 'localhost'],
   async rewrites() {
     return [
       {

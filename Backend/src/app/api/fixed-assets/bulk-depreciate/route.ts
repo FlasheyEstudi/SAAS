@@ -27,23 +27,23 @@ export async function POST(request: Request) {
       });
       if (existingDep) { skipped++; continue; }
 
-      const depreciableAmount = asset.purchaseAmount - asset.salvageValue;
+      const depreciableAmount = Number(asset.purchaseAmount) - Number(asset.salvageValue);
       const monthlyDepreciation = depreciableAmount / asset.usefulLifeMonths;
       let depreciationAmount = monthlyDepreciation;
 
       if (asset.depreciationMethod === 'DECLINING') {
         const remainingLife = asset.usefulLifeMonths - asset._count.depreciationEntries;
-        depreciationAmount = (asset.currentBookValue - asset.salvageValue) / (remainingLife || 1);
+        depreciationAmount = (Number(asset.currentBookValue) - Number(asset.salvageValue)) / (remainingLife || 1);
       }
 
       if (depreciationAmount < 0) depreciationAmount = 0;
-      if (depreciationAmount > asset.currentBookValue - asset.salvageValue) {
-        depreciationAmount = asset.currentBookValue - asset.salvageValue;
+      if (depreciationAmount > Number(asset.currentBookValue) - Number(asset.salvageValue)) {
+        depreciationAmount = Number(asset.currentBookValue) - Number(asset.salvageValue);
       }
 
       depreciationAmount = Math.round(depreciationAmount * 100) / 100;
-      const newAccumulated = Math.round((asset.accumulatedDepreciation + depreciationAmount) * 100) / 100;
-      const newBookValue = Math.round((asset.purchaseAmount - newAccumulated) * 100) / 100;
+      const newAccumulated = Math.round((Number(asset.accumulatedDepreciation) + depreciationAmount) * 100) / 100;
+      const newBookValue = Math.round((Number(asset.purchaseAmount) - newAccumulated) * 100) / 100;
 
       await db.$transaction(async (tx) => {
         await tx.depreciationEntry.create({

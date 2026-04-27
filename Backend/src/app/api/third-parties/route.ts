@@ -1,52 +1,51 @@
 import { db } from '@/lib/db';
-import { success, created, error, parsePagination, serverError } from '@/lib/api-helpers';
-import type { PaginatedResponse } from '@/lib/api-helpers';
-import { Prisma } from '@prisma/client';
+import {
+  success,
+  error,
+  parsePagination,
+  serverError,
+  validateAuth,
+  requireAuth,
+} from '@/lib/api-helpers';
+import { thirdPartySchema } from '@/lib/schemas/inventory';
+import { logAudit } from '@/lib/audit-service';
+import { NextRequest } from 'next/server';
 
 // ============================================================
 // GET /api/third-parties - List third parties with pagination & filters
 // ============================================================
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
+    const { searchParams } = request.nextUrl;
     const { page, limit, sortBy, sortOrder } = parsePagination(searchParams);
 
     const companyId = searchParams.get('companyId');
-    if (!companyId) {
-      return error('El parámetro companyId es obligatorio');
-    }
+    if (!companyId) return error('El parámetro companyId es obligatorio');
 
-    const type = searchParams.get('type') || '';
+    const type = searchParams.get('type');
     const isActive = searchParams.get('isActive');
     const search = searchParams.get('search') || '';
 
-    // Build where clause
-    const where: Prisma.ThirdPartyWhereInput = { companyId };
-
-    if (type && ['CUSTOMER', 'SUPPLIER', 'BOTH'].includes(type)) {
-      where.type = type;
-    }
-
-    if (isActive !== null && isActive !== undefined && isActive !== '') {
-      where.isActive = isActive === 'true';
-    }
+    const where: any = { companyId };
+    if (type) where.type = type as any;
+    if (isActive !== null) where.isActive = isActive === 'true';
 
     if (search) {
       where.OR = [
-        { name: { contains: search } },
-        { taxId: { contains: search } },
-        { email: { contains: search } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { taxId: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
       ];
     }
 
     const [thirdParties, total] = await Promise.all([
       db.thirdParty.findMany({
         where,
-        include: {
-          _count: {
-            select: { invoices: true },
-          },
-        },
+        include: { _count: { select: { invoices: true } } },
         orderBy: { [sortBy]: sortOrder },
         skip: (page - 1) * limit,
         take: limit,
@@ -54,7 +53,7 @@ export async function GET(request: Request) {
       db.thirdParty.count({ where }),
     ]);
 
-    const result: PaginatedResponse<(typeof thirdParties)[0]> = {
+    return success({
       data: thirdParties,
       pagination: {
         page,
@@ -64,72 +63,65 @@ export async function GET(request: Request) {
         hasNext: page * limit < total,
         hasPrev: page > 1,
       },
-    };
-
-    return success(result);
+    });
   } catch (err) {
-    console.error('Error listing third parties:', err);
-    return serverError('Error al listar terceros');
+    console.error('[GET /api/third-parties]', err);
+    return serverError();
   }
 }
 
 // ============================================================
 // POST /api/third-parties - Create a new third party
 // ============================================================
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
     const body = await request.json();
-    const { companyId, name, type, taxId, email, phone, address, city, state, country } = body;
-
-    // Validate required fields
-    if (!companyId) {
-      return error('El companyId es obligatorio');
+    
+    // 1. Validar con Zod (100/100)
+    const result = thirdPartySchema.safeParse(body);
+    if (!result.success) {
+      return error(result.error.issues[0].message);
     }
-    if (!name || typeof name !== 'string' || name.trim().length === 0) {
-      return error('El nombre del tercero es obligatorio');
-    }
+    const data = result.data;
 
-    // Validate type if provided
-    const validTypes = ['CUSTOMER', 'SUPPLIER', 'BOTH'];
-    const thirdPartyType = type || 'CUSTOMER';
-    if (!validTypes.includes(thirdPartyType)) {
-      return error('El tipo debe ser CUSTOMER, SUPPLIER o BOTH');
-    }
-
-    // Verify company exists
-    const company = await db.company.findUnique({ where: { id: companyId } });
-    if (!company) {
-      return error('La empresa especificada no existe');
-    }
-
+    // 2. Crear tercero
     const thirdParty = await db.thirdParty.create({
       data: {
-        companyId,
-        name: name.trim(),
-        type: thirdPartyType,
-        taxId: taxId?.trim() || null,
-        email: email?.trim() || null,
-        phone: phone?.trim() || null,
-        address: address?.trim() || null,
-        city: city?.trim() || null,
-        state: state?.trim() || null,
-        country: country?.trim() || null,
+        companyId: data.companyId,
+        name: data.name.trim(),
+        type: data.type as any,
+        taxId: data.taxId?.trim() || null,
+        email: data.email?.trim() || null,
+        phone: data.phone?.trim() || null,
+        address: data.address?.trim() || null,
+        city: data.city?.trim() || null,
+        state: data.state?.trim() || null,
+        country: data.country?.trim() || null,
+        isActive: data.isActive,
       },
       include: {
-        _count: {
-          select: { invoices: true },
-        },
+        _count: { select: { invoices: true } },
       },
     });
 
-    return created(thirdParty);
+    // 3. Registrar auditoría
+    await logAudit({
+      companyId: data.companyId,
+      userId: user!.id,
+      action: 'CREATE',
+      entityType: 'ThirdParty',
+      entityId: thirdParty.id,
+      entityLabel: thirdParty.name,
+      newValues: thirdParty,
+    });
+
+    return success(thirdParty, 201);
   } catch (err: unknown) {
-    console.error('Error creating third party:', err);
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === 'P2003') {
-        return error('La empresa especificada no existe');
-      }
-    }
-    return serverError('Error al crear el tercero');
+    console.error('[POST /api/third-parties]', err);
+    return serverError();
   }
 }

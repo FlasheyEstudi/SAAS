@@ -46,11 +46,11 @@ export async function GET(request: Request) {
     }
 
     const trends = Array.from(allCategories).map(category => {
-      const monthly = [];
+      const monthly: any[] = [];
       for (let m = 1; m <= 12; m++) {
         monthly.push({ month: m, amount: Math.round((monthlyData[m][category] || 0) * 100) / 100 });
       }
-      const total = monthly.reduce((s, m) => s + m.amount, 0);
+      const total = monthly.reduce((s, m) => s + (Number(m.amount) || 0), 0);
       return { category, total: Math.round(total * 100) / 100, monthly };
     });
 
@@ -58,7 +58,7 @@ export async function GET(request: Request) {
 
     return success({
       year: parseInt(year),
-      totalExpenses: Math.round(trends.reduce((s, t) => s + t.total, 0) * 100) / 100,
+      totalExpenses: Math.round(trends.reduce((s, t) => s + (Number(t.total) || 0), 0) * 100) / 100,
       categories: trends.length,
       trends,
     });

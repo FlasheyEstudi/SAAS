@@ -50,8 +50,8 @@ export async function GET(request: Request) {
       partial: partialCount,
       paid: paidCount,
       cancelled: cancelledCount,
-      totalAmount: amountSummary._sum.totalAmount || 0,
-      totalBalanceDue: amountSummary._sum.balanceDue || 0,
+      totalAmount: Number(amountSummary._sum.totalAmount || 0),
+      totalBalanceDue: Number(amountSummary._sum.balanceDue || 0),
     });
   } catch (err) {
     console.error('Error generating invoice summary:', err);

@@ -12,18 +12,16 @@ import { StatusBadge, ConfirmDialog } from '@/components/ui/vintage-ui';
 import { useCostCenters } from '../hooks/useCostCenters';
 
 export function CostCentersView() {
-  const { costCenters: rawCenters = [], isLoading: loading } = useCostCenters();
+  const { 
+    costCenters: centers = [], 
+    isLoading: loading,
+    createCostCenter,
+    updateCostCenter,
+    deleteCostCenter,
+    isCreating,
+    isUpdating
+  } = useCostCenters();
 
-  // GANESHA MOCK DATA for cost centers
-  const mockCenters = [
-    { id: 'cc1', code: '100-ADM', name: 'Administración Central', description: 'Gastos administrativos y gerenciales', isActive: true, journalEntryCount: 124 },
-    { id: 'cc2', code: '200-VNT', name: 'Departamento de Ventas', description: 'Comisiones y gastos operativos de ventas', isActive: true, journalEntryCount: 88 },
-    { id: 'cc3', code: '300-PRO', name: 'Producción / Operación', description: 'Costos directos de operación', isActive: true, journalEntryCount: 256 },
-    { id: 'cc4', code: '400-IT', name: 'Tecnología e Infraestructura', description: 'Gastos de sistemas y licencias', isActive: true, journalEntryCount: 32 },
-    { id: 'cc5', code: '500-LOG', name: 'Logística y Distribución', description: 'Transporte y almacenamiento', isActive: false, journalEntryCount: 12 },
-  ];
-
-  const centers = (rawCenters.length === 0 && !loading) ? mockCenters : rawCenters;
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -31,12 +29,32 @@ export function CostCentersView() {
 
   const openCreate = () => { setEditing(null); setForm({ code: '', name: '', description: '' }); setShowForm(true); };
   const openEdit = (c: any) => { setEditing(c); setForm({ code: c.code, name: c.name, description: c.description || '' }); setShowForm(true); };
-  const handleSave = () => {
+  
+  const handleSave = async () => {
     if (!form.code || !form.name) { toast.error('Código y nombre son obligatorios'); return; }
-    toast.message('Función guardar pendiente de API POST/PUT'); 
-    setShowForm(false);
+    
+    try {
+      if (editing) {
+        await updateCostCenter({ id: editing.id, data: form });
+      } else {
+        await createCostCenter(form);
+      }
+      setShowForm(false);
+    } catch (err) {
+      // Error handled by mutation
+    }
   };
-  const handleDelete = () => { if (deleteId) { toast.message('Función eliminar pendiente de API DELETE'); setDeleteId(null); } };
+
+  const handleDelete = async () => { 
+    if (deleteId) { 
+      try {
+        await deleteCostCenter(deleteId);
+        setDeleteId(null);
+      } catch (err) {
+        // Error handled by mutation
+      }
+    } 
+  };
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
@@ -50,7 +68,7 @@ export function CostCentersView() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <VintageCard><p className="text-xs text-vintage-500">Total</p><p className="text-2xl font-bold text-vintage-800">{(centers || []).length}</p></VintageCard>
         <VintageCard><p className="text-xs text-vintage-500">Activos</p><p className="text-2xl font-bold text-success">{(centers || []).filter(c => c.isActive).length}</p></VintageCard>
-        <VintageCard><p className="text-xs text-vintage-500">Total Pólizas</p><p className="text-2xl font-bold text-vintage-800">{(centers || []).reduce((s, c) => s + (c.journalEntryCount || 0), 0)}</p></VintageCard>
+        <VintageCard><p className="text-xs text-vintage-500">Total Pólizas</p><p className="text-2xl font-bold text-vintage-800">{(centers || []).reduce((s, c) => s + (Number(c.journalEntryCount) || 0), 0)}</p></VintageCard>
       </div>
 
       <VintageCard className="p-0 overflow-hidden">

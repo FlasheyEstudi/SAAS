@@ -13,10 +13,10 @@ import { formatCurrency } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 import { useThirdParties } from '../hooks/useThirdParties';
 
-interface ThirdParty { id: string; name: string; taxId: string; type: 'CLIENT' | 'SUPPLIER' | 'BOTH'; email: string; phone: string; balance: number; isActive: boolean; }
+interface ThirdParty { id: string; name: string; taxId: string; type: 'CUSTOMER' | 'SUPPLIER' | 'BOTH'; email: string; phone: string; balance: number; isActive: boolean; }
 
-const typeLabels: Record<string, string> = { CLIENT: 'Cliente', SUPPLIER: 'Proveedor', BOTH: 'Ambos' };
-const typeColors: Record<string, string> = { CLIENT: 'success', SUPPLIER: 'info', BOTH: 'warning' };
+const typeLabels: Record<string, string> = { CUSTOMER: 'Cliente', SUPPLIER: 'Proveedor', BOTH: 'Ambos' };
+const typeColors: Record<string, string> = { CUSTOMER: 'success', SUPPLIER: 'info', BOTH: 'warning' };
 
 export function ThirdPartiesView() {
   const { parties = [], isLoading: loading, createParty, updateParty, deleteParty, isCreating, isUpdating, isDeleting } = useThirdParties() as any;
@@ -25,7 +25,7 @@ export function ThirdPartiesView() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ThirdParty | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', taxId: '', type: 'CLIENT' as ThirdParty['type'], email: '', phone: '' });
+  const [form, setForm] = useState({ name: '', taxId: '', type: 'CUSTOMER' as ThirdParty['type'], email: '', phone: '' });
 
   const handleExport = async (format: 'excel' | 'pdf') => {
     try {
@@ -50,7 +50,7 @@ export function ThirdPartiesView() {
     return matchSearch && matchType;
   });
 
-  const openCreate = () => { setEditing(null); setForm({ name: '', taxId: '', type: 'CLIENT', email: '', phone: '' }); setShowForm(true); };
+  const openCreate = () => { setEditing(null); setForm({ name: '', taxId: '', type: 'CUSTOMER', email: '', phone: '' }); setShowForm(true); };
   const openEdit = (c: ThirdParty) => { setEditing(c); setForm({ name: c.name, taxId: c.taxId, type: c.type, email: c.email, phone: c.phone }); setShowForm(true); };
   
   const handleSave = async () => {
@@ -74,8 +74,8 @@ export function ThirdPartiesView() {
     }
   };
 
-  const totalClients = parties.filter(p => p.type === 'CLIENT' || p.type === 'BOTH').length;
-  const totalSuppliers = parties.filter(p => p.type === 'SUPPLIER' || p.type === 'BOTH').length;
+  const totalClients = parties.filter((p: any) => p.type === 'CUSTOMER' || p.type === 'BOTH').length;
+  const totalSuppliers = parties.filter((p: any) => p.type === 'SUPPLIER' || p.type === 'BOTH').length;
 
   return (
     <div className="space-y-6">
@@ -113,7 +113,7 @@ export function ThirdPartiesView() {
         </div>
         <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="px-4 py-2.5 text-sm bg-card border border-vintage-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400">
           <option value="">Todos los tipos</option>
-          <option value="CLIENT">Clientes</option>
+          <option value="CUSTOMER">Clientes</option>
           <option value="SUPPLIER">Proveedores</option>
           <option value="BOTH">Ambos</option>
         </select>
@@ -166,7 +166,7 @@ export function ThirdPartiesView() {
               <FloatingInput label="RUC" value={form.taxId} onChange={(e) => setForm({ ...form, taxId: e.target.value })} />
               <div className="relative">
                 <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as ThirdParty['type'] })} className="peer w-full px-3 pt-5 pb-2 text-sm bg-card border border-vintage-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400 appearance-none dark:text-white">
-                  <option value="CLIENT">Cliente</option><option value="SUPPLIER">Proveedor</option><option value="BOTH">Ambos</option>
+                  <option value="CUSTOMER">Cliente</option><option value="SUPPLIER">Proveedor</option><option value="BOTH">Ambos</option>
                 </select>
                 <label className="absolute left-3 top-1.5 text-xs text-vintage-500 font-bold uppercase tracking-tighter">Tipo</label>
               </div>

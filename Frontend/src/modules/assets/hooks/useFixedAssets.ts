@@ -22,7 +22,7 @@ export interface FixedAsset {
 
 export interface AssetSummary {
   totalAssets: number;
-  totalCost: number;
+  totalPurchaseAmount: number;
   totalBookValue: number;
   totalAccumulatedDepreciation: number;
   activeAssets: number;
@@ -40,12 +40,12 @@ export function useFixedAssets() {
   const fetchAssets = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get(ASSETS.list);
+      const companyId = localStorage.getItem('current_company_id');
+      const response = await apiClient.get(ASSETS.list, { companyId: companyId || undefined });
       const data = response?.data || response || [];
       setAssets(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching fixed assets:', error);
-      toast.error('No se pudieron cargar los activos fijos');
     } finally {
       setLoading(false);
     }
@@ -53,22 +53,33 @@ export function useFixedAssets() {
 
   const fetchSummary = useCallback(async () => {
     try {
-      const response = await apiClient.get(ASSETS.summary);
+      const companyId = localStorage.getItem('current_company_id');
+      const response = await apiClient.get(ASSETS.summary, { companyId: companyId || undefined });
       const data = response?.data || response || {};
       setSummary(data);
     } catch (error) {
       console.error('Error fetching asset summary:', error);
-      setSummary({} as any); // Fallback so UI doesnt crash
+      setSummary({
+        totalAssets: 0,
+        totalPurchaseAmount: 0,
+        totalBookValue: 0,
+        totalAccumulatedDepreciation: 0,
+        activeAssets: 0,
+        fullyDepreciated: 0,
+        disposedAssets: 0,
+        depreciationByCategory: {},
+      } as any);
     }
   }, []);
 
-  const depreciateAsset = useCallback(async (assetId: string) => {
+  const depreciateAsset = useCallback(async (assetId: string, params?: { year: number, month: number }) => {
     try {
       const now = new Date();
-      await apiClient.post(ASSETS.depreciate(assetId), {
+      const payload = params || {
         year: now.getFullYear(),
         month: now.getMonth() + 1,
-      });
+      };
+      await apiClient.post(ASSETS.depreciate(assetId), payload);
       toast.success('Depreciación calculada correctamente');
       fetchAssets();
       fetchSummary();

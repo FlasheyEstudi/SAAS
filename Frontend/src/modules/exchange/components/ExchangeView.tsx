@@ -1,30 +1,38 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeftRight, Calculator } from 'lucide-react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeftRight, Calculator, Plus, Save, History as HistoryIcon, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
 import { FloatingInput } from '@/components/ui/floating-input';
 import { formatDate } from '@/lib/utils/format';
-import { cn } from '@/lib/utils';
-
 import { useExchangeRates } from '../hooks/useExchangeRates';
 
 export function ExchangeView() {
-  const { exchangeRates: rates, isLoading: loading } = useExchangeRates();
+  const { exchangeRates: rates, isLoading: loading, createExchangeRate, isCreating } = useExchangeRates();
   const [amount, setAmount] = useState('1000');
   const [fromCurrency, setFromCurrency] = useState('USD');
   const [toCurrency, setToCurrency] = useState('NIO');
   const [convertedAmount, setConvertedAmount] = useState<string | null>(null);
 
+  // New rate form state
+  const [newFrom, setNewFrom] = useState('USD');
+  const [newTo, setNewTo] = useState('NIO');
+  const [newRate, setNewRate] = useState('');
+  const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
+
   const getRate = (from: string, to: string): number => {
     if (from === to) return 1;
-    const direct = (rates || []).find(r => r.fromCurrency === from && r.toCurrency === to);
-    if (direct) return direct.rate;
-    const reverse = (rates || []).find(r => r.fromCurrency === to && r.toCurrency === from);
-    if (reverse) return 1 / reverse.rate;
+    // Sort by date desc to get latest
+    const sorted = [...(rates || [])].sort((a, b) => new Date(b.date || b.effectiveDate).getTime() - new Date(a.date || a.effectiveDate).getTime());
+    
+    const direct = sorted.find(r => r.fromCurrency === from && r.toCurrency === to);
+    if (direct) return Number(direct.rate);
+    
+    const reverse = sorted.find(r => r.fromCurrency === to && r.toCurrency === from);
+    if (reverse) return 1 / Number(reverse.rate);
 
     // Fallback static rates if API doesn't have them
     const fallbackRates: Record<string, Record<string, number>> = {
@@ -56,54 +64,161 @@ export function ExchangeView() {
     toast.success(`Tasa aplicada: ${rate.toFixed(4)}`);
   };
 
+  const handleCreateRate = async () => {
+    if (!newRate || parseFloat(newRate) <= 0) return toast.error('Ingresa una tasa válida');
+    if (newFrom === newTo) return toast.error('Las monedas deben ser distintas');
+
+    try {
+      await createExchangeRate({
+        fromCurrency: newFrom,
+        toCurrency: newTo,
+        rate: parseFloat(newRate),
+        date: newDate,
+        source: 'MANUAL'
+      });
+      toast.success('Tipo de cambio registrado');
+      setNewRate('');
+    } catch (err: any) {
+      toast.error(err.message || 'Error al guardar');
+    }
+  };
+
   const currencies = ['USD', 'NIO', 'MXN', 'EUR', 'GBP', 'CAD', 'JPY'];
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
   return (
     <div className="space-y-6">
-      <div><h2 className="text-2xl font-playfair font-bold text-vintage-900">Tipos de Cambio</h2><p className="text-sm text-vintage-600 mt-1">Tipos de cambio y conversor de divisas</p></div>
-
-      <VintageCard>
-        <h3 className="text-sm font-semibold text-vintage-800 mb-4 flex items-center gap-2"><Calculator className="w-4 h-4 text-vintage-500" />Conversor de Divisas</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-4 items-end">
-          <FloatingInput label="Monto" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-full">
-              <select value={fromCurrency} onChange={(e) => setFromCurrency(e.target.value)} className="w-full px-3 py-3 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400">
-                {currencies.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-            <div className="w-8 h-8 rounded-full bg-vintage-200 flex items-center justify-center"><ArrowLeftRight className="w-4 h-4 text-vintage-600" /></div>
-            <div className="w-full">
-              <select value={toCurrency} onChange={(e) => setToCurrency(e.target.value)} className="w-full px-3 py-3 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400">
-                {currencies.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            {convertedAmount && <div className="px-3 py-3 bg-success/10 border border-success/20 rounded-xl"><p className="text-lg font-bold text-success">{toCurrency} {convertedAmount}</p><p className="text-xs text-vintage-500">Tasa: {getRate(fromCurrency, toCurrency).toFixed(4)}</p></div>}
-            <PastelButton onClick={handleConvert} className="w-full">Convertir</PastelButton>
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-playfair font-bold text-vintage-900">Tipos de Cambio</h2>
+          <p className="text-sm text-vintage-600 mt-1">Gestión de paridades y conversor multi-moneda</p>
         </div>
-      </VintageCard>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Converter */}
+        <VintageCard className="h-full">
+          <h3 className="text-sm font-semibold text-vintage-800 mb-4 flex items-center gap-2">
+            <Calculator className="w-4 h-4 text-vintage-500" />
+            Conversor de Divisas
+          </h3>
+          <div className="space-y-4">
+            <FloatingInput label="Monto" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
+            <div className="flex items-center gap-3">
+              <select value={fromCurrency} onChange={(e) => setFromCurrency(e.target.value)} className="flex-1 px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400">
+                {currencies.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <div className="p-2 rounded-full bg-vintage-100"><ArrowLeftRight className="w-4 h-4 text-vintage-500" /></div>
+              <select value={toCurrency} onChange={(e) => setToCurrency(e.target.value)} className="flex-1 px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400">
+                {currencies.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            
+            <AnimatePresence>
+              {convertedAmount && (
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="p-4 bg-success/5 border border-success/20 rounded-xl">
+                  <p className="text-xs text-vintage-500 uppercase font-bold tracking-tight mb-1">Resultado Estimado</p>
+                  <p className="text-2xl font-playfair font-bold text-success">{toCurrency} {convertedAmount}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            <PastelButton onClick={handleConvert} className="w-full">Calcular Conversión</PastelButton>
+          </div>
+        </VintageCard>
+
+        {/* Create Form */}
+        <VintageCard className="h-full">
+          <h3 className="text-sm font-semibold text-vintage-800 mb-4 flex items-center gap-2">
+            <Plus className="w-4 h-4 text-vintage-500" />
+            Registrar Nueva Tasa
+          </h3>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-bold text-vintage-500 uppercase mb-1">De</label>
+                <select value={newFrom} onChange={e => setNewFrom(e.target.value)} className="w-full px-3 py-2 text-sm bg-card border border-vintage-200 rounded-xl outline-none focus:ring-2 focus:ring-vintage-400">
+                  {currencies.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-vintage-500 uppercase mb-1">A</label>
+                <select value={newTo} onChange={e => setNewTo(e.target.value)} className="w-full px-3 py-2 text-sm bg-card border border-vintage-200 rounded-xl outline-none focus:ring-2 focus:ring-vintage-400">
+                  {currencies.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+               <div>
+                  <label className="block text-[10px] font-bold text-vintage-500 uppercase mb-1">Tasa de Cambio</label>
+                  <input type="number" step="0.0001" value={newRate} onChange={e => setNewRate(e.target.value)} className="w-full px-3 py-2 text-sm bg-card border border-vintage-200 rounded-xl outline-none focus:ring-2 focus:ring-vintage-400" />
+               </div>
+               <div>
+                  <label className="block text-[10px] font-bold text-vintage-500 uppercase mb-1">Fecha</label>
+                  <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="w-full px-3 py-2 text-sm bg-card border border-vintage-200 rounded-xl outline-none focus:ring-2 focus:ring-vintage-400" />
+               </div>
+            </div>
+            <PastelButton onClick={handleCreateRate} loading={isCreating} variant="success" className="w-full gap-2">
+              <Save className="w-4 h-4" />
+              Guardar en Historial
+            </PastelButton>
+          </div>
+        </VintageCard>
+      </div>
 
       <VintageCard className="p-0 overflow-hidden">
-        <div className="px-5 pt-5 pb-3"><h3 className="text-sm font-semibold text-vintage-800">Tabla de Tipos de Cambio</h3></div>
-        <table className="w-full">
-          <thead><tr className="border-b border-vintage-200 bg-vintage-50/50"><th className="px-4 py-3 text-xs font-semibold text-vintage-700 text-left">De</th><th className="px-4 py-3 text-xs font-semibold text-vintage-700 text-left">A</th><th className="px-4 py-3 text-xs font-semibold text-vintage-700 text-right">Tipo de Cambio</th><th className="px-4 py-3 text-xs font-semibold text-vintage-700 text-left">Fecha</th></tr></thead>
-          <tbody className="divide-y divide-vintage-100">
-            {(rates || []).map((r, i) => (
-              <motion.tr key={r.id} className="hover:bg-vintage-50 cursor-pointer transition-colors" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}
-                onClick={() => { setFromCurrency(r.fromCurrency); setToCurrency(r.toCurrency); setAmount('1'); handleConvert(); }}>
-                <td className="px-4 py-3"><span className="font-mono text-sm font-medium text-vintage-700 bg-vintage-100 px-2 py-0.5 rounded">{r.fromCurrency}</span></td>
-                <td className="px-4 py-3"><span className="font-mono text-sm font-medium text-vintage-700 bg-vintage-100 px-2 py-0.5 rounded">{r.toCurrency}</span></td>
-                <td className="px-4 py-3 text-sm font-mono text-vintage-800 text-right font-medium">{r.rate.toFixed(4)}</td>
-                <td className="px-4 py-3 text-xs text-vintage-500">{formatDate(r.effectiveDate)}</td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="px-5 py-4 border-b border-vintage-100 flex justify-between items-center">
+          <h3 className="text-sm font-semibold text-vintage-800 flex items-center gap-2">
+            <HistoryIcon className="w-4 h-4 text-vintage-500" />
+            Historial de Paridades
+          </h3>
+          <div className="flex items-center gap-1.5 text-xs text-vintage-500">
+            <TrendingUp className="w-3.5 h-3.5 text-success" />
+            <span>Últimas 10 entradas</span>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left font-sans">
+            <thead>
+              <tr className="bg-vintage-50/50">
+                <th className="px-5 py-3 text-[10px] font-bold text-vintage-500 uppercase">Paridad Divisas</th>
+                <th className="px-5 py-3 text-[10px] font-bold text-vintage-500 uppercase text-right">Valor Tasa</th>
+                <th className="px-5 py-3 text-[10px] font-bold text-vintage-500 uppercase">Fecha Entrada</th>
+                <th className="px-5 py-3 text-[10px] font-bold text-vintage-500 uppercase">Fuente Datos</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-vintage-100 italic">
+              {(rates || []).slice(0, 10).map((r, i) => (
+                <tr key={r.id} className="hover:bg-vintage-50 transition-colors group">
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-2">
+                       <span className="font-mono text-xs font-bold text-vintage-700 bg-vintage-100/50 px-2 py-0.5 rounded">{r.fromCurrency}</span>
+                       <ArrowLeftRight className="w-3 h-3 text-vintage-300 group-hover:text-vintage-500" />
+                       <span className="font-mono text-xs font-bold text-vintage-700 bg-vintage-100/50 px-2 py-0.5 rounded">{r.toCurrency}</span>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    <span className="font-mono text-sm font-bold text-vintage-900">{Number(r.rate).toFixed(4)}</span>
+                  </td>
+                  <td className="px-5 py-3 text-xs text-vintage-600">{formatDate(r.date || r.effectiveDate)}</td>
+                  <td className="px-5 py-3">
+                    <span className="px-2 py-0.5 rounded-full bg-vintage-100 text-[10px] font-medium text-vintage-500 uppercase">
+                      {r.source || 'Manual'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {(!rates || rates.length === 0) && (
+                <tr>
+                   <td colSpan={4} className="px-5 py-8 text-center text-vintage-400 text-sm italic">
+                      No hay registros en el historial. El conversor usará tasas predefinidas.
+                   </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </VintageCard>
     </div>
   );

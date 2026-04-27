@@ -8,6 +8,138 @@ datasource db {
 }
 
 // ============================================================
+// ENUMS (Integridad de datos a nivel DB)
+// ============================================================
+
+enum PeriodStatus {
+  OPEN
+  CLOSED
+  LOCKED
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  INCOME
+  EXPENSE
+}
+
+enum AccountNature {
+  DEBITOR
+  ACREEDOR
+}
+
+enum EntryType {
+  DIARIO
+  EGRESO
+  INGRESO
+  TRASPASO
+}
+
+enum EntryStatus {
+  DRAFT
+  POSTED
+}
+
+enum ThirdPartyType {
+  CUSTOMER
+  SUPPLIER
+  BOTH
+}
+
+enum InvoiceType {
+  SALE
+  PURCHASE
+}
+
+enum InvoiceStatus {
+  PENDING
+  PARTIAL
+  PAID
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+  OVERDUE
+}
+
+enum BankAccountType {
+  CHECKING
+  SAVINGS
+  INVESTMENT
+}
+
+enum MovementType {
+  DEBIT
+  CREDIT
+}
+
+enum MovementStatus {
+  RECONCILED
+  PENDING
+  EXCLUDED
+}
+
+enum UserRole {
+  ADMIN
+  ACCOUNTANT
+  MANAGER
+  VIEWER
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  ACCOUNTANT
+  VIEWER
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  POST
+  CLOSE
+  LOGIN
+  LOGOUT
+  EXPORT
+  IMPORT
+}
+
+enum AssetType {
+  BUILDING
+  FURNITURE
+  COMPUTER
+  VEHICLE
+  MACHINERY
+  OTHER
+}
+
+enum AssetStatus {
+  ACTIVE
+  DISPOSED
+  SOLD
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum ClosingType {
+  INCOME_EXPENSE
+  NET_INCOME
+  PREVIOUS_YEAR
+}
+
+
+// ============================================================
 // ENTIDAD 1: Company (Empresa / Tenant Multi-compañía)
 // Una empresa puede tener múltiples períodos contables, cuentas,
 // pólizas, terceros, facturas y cuentas bancarias.
@@ -22,6 +154,7 @@ model Company {
   phone     String?
   email     String?
   currency  String   @default("MXN") // Moneda base de la empresa
+  metadata  Json?              // Datos adicionales específicos
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -63,7 +196,7 @@ model AccountingPeriod {
   companyId String
   year      Int
   month     Int                 // 1-12
-  status    String   @default("OPEN") // OPEN, CLOSED, LOCKED
+  status    PeriodStatus @default(OPEN)
   closedAt  DateTime?           // Fecha en que se cerró el período
   closedBy  String?             // ID del usuario que cerró
   createdAt DateTime @default(now())
@@ -92,8 +225,8 @@ model Account {
   code        String              // Ej: "1.1.01" - Permite ordenamiento jerárquico
   name        String              // Ej: "Bancos"
   parentId    String?             // FK auto-referenciante para árbol
-  accountType String              // ASSET, LIABILITY, EQUITY, INCOME, EXPENSE
-  nature      String              // DEBITOR, ACREEDOR
+  accountType AccountType
+  nature      AccountNature
   level       Int      @default(1) // Calculado por profundidad del árbol
   isGroup     Boolean  @default(true) // True = título/padre, False = hoja/movimiento
   isActive    Boolean  @default(true) // Permite desactivar sin eliminar
@@ -158,13 +291,13 @@ model JournalEntry {
   entryNumber   String             // Auto-generado secuencia por período
   description   String             // Concepto general de la póliza
   entryDate     DateTime           // Fecha contable de la póliza
-  entryType     String   @default("DIARIO") // DIARIO, EGRESO, INGRESO, TRASPASO
-  status        String   @default("DRAFT") // DRAFT, POSTED
+  entryType     EntryType @default(DIARIO)
+  status        EntryStatus @default(DRAFT)
   postedAt      DateTime?          // Fecha en que se publicó
   postedBy      String?            // ID del usuario que publicó
-  totalDebit    Float    @default(0) // Suma total de débitos (cache)
-  totalCredit   Float    @default(0) // Suma total de créditos (cache)
-  difference    Float    @default(0) // Diferencia (debe ser 0 para cuadrar)
+  totalDebit    Decimal  @default(0) // Suma total de débitos (cache)
+  totalCredit   Decimal  @default(0) // Suma total de créditos (cache)
+  difference    Decimal  @default(0) // Diferencia (debe ser 0 para cuadrar)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -197,8 +330,8 @@ model JournalEntryLine {
   accountId        String             // DEBE ser cuenta hoja (is_group=false)
   costCenterId     String?            // Centro de costo opcional
   description      String             // Descripción de la partida
-  debit            Float    @default(0) // Cargo (debe)
-  credit           Float    @default(0) // Abono (haber)
+  debit            Decimal  @default(0) // Cargo (debe)
+  credit           Decimal  @default(0) // Abono (haber)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -209,6 +342,8 @@ model JournalEntryLine {
   @@index([journalEntryId])
   @@index([accountId])
   @@index([costCenterId])
+
+  bankMovements BankMovement[]
 }
 
 // ============================================================
@@ -219,7 +354,7 @@ model JournalEntryLine {
 model ThirdParty {
   id        String   @id @default(cuid())
   companyId String
-  type      String   @default("CUSTOMER") // CUSTOMER, SUPPLIER, BOTH
+  type      ThirdPartyType @default(CUSTOMER)
   taxId     String?            // RFC/NIT del tercero
   name      String
   email     String?
@@ -274,8 +409,8 @@ model PaymentTerm {
 model TaxRate {
   id          String   @id @default(cuid())
   companyId   String
-  taxType     String              // IVA, ISR, RET_IVA, RET_ISR, IEPS, CEDULAR
-  rate        Float               // 0.16, 0.08, 0.0125, etc.
+  taxType     String              // TODO: Convertir a Enum si se definen tipos fijos (IVA, ISR, etc)
+  rate        Decimal             // 0.16, 0.08, 0.0125, etc.
   name        String              // "IVA 16%", "IVA Fronterizo 8%", "Retención ISR 1.25%"
   description String?
   isRetention Boolean  @default(false) // true = es retención
@@ -303,18 +438,18 @@ model Invoice {
   id              String   @id @default(cuid())
   companyId       String
   thirdPartyId    String
-  invoiceType     String             // SALE, PURCHASE
+  invoiceType     InvoiceType
   number          String             // Número de factura
   issueDate       DateTime           // Fecha de emisión
   dueDate         DateTime?          // Fecha de vencimiento
-  totalAmount     Float              // Monto total de la factura
-  balanceDue      Float              // Saldo pendiente
-  status          String   @default("PENDING") // PENDING, PARTIAL, PAID, CANCELLED
+  totalAmount     Decimal            // Monto total de la factura
+  balanceDue      Decimal            // Saldo pendiente
+  status          InvoiceStatus @default(PENDING)
   journalEntryId  String?            // FK a la póliza que registró esta factura
   paymentTermId  String?            // FK al término de pago
-  subtotal        Float    @default(0) // Subtotal antes de impuestos
-  taxAmount       Float    @default(0) // Total de impuestos
-  discountAmount  Float    @default(0) // Descuento total
+  subtotal        Decimal  @default(0) // Subtotal antes de impuestos
+  taxAmount       Decimal  @default(0) // Total de impuestos
+  discountAmount  Decimal  @default(0) // Descuento total
   description     String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -347,12 +482,12 @@ model InvoiceLine {
   invoiceId      String
   lineNumber     Int                 // Orden de la línea
   description    String              // Descripción del concepto
-  quantity       Float    @default(1)
-  unitPrice      Float               // Precio unitario
+  quantity       Decimal  @default(1)
+  unitPrice      Decimal            // Precio unitario
   unit           String   @default("PIEZA") // PIEZA, KG, LT, HR, SERVICIO, M2, M3, Caja, Paquete
-  discountRate   Float    @default(0) // Porcentaje de descuento 0-100
-  subtotal       Float               // quantity * unitPrice - discount
-  taxBase        Float    @default(0) // Base gravable
+  discountRate   Decimal  @default(0) // Porcentaje de descuento 0-100
+  subtotal       Decimal            // quantity * unitPrice - discount
+  taxBase        Decimal  @default(0) // Base gravable
   accountId      String?             // Cuenta contable de la partida
   costCenterId   String?
   createdAt      DateTime @default(now())
@@ -377,9 +512,9 @@ model TaxEntry {
   invoiceId      String
   taxRateId      String             // FK a la tasa de impuesto usada
   taxType        String             // IVA, ISR, RET_IVA, RET_ISR, IEPS
-  taxableBase    Float              // Base gravable
-  taxAmount      Float              // Monto del impuesto
-  withholdingAmount Float  @default(0) // Monto retenido (si aplica)
+  taxableBase    Decimal            // Base gravable
+  taxAmount      Decimal            // Monto del impuesto
+  withholdingAmount Decimal  @default(0) // Monto retenido (si aplica)
   isRetention    Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -406,9 +541,9 @@ model PaymentSchedule {
   paymentTermId  String?
   installmentNumber Int              // Número de parcialidad (1, 2, 3...)
   dueDate        DateTime           // Fecha de vencimiento de esta parcialidad
-  expectedAmount Float              // Monto esperado de esta parcialidad
-  paidAmount     Float    @default(0) // Monto pagado
-  status         String   @default("PENDING") // PENDING, PARTIAL, PAID, OVERDUE
+  expectedAmount Decimal            // Monto esperado de esta parcialidad
+  paidAmount     Decimal  @default(0) // Monto pagado
+  status         PaymentStatus @default(PENDING)
   paidDate       DateTime?
   journalEntryId String?
   createdAt      DateTime @default(now())
@@ -437,11 +572,11 @@ model ClosingEntry {
   companyId       String
   periodId        String
   journalEntryId  String             // FK al asiento de cierre generado
-  closingType     String             // INCOME_EXPENSE, NET_INCOME, PREVIOUS_YEAR
+  closingType     ClosingType
   concept         String             // "Cierre de Ingresos y Gastos"
-  totalIncome     Float    @default(0) // Suma de ingresos cerrados
-  totalExpense    Float    @default(0) // Suma de gastos cerrados
-  netResult       Float    @default(0) // Resultado neto (ingresos - gastos)
+  totalIncome     Decimal  @default(0) // Suma de ingresos cerrados
+  totalExpense    Decimal  @default(0) // Suma de gastos cerrados
+  netResult       Decimal  @default(0) // Resultado neto (ingresos - gastos)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -491,10 +626,10 @@ model BankAccount {
   companyId     String
   bankName      String              // Nombre del banco
   accountNumber String              // Número de cuenta (enmascarado en frontend)
-  accountType   String   @default("CHECKING") // CHECKING, SAVINGS, INVESTMENT
+  accountType   BankAccountType @default(CHECKING)
   currency      String   @default("MXN")
-  initialBalance Float   @default(0) // Saldo inicial
-  currentBalance Float   @default(0) // Saldo actual (calculado)
+  initialBalance Decimal   @default(0) // Saldo inicial
+  currentBalance Decimal   @default(0) // Saldo actual (calculado)
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -519,10 +654,11 @@ model BankMovement {
   movementDate    DateTime
   description     String
   reference       String?            // Número de referencia del banco
-  amount          Float              // Monto del movimiento
-  movementType    String             // DEBIT (salida), CREDIT (entrada)
-  status          String   @default("PENDING") // RECONCILED, PENDING, EXCLUDED
+  amount          Decimal            // Monto del movimiento
+  movementType    MovementType
+  status          MovementStatus @default(PENDING)
   journalLineId   String?            // FK a la partida contable correspondiente
+  journalLine     JournalEntryLine? @relation(fields: [journalLineId], references: [id])
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -543,8 +679,9 @@ model User {
   companyId   String?              // Default/Current company
   email       String    @unique
   name        String
-  password    String               // hashed password
-  role        String    @default("ACCOUNTANT") // ADMIN, ACCOUNTANT, MANAGER, VIEWER
+  passwordHash    String               // hashed password
+  role        UserRole    @default(ACCOUNTANT)
+  metadata    Json?
   isActive    Boolean   @default(true)
   lastLoginAt DateTime?
   createdAt   DateTime  @default(now())
@@ -567,7 +704,7 @@ model UserCompany {
   id        String   @id @default(cuid())
   userId    String
   companyId String
-  role      String   @default("OWNER") // OWNER, ADMIN, ACCOUNTANT, VIEWER
+  role      MembershipRole @default(OWNER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -588,12 +725,13 @@ model AuditLog {
   id          String   @id @default(cuid())
   companyId   String
   userId      String?               // nullable - puede ser sistema
-  action      String                // CREATE, UPDATE, DELETE, POST, CLOSE, LOGIN, EXPORT
+  action      AuditAction
   entityType  String                // Company, Account, JournalEntry, Invoice, etc
   entityId    String                // ID of the affected entity
   entityLabel String?               // Human-readable label like "Póliza 0001"
-  oldValues   String?               // JSON string of previous values
-  newValues   String?               // JSON string of new values
+  oldValues   Json?
+  newValues   Json?
+  metadata    Json?
   ipAddress   String?
   userAgent   String?
   createdAt   DateTime @default(now())
@@ -618,7 +756,7 @@ model ExchangeRate {
   companyId   String
   fromCurrency String               // e.g. "USD"
   toCurrency   String               // e.g. "MXN"
-  rate        Float                 // exchange rate
+  rate        Decimal               // exchange rate
   date        DateTime              // effective date
   source      String?               // e.g. "BANXICO", "FIXER"
   createdAt   DateTime @default(now())
@@ -641,15 +779,16 @@ model FixedAsset {
   companyId               String
   code                    String
   name                    String
-  assetType               String               // BUILDING, FURNITURE, COMPUTER, VEHICLE, MACHINERY, OTHER
+  description             String?
+  assetType               AssetType
   purchaseDate            DateTime
-  purchaseAmount          Float                 // original cost
-  salvageValue            Float    @default(0)
+  purchaseAmount          Decimal               // original cost
+  salvageValue            Decimal  @default(0)
   usefulLifeMonths        Int                   // in months
   depreciationMethod      String   @default("STRAIGHT_LINE") // STRAIGHT_LINE, DECLINING
-  currentBookValue        Float
-  accumulatedDepreciation Float    @default(0)
-  status                  String   @default("ACTIVE") // ACTIVE, DISPOSED, SOLD
+  currentBookValue        Decimal              
+  accumulatedDepreciation Decimal  @default(0)
+  status                  AssetStatus @default(ACTIVE)
   location                String?
   accountId               String?
   isActive                Boolean  @default(true)
@@ -679,9 +818,9 @@ model DepreciationEntry {
   journalEntryId    String?
   month             Int
   year              Int
-  depreciationAmount Float
-  accumulatedTotal  Float
-  bookValueAfter    Float
+  depreciationAmount Decimal 
+  accumulatedTotal   Decimal 
+  bookValueAfter     Decimal 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -709,9 +848,9 @@ model Budget {
   accountId      String
   costCenterId   String?
   month          Int                  // 1-12
-  budgetedAmount Float
-  actualAmount   Float    @default(0) // calculated from journal entries
-  variance       Float    @default(0) // difference budget - actual
+  budgetedAmount Decimal  
+  actualAmount   Decimal   @default(0) // calculated from journal entries
+  variance       Decimal   @default(0) // difference budget - actual
   description    String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -736,14 +875,14 @@ model Notification {
   id         String    @id @default(cuid())
   companyId  String
   userId     String?
-  type       String                // OVERDUE_INVOICE, PERIOD_CLOSE, BALANCE_MISMATCH, LOW_CASH, TASK_ASSIGNED, SYSTEM
+  type       String                // TODO: Convertir a Enum si se definen tipos fijos
   title      String
   message    String
   entityType String?               // e.g. "Invoice"
   entityId   String?
   isRead     Boolean   @default(false)
   readAt     DateTime?
-  priority   String    @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  priority   Priority    @default(NORMAL)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 

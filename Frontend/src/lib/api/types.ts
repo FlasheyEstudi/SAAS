@@ -75,7 +75,7 @@ export interface ThirdParty {
   companyId: string;
   name: string;
   taxId: string;
-  type: 'CLIENT' | 'SUPPLIER' | 'BOTH';
+  type: 'CUSTOMER' | 'SUPPLIER' | 'BOTH';
   email?: string;
   phone?: string;
   address?: string;
@@ -120,10 +120,10 @@ export interface Invoice {
   companyId: string;
   thirdPartyId: string;
   thirdParty?: ThirdParty;
-  invoiceNumber: string;
+  number: string;
   invoiceType: 'SALE' | 'PURCHASE';
   description?: string;
-  invoiceDate: string;
+  issueDate: string;
   dueDate: string;
   status: 'DRAFT' | 'PENDING' | 'PARTIAL' | 'PAID' | 'CANCELLED' | 'OVERDUE';
   subtotal: number;
@@ -199,12 +199,12 @@ export interface FixedAsset {
   companyId: string;
   name: string;
   description?: string;
-  category: string;
-  acquisitionDate: string;
-  acquisitionCost: number;
-  residualValue: number;
+  assetType: 'BUILDING' | 'FURNITURE' | 'COMPUTER' | 'VEHICLE' | 'MACHINERY' | 'OTHER';
+  purchaseDate: string;
+  purchaseAmount: number;
+  salvageValue: number;
   usefulLifeMonths: number;
-  depreciationMethod: 'STRAIGHT_LINE' | 'DECLINING_BALANCE';
+  depreciationMethod: 'STRAIGHT_LINE' | 'DECLINING';
   currentBookValue: number;
   accumulatedDepreciation: number;
   status: 'ACTIVE' | 'DISPOSED' | 'FULLY_DEPRECIATED';
@@ -241,19 +241,28 @@ export interface ExchangeRate {
   fromCurrency: string;
   toCurrency: string;
   rate: number;
+  date: string;
   effectiveDate: string;
+  source?: string;
   createdAt: string;
 }
 
 export interface AuditLog {
   id: string;
+  companyId: string;
   userId: string;
-  user?: User;
-  action: string;
-  entity: string;
+  user?: {
+    name: string;
+    email: string;
+  };
+  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'LOGOUT' | 'FAILED_LOGIN' | 'OTHER';
+  entityType: string;
   entityId: string;
-  details?: string;
+  entityLabel?: string;
+  oldValues?: any;
+  newValues?: any;
   ipAddress?: string;
+  userAgent?: string;
   createdAt: string;
 }
 

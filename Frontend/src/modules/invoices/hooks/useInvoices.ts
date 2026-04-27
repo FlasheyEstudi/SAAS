@@ -80,7 +80,8 @@ export function useInvoices() {
 
   // Pay invoice mutation
   const payMutation = useMutation({
-    mutationFn: (id: string) => apiClient.post<Invoice>(INVOICES.pay(id), {}),
+    mutationFn: ({ id, amount, description }: { id: string; amount: number; description?: string }) => 
+      apiClient.post<Invoice>(INVOICES.pay(id), { amount, description }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
     },

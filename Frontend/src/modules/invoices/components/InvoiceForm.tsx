@@ -13,6 +13,7 @@ import { PageLoader } from '@/components/ui/vintage-ui';
 import { formatCurrency } from '@/lib/utils/format';
 import { toast } from 'sonner';
 import type { InvoiceLine } from '@/lib/api/types';
+import { invoiceSchema } from '@/lib/schemas/inventory';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -47,7 +48,7 @@ export function InvoiceForm() {
   // Filter third parties based on invoice type
   const filteredThirdParties = useMemo(() => {
     return thirdParties.filter((tp) => {
-      if (invoiceType === 'SALE') return tp.type === 'CLIENT' || tp.type === 'BOTH';
+      if (invoiceType === 'SALE') return tp.type === 'CUSTOMER' || tp.type === 'BOTH';
       return tp.type === 'SUPPLIER' || tp.type === 'BOTH';
     });
   }, [thirdParties, invoiceType]);
@@ -80,40 +81,60 @@ export function InvoiceForm() {
     );
   }, []);
 
+
+
   const handleSave = useCallback(async () => {
-    if (!thirdPartyId) { toast.error('Selecciona un tercero'); return; }
-    if (!invoiceDate) { toast.error('Ingresa la fecha de factura'); return; }
-    if (!dueDate) { toast.error('Ingresa la fecha de vencimiento'); return; }
-    const validLines = lines.filter((l) => l.description.trim() && l.unitPrice > 0);
-    if (validLines.length === 0) { toast.error('Agrega al menos una línea con descripción y precio'); return; }
+    const companyId = useAppStore.getState().companyId;
+    
+    // Preparing data for validation
+    const dataToValidate: any = {
+      companyId: companyId || '',
+      thirdPartyId,
+      invoiceType,
+      number: 'AUTO', // Backend generates it if empty
+      description: description || '',
+      issueDate: invoiceDate,
+      dueDate: dueDate || null,
+      totalAmount,
+      balanceDue: totalAmount,
+      status: 'PENDING',
+      subtotal,
+      taxAmount,
+      lines: lines.map((l, idx) => ({
+        lineNumber: idx + 1,
+        description: l.description,
+        quantity: l.quantity,
+        unitPrice: l.unitPrice,
+        unit: 'PIEZA',
+        discountRate: 0,
+        subtotal: l.quantity * l.unitPrice,
+        taxBase: l.quantity * l.unitPrice,
+      })),
+    };
+
+    // 1. Zod Validation (100/100)
+    const zodResult = invoiceSchema.safeParse(dataToValidate);
+    if (!zodResult.success) {
+      toast.error(zodResult.error.issues[0].message);
+      return;
+    }
 
     setSaving(true);
     try {
-      const invoice = await createInvoice({
-        thirdPartyId,
-        invoiceType,
-        description: description || '',
-        invoiceDate,
-        dueDate,
-        lines: validLines.map((l) => ({
-          description: l.description,
-          quantity: l.quantity,
-          unitPrice: l.unitPrice,
-          taxRate: l.taxRate,
-        })),
-      });
+      const invoice = await createInvoice(dataToValidate);
       if (invoice) {
         toast.success('Factura creada correctamente');
         navigate('invoice-detail', { id: invoice.id });
       } else {
         toast.error('No se pudo crear la factura');
       }
-    } catch {
-      toast.error('Error al crear la factura');
+    } catch (err: any) {
+      console.error('Invoice Creation Error:', err);
+      toast.error(err.error || 'Error al crear la factura');
     } finally {
       setSaving(false);
     }
-  }, [thirdPartyId, invoiceType, description, invoiceDate, dueDate, lines, createInvoice, navigate]);
+  }, [thirdPartyId, invoiceType, description, invoiceDate, dueDate, lines, totalAmount, subtotal, taxAmount, createInvoice, navigate]);
 
   if (isLoading) return <PageLoader text="Cargando datos..." />;
 

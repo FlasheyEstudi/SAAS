@@ -43,14 +43,14 @@ export async function GET(request: Request) {
 
       if (code.includes('iva') || name.includes('iva')) {
         if (name.includes('trasladado') || name.includes('cobrado') || name.includes('por pagar') || line.account.accountType === 'LIABILITY') {
-          ivaCollected += line.credit;
-          ivaPaid += line.debit;
+          ivaCollected += (Number(line.credit) || 0);
+          ivaPaid += (Number(line.debit) || 0);
         }
       }
       if (code.includes('isr') || name.includes('isr') || name.includes('impuesto sobre la renta')) {
         if (name.includes('retenido') || name.includes('por pagar')) {
-          isrWithheld += line.credit;
-          isrPaid += line.debit;
+          isrWithheld += (Number(line.credit) || 0);
+          isrPaid += (Number(line.debit) || 0);
         }
       }
     }

@@ -37,12 +37,17 @@ export interface DashboardData {
   topClients: TopClientItem[];
 }
 
+import { useAppStore } from '@/lib/stores/useAppStore';
+
 /**
  * Dashboard hook - consumes real Backend APIs
  */
 export function useDashboard(consolidated = false, year?: number, month?: number) {
+  const companyId = useAppStore(s => s.companyId);
+
   const queryParams = { 
     consolidated,
+    ...(companyId ? { companyId } : {}),
     ...(year ? { year } : {}),
     ...(month ? { month } : {})
   };
@@ -56,50 +61,50 @@ export function useDashboard(consolidated = false, year?: number, month?: number
 
   // Fetch recent journal entries
   const { data: journalData, isLoading: journalLoading } = useQuery<{ entries: JournalEntry[] }>({
-    queryKey: ['journal-entries', 'list', { limit: 5 }],
-    queryFn: () => apiClient.get<{ entries: JournalEntry[] }>(JOURNAL.list, { limit: 5 }),
+    queryKey: ['journal-entries', 'list', { limit: 5, ...queryParams }],
+    queryFn: () => apiClient.get<{ entries: JournalEntry[] }>(JOURNAL.list, { limit: 5, ...queryParams }),
     retry: false,
   });
 
   // Fetch recent invoices
   const { data: invoicesData, isLoading: invoicesLoading } = useQuery<{ invoices: Invoice[] }>({
-    queryKey: ['invoices', 'list', { limit: 5 }],
-    queryFn: () => apiClient.get<{ invoices: Invoice[] }>(INVOICES.list, { limit: 5 }),
+    queryKey: ['invoices', 'list', { limit: 5, ...queryParams }],
+    queryFn: () => apiClient.get<{ invoices: Invoice[] }>(INVOICES.list, { limit: 5, ...queryParams }),
     retry: false,
   });
 
   // Fetch period overview for trends
   const { data: periodData, isLoading: periodLoading } = useQuery<any>({
-    queryKey: ['dashboard', 'period-overview'],
-    queryFn: () => apiClient.get(DASHBOARD.periodOverview),
+    queryKey: ['dashboard', 'period-overview', queryParams],
+    queryFn: () => apiClient.get(DASHBOARD.periodOverview, queryParams),
     retry: false,
   });
 
   // Fetch cash positions
   const { data: cashData, isLoading: cashLoading } = useQuery<any>({
-    queryKey: ['dashboard', 'cash-positions'],
-    queryFn: () => apiClient.get(DASHBOARD.cashPositions),
+    queryKey: ['dashboard', 'cash-positions', queryParams],
+    queryFn: () => apiClient.get(DASHBOARD.cashPositions, queryParams),
     retry: false,
   });
 
   // Fetch receivables summary
   const { data: receivablesData, isLoading: receivablesLoading } = useQuery<any>({
-    queryKey: ['dashboard', 'receivables-summary'],
-    queryFn: () => apiClient.get(DASHBOARD.receivablesSummary),
+    queryKey: ['dashboard', 'receivables-summary', queryParams],
+    queryFn: () => apiClient.get(DASHBOARD.receivablesSummary, queryParams),
     retry: false,
   });
 
   // Fetch payables summary
   const { data: payablesData, isLoading: payablesLoading } = useQuery<any>({
-    queryKey: ['dashboard', 'payables-summary'],
-    queryFn: () => apiClient.get(DASHBOARD.payablesSummary),
+    queryKey: ['dashboard', 'payables-summary', queryParams],
+    queryFn: () => apiClient.get(DASHBOARD.payablesSummary, queryParams),
     retry: false,
   });
 
   // Fetch top customers
   const { data: customersData, isLoading: customersLoading } = useQuery<any>({
-    queryKey: ['dashboard', 'top-customers'],
-    queryFn: () => apiClient.get(DASHBOARD.topCustomers),
+    queryKey: ['dashboard', 'top-customers', queryParams],
+    queryFn: () => apiClient.get(DASHBOARD.topCustomers, queryParams),
     retry: false,
   });
 

@@ -51,8 +51,12 @@ const typeFilterOptions = [
 
 function getMovementIcon(type: string) {
   switch (type) {
-    case 'DEPOSIT': return <ArrowDownCircle className="w-5 h-5 text-success" />;
-    case 'WITHDRAWAL': return <ArrowUpCircle className="w-5 h-5 text-error" />;
+    case 'DEPOSIT':
+    case 'CREDIT': 
+      return <ArrowDownCircle className="w-5 h-5 text-success" />;
+    case 'WITHDRAWAL':
+    case 'DEBIT': 
+      return <ArrowUpCircle className="w-5 h-5 text-error" />;
     case 'TRANSFER': return <ArrowLeftRight className="w-5 h-5 text-vintage-500" />;
     default: return null;
   }
@@ -70,9 +74,9 @@ export function BanksView() {
   } = useBanks() as any;
 
   // Compute summary from real data — prefer hook values, fallback to computing from arrays
-  const totalBalance = hookBalance || accounts.reduce((s: number, a: any) => s + (a.currentBalance || a.initialBalance || 0), 0);
-  const totalDeposits = hookDeposits || movements.filter((m: any) => m.movementType === 'DEPOSIT').reduce((s: number, m: any) => s + Math.abs(m.amount || 0), 0);
-  const totalWithdrawals = hookWithdrawals || movements.filter((m: any) => m.movementType === 'WITHDRAWAL').reduce((s: number, m: any) => s + Math.abs(m.amount || 0), 0);
+  const totalBalance = Number(hookBalance || accounts.reduce((s: number, a: any) => s + (Number(a.currentBalance || a.initialBalance) || 0), 0));
+  const totalDeposits = Number(hookDeposits || movements.filter((m: any) => m.movementType === 'DEPOSIT' || m.movementType === 'CREDIT').reduce((s: number, m: any) => s + Math.abs(Number(m.amount) || 0), 0));
+  const totalWithdrawals = Number(hookWithdrawals || movements.filter((m: any) => m.movementType === 'WITHDRAWAL' || m.movementType === 'DEBIT').reduce((s: number, m: any) => s + Math.abs(Number(m.amount) || 0), 0));
   const total = rawTotal || movements.length;
 
 
@@ -205,11 +209,20 @@ export function BanksView() {
     setEditingAccount(null);
   };
 
-  const handleReconcile = useCallback(async (id: string, e: React.MouseEvent) => {
+  const handleReconcile = useCallback(async (bankAccountId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const ok = await reconcileMovement(id);
-    if (ok) toast.success('Movimiento conciliado');
-    else toast.error('No se pudo conciliar');
+    if (!bankAccountId) return toast.error('No se pudo identificar la cuenta bancaria');
+    
+    try {
+      const res = await reconcileMovement(bankAccountId);
+      if (res?.reconciled > 0) {
+        toast.success(`Se conciliaron ${res.reconciled} movimientos automáticamente`);
+      } else {
+        toast.info(res?.message || 'No se encontraron coincidencias automáticas');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error al conciliar');
+    }
   }, [reconcileMovement]);
 
   const accountFilterOptions = useMemo(() => (accounts || []).map((a: any) => ({
@@ -265,11 +278,11 @@ export function BanksView() {
         {(accounts || []).map((acc: any) => {
           const colors = accountColors[acc.accountType] || accountColors.CHECKING;
           const depositTotal = movements
-            .filter((m) => m.bankAccountId === acc.id && m.movementType === 'DEPOSIT')
-            .reduce((s, m) => s + m.amount, 0);
+            .filter((m) => m.bankAccountId === acc.id && (m.movementType === 'DEPOSIT' || m.movementType === 'CREDIT'))
+            .reduce((s, m) => s + (Number(m.amount) || 0), 0);
           const withdrawalTotal = movements
-            .filter((m) => m.bankAccountId === acc.id && m.movementType === 'WITHDRAWAL')
-            .reduce((s, m) => s + Math.abs(m.amount), 0);
+            .filter((m) => m.bankAccountId === acc.id && (m.movementType === 'WITHDRAWAL' || m.movementType === 'DEBIT'))
+            .reduce((s, m) => s + Math.abs(Number(m.amount) || 0), 0);
           return (
             <VintageCard key={acc.id} className="p-4 relative group">
               <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
@@ -394,15 +407,15 @@ export function BanksView() {
                 <td className="px-4 py-3 text-right">
                   <span className={cn(
                     'text-sm font-mono font-semibold',
-                    row.amount >= 0 ? 'text-success' : 'text-error',
+                    (row.movementType === 'DEPOSIT' || row.movementType === 'CREDIT') ? 'text-success' : 'text-error',
                   )}>
-                    {row.amount >= 0 ? '+' : ''}{formatCurrency(row.amount, 'NIO')}
+                    {(row.movementType === 'DEPOSIT' || row.movementType === 'CREDIT') ? '+' : '-'}{formatCurrency(row.amount, 'NIO')}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-center">
                   {row.reconciled ? (
                     <button
-                      onClick={(e) => handleReconcile(row.id, e)}
+                      onClick={(e) => handleReconcile(row.bankAccountId, e)}
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success/15 text-success"
                       title="Conciliado"
                     >
@@ -411,7 +424,7 @@ export function BanksView() {
                     </button>
                   ) : (
                     <button
-                      onClick={(e) => handleReconcile(row.id, e)}
+                      onClick={(e) => handleReconcile(row.bankAccountId, e)}
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-vintage-100 text-vintage-600 hover:bg-vintage-200 transition-colors"
                       title="Marcar como conciliado"
                     >

@@ -11,6 +11,8 @@ import type { OllamaMessage } from '@/lib/ollama';
 // Falls back to keyword-based guidance when Ollama is offline.
 // ============================================================
 
+import { db } from '@/lib/db';
+
 export async function POST(request: Request) {
   try {
     const user = await validateAuth(request);
@@ -32,6 +34,22 @@ export async function POST(request: Request) {
     const companyError = requireCompanyAccess(user!, companyId);
     if (companyError) return companyError;
 
+    // Obtener detalles de la empresa para inyectar como contexto
+    const company = await db.company.findUnique({
+      where: { id: companyId },
+      select: { name: true, taxId: true }
+    });
+
+    const aiContext = {
+      companyId: companyId,
+      companyName: company?.name || 'Empresa',
+      companyTaxId: company?.taxId || 'N/A',
+      userId: user!.id,
+      userName: user!.name,
+      userRole: user!.role,
+      currentDate: new Date().toLocaleDateString('es-NI', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    };
+
     // Validate history array if provided
     let chatHistory: OllamaMessage[] = [];
     if (Array.isArray(history)) {
@@ -47,7 +65,7 @@ export async function POST(request: Request) {
     // Check Ollama availability in parallel with the chat request
     const [ollamaAvailable, result] = await Promise.all([
       isOllamaAvailable(),
-      chatWithOllama(message, chatHistory, companyId),
+      chatWithOllama(message, chatHistory, aiContext),
     ]);
 
     const responseData: {

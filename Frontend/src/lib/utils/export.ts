@@ -282,14 +282,17 @@ export async function exportTrialBalanceExcel(
   totals: { totalDebit: number; totalCredit: number; totalBalance: number } = { totalDebit: 0, totalCredit: 0, totalBalance: 0 }
 ): Promise<void> {
   const headers = ['Código', 'Cuenta', 'Tipo', 'Debe', 'Haber', 'Saldo'];
-  const rows = data.map(row => [
-    row.accountCode,
-    row.accountName,
-    row.accountType,
-    row.totalDebit,
-    row.totalCredit,
-    row.balance,
-  ]);
+  const rows = data.map(row => {
+    const indent = '  '.repeat(row.level ? row.level - 1 : 0);
+    return [
+      row.accountCode,
+      `${indent}${row.accountName}`,
+      row.accountType,
+      row.totalDebit,
+      row.totalCredit,
+      row.balance,
+    ];
+  });
 
   // Add totals row
   rows.push(['', 'TOTALES', '', totals.totalDebit, totals.totalCredit, totals.totalBalance]);
@@ -315,14 +318,17 @@ export async function exportTrialBalancePDF(
   totals: { totalDebit: number; totalCredit: number; totalBalance: number } = { totalDebit: 0, totalCredit: 0, totalBalance: 0 }
 ): Promise<void> {
   const headers = ['Código', 'Cuenta', 'Tipo', 'Debe', 'Haber', 'Saldo'];
-  const rows = data.map(row => [
-    row.accountCode,
-    row.accountName,
-    row.accountType,
-    `C$ ${row.totalDebit.toLocaleString()}`,
-    `C$ ${row.totalCredit.toLocaleString()}`,
-    `C$ ${row.balance.toLocaleString()}`,
-  ]);
+  const rows = data.map(row => {
+    const indent = '  '.repeat(row.level ? row.level - 1 : 0);
+    return [
+      row.accountCode,
+      { content: `${indent}${row.accountName}`, styles: { fontStyle: row.isGroup ? 'bold' : 'normal' } },
+      row.accountType,
+      `C$ ${row.totalDebit.toLocaleString()}`,
+      `C$ ${row.totalCredit.toLocaleString()}`,
+      `C$ ${row.balance.toLocaleString()}`,
+    ];
+  });
 
   rows.push(['', 'TOTALES', '', `C$ ${totals.totalDebit.toLocaleString()}`, `C$ ${totals.totalCredit.toLocaleString()}`, `C$ ${totals.totalBalance.toLocaleString()}`]);
 
@@ -349,37 +355,19 @@ export async function exportBalanceSheetExcel(
   const headers = ['Concepto', 'Monto'];
   const rows: any[][] = [];
 
-  // Assets section
-  rows.push(['ACTIVOS', '']);
-  assets.forEach((item) => {
-    rows.push([item.name, item.amount]);
-    if (item.subItems) {
-      item.subItems.forEach((sub: any) => {
-        rows.push([`  ${sub.name}`, sub.amount]);
-      });
-    }
-  });
+  const addItems = (title: string, items: any[]) => {
+    rows.push([title.toUpperCase(), '']);
+    (items || []).forEach(item => {
+      // Indent by level
+      const indent = '  '.repeat(item.level - 1);
+      rows.push([`${indent}${item.accountName}`, item.balance]);
+    });
+    rows.push(['', '']);
+  };
 
-  rows.push(['', '']);
-  
-  // Liabilities section
-  rows.push(['PASIVOS', '']);
-  liabilities.forEach((item) => {
-    rows.push([item.name, item.amount]);
-    if (item.subItems) {
-      item.subItems.forEach((sub: any) => {
-        rows.push([`  ${sub.name}`, sub.amount]);
-      });
-    }
-  });
-
-  rows.push(['', '']);
-  
-  // Equity section
-  rows.push(['PATRIMONIO', '']);
-  equity.forEach((item) => {
-    rows.push([item.name, item.amount]);
-  });
+  addItems('ACTIVOS', assets);
+  addItems('PASIVOS', liabilities);
+  addItems('PATRIMONIO', equity);
 
   await exportToExcelTemplate({
     filename: `Balance_General_${period.replace('-', '_')}`,
@@ -406,12 +394,13 @@ export async function exportBalanceSheetPDF(
   const rows: any[][] = [];
 
   const addItems = (title: string, items: any[]) => {
-    rows.push([{ content: title, styles: { fontStyle: 'bold', fillColor: [230, 230, 230] } }, '']);
-    items.forEach(item => {
-      rows.push([item.name, `C$ ${item.amount.toLocaleString()}`]);
-      item.subItems?.forEach((sub: any) => {
-        rows.push([`  ${sub.name}`, `C$ ${sub.amount.toLocaleString()}`]);
-      });
+    rows.push([{ content: title.toUpperCase(), styles: { fontStyle: 'bold', fillColor: [230, 230, 230] } }, '']);
+    (items || []).forEach(item => {
+      const indent = '  '.repeat(item.level - 1);
+      rows.push([
+        { content: `${indent}${item.accountName}`, styles: { fontStyle: item.isGroup ? 'bold' : 'normal' } }, 
+        `C$ ${item.balance.toLocaleString()}`
+      ]);
     });
   };
 
@@ -444,23 +433,18 @@ export async function exportIncomeStatementExcel(
   const headers = ['Concepto', 'Monto'];
   const rows: any[][] = [];
 
-  // Income section
-  rows.push(['INGRESOS', '']);
-  income.forEach((item) => {
-    rows.push([item.name, item.amount]);
-  });
-  rows.push(['Total Ingresos', income.reduce((sum: number, i: any) => sum + i.amount, 0)]);
+  const addItems = (title: string, items: any[]) => {
+    rows.push([title.toUpperCase(), '']);
+    (items || []).forEach(item => {
+      const indent = '  '.repeat(item.level - 1);
+      rows.push([`${indent}${item.accountName}`, item.balance]);
+    });
+    rows.push(['', '']);
+  };
 
-  rows.push(['', '']);
-
-  // Expenses section
-  rows.push(['GASTOS', '']);
-  expenses.forEach((item) => {
-    rows.push([item.name, item.amount]);
-  });
-  rows.push(['Total Gastos', expenses.reduce((sum: number, e: any) => sum + e.amount, 0)]);
-
-  rows.push(['', '']);
+  addItems('INGRESOS', income);
+  addItems('GASTOS', expenses);
+  
   rows.push(['UTILIDAD NETA', netIncome]);
 
   await exportToExcelTemplate({
@@ -487,17 +471,21 @@ export async function exportIncomeStatementPDF(
   const headers = ['Concepto', 'Monto'];
   const rows: any[][] = [];
 
-  rows.push([{ content: 'INGRESOS', styles: { fontStyle: 'bold', fillColor: [209, 231, 221] } }, '']);
-  income.forEach(item => rows.push([item.name, `C$ ${item.amount.toLocaleString()}`]));
-  const totalIncome = income.reduce((s, i) => s + i.amount, 0);
-  rows.push([{ content: 'TOTAL INGRESOS', styles: { fontStyle: 'bold' } }, `C$ ${totalIncome.toLocaleString()}`]);
-  
-  rows.push(['', '']);
-  rows.push([{ content: 'GASTOS', styles: { fontStyle: 'bold', fillColor: [248, 215, 218] } }, '']);
-  expenses.forEach(item => rows.push([item.name, `C$ ${item.amount.toLocaleString()}`]));
-  const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-  rows.push([{ content: 'TOTAL GASTOS', styles: { fontStyle: 'bold' } }, `C$ ${totalExpenses.toLocaleString()}`]);
+  const addItems = (title: string, items: any[], color: [number, number, number]) => {
+    rows.push([{ content: title, styles: { fontStyle: 'bold', fillColor: color } }, '']);
+    (items || []).forEach(item => {
+      const indent = '  '.repeat(item.level - 1);
+      rows.push([
+        { content: `${indent}${item.accountName}`, styles: { fontStyle: item.isGroup ? 'bold' : 'normal' } }, 
+        `C$ ${item.balance.toLocaleString()}`
+      ]);
+    });
+  };
 
+  addItems('INGRESOS', income, [209, 231, 221]);
+  rows.push(['', '']);
+  addItems('GASTOS', expenses, [248, 215, 218]);
+  
   rows.push(['', '']);
   rows.push([{ content: 'UTILIDAD NETA', styles: { fontStyle: 'bold', fillColor: [107, 91, 149], textColor: [255, 255, 255] } }, `C$ ${netIncome.toLocaleString()}`]);
 

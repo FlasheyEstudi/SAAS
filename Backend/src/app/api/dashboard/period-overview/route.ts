@@ -53,11 +53,11 @@ export async function GET(request: Request) {
       }
     }
 
-    const totalCash = bankAccounts.reduce((s, a) => s + a.currentBalance, 0);
+    const totalCash = bankAccounts.reduce((s, a) => s + (Number(a.currentBalance) || 0), 0);
     const overdueInvoices = pendingInvoices.filter(i => i.dueDate && new Date(i.dueDate) < new Date());
-    const totalOverdue = overdueInvoices.reduce((s, i) => s + i.balanceDue, 0);
+    const totalOverdue = overdueInvoices.reduce((s, i) => s + (Number(i.balanceDue) || 0), 0);
 
-    const alerts = [];
+    const alerts: any[] = [];
     if (overdueInvoices.length > 0) alerts.push({ type: 'WARNING', message: `${overdueInvoices.length} facturas vencidas por $${Math.round(totalOverdue)}` });
     if (openPeriods > 3) alerts.push({ type: 'WARNING', message: `${openPeriods} períodos abiertos` });
     if (totalExpenses > totalIncome) alerts.push({ type: 'ERROR', message: 'Gastos superan ingresos en este período' });

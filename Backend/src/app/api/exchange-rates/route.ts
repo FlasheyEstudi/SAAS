@@ -18,9 +18,9 @@ export async function GET(request: Request) {
     if (fromCurrency) where.fromCurrency = fromCurrency;
     if (toCurrency) where.toCurrency = toCurrency;
     if (dateFrom || dateTo) {
-      where.effectiveDate = {};
-      if (dateFrom) (where.effectiveDate as Prisma.DateTimeNullableFilter).gte = new Date(dateFrom);
-      if (dateTo) (where.effectiveDate as Prisma.DateTimeNullableFilter).lte = new Date(dateTo);
+      where.date = {};
+      if (dateFrom) (where.date as Prisma.DateTimeNullableFilter).gte = new Date(dateFrom);
+      if (dateTo) (where.date as Prisma.DateTimeNullableFilter).lte = new Date(dateTo);
     }
 
     const [rates, total] = await Promise.all([
@@ -47,22 +47,22 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { companyId, fromCurrency, toCurrency, rate, effectiveDate, source } = body;
+    const { companyId, fromCurrency, toCurrency, rate, date, source } = body;
 
-    if (!companyId || !fromCurrency || !toCurrency || !rate || !effectiveDate) {
-      return error('companyId, fromCurrency, toCurrency, rate y effectiveDate son obligatorios');
+    if (!companyId || !fromCurrency || !toCurrency || !rate || !date) {
+      return error('companyId, fromCurrency, toCurrency, rate y date son obligatorios');
     }
     if (rate <= 0) return error('El tipo de cambio debe ser mayor a 0');
 
     const existing = await db.exchangeRate.findFirst({
-      where: { companyId, fromCurrency, toCurrency, effectiveDate: new Date(effectiveDate) },
+      where: { companyId, fromCurrency, toCurrency, date: new Date(date) },
     });
     if (existing) return error('Ya existe un tipo de cambio para esa fecha y par de monedas');
 
     const newRate = await db.exchangeRate.create({
       data: {
         companyId, fromCurrency, toCurrency, rate: parseFloat(rate),
-        effectiveDate: new Date(effectiveDate),
+        date: new Date(date),
         source: source || 'MANUAL',
       },
     });

@@ -57,22 +57,27 @@ async function handleQueryFinancialData(args: any, companyId: string) {
 
   // Resolve period if needed
   let resolvedPeriodId = period_id;
+  let resolvedYear = year || new Date().getFullYear();
+  let resolvedMonth = month || (new Date().getMonth() + 1);
+
   if (!resolvedPeriodId) {
-    const period = await resolvePeriod(companyId, null, year, month);
+    const period = await resolvePeriod(companyId, null, resolvedYear, resolvedMonth);
     resolvedPeriodId = period?.id;
   }
 
+  const periodErrorMsg = `No se encontró el período contable (Año: ${resolvedYear}, Mes: ${resolvedMonth}) para esta empresa. Por favor informa al usuario que debe crear el período o consultar otro.`;
+
   switch (normalizedView) {
     case 'trial_balance':
-      if (!resolvedPeriodId) return { error: 'Se requiere un período para la Balanza de Comprobación' };
+      if (!resolvedPeriodId) return { error: periodErrorMsg };
       return await getTrialBalance(companyId, resolvedPeriodId, consolidated || false);
     
     case 'balance_sheet':
-      if (!resolvedPeriodId) return { error: 'Se requiere un período para el Balance General' };
+      if (!resolvedPeriodId) return { error: periodErrorMsg };
       return await getBalanceSheet(companyId, resolvedPeriodId, consolidated || false);
 
     case 'income_statement':
-      if (!resolvedPeriodId) return { error: 'Se requiere un período para el Estado de Resultados' };
+      if (!resolvedPeriodId) return { error: periodErrorMsg };
       return await getIncomeStatement(companyId, resolvedPeriodId, consolidated || false);
 
     case 'ar_aging':

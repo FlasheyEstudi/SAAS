@@ -25,8 +25,8 @@ export async function GET(request: Request) {
       if (!customerTotals[inv.thirdPartyId]) {
         customerTotals[inv.thirdPartyId] = { name: inv.thirdParty.name, taxId: inv.thirdParty.taxId, totalAmount: 0, paidAmount: 0, invoiceCount: 0 };
       }
-      customerTotals[inv.thirdPartyId].totalAmount += inv.totalAmount;
-      customerTotals[inv.thirdPartyId].paidAmount += inv.totalAmount - inv.balanceDue;
+      customerTotals[inv.thirdPartyId].totalAmount += Number(inv.totalAmount) || 0;
+      customerTotals[inv.thirdPartyId].paidAmount += (Number(inv.totalAmount) || 0) - (Number(inv.balanceDue) || 0);
       customerTotals[inv.thirdPartyId].invoiceCount++;
     }
 

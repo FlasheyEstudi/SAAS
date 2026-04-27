@@ -9,19 +9,29 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: 'ADMIN' | 'ACCOUNTANT' | 'MANAGER' | 'USER';
-  companyId: string | null; // Currently active/default company
+  role: string;
+  companyId: string | null; // Moneda base de la empresa
   availableCompanies: { id: string, name: string, role: string }[];
 }
 
 export async function validateAuth(request: Request): Promise<AuthUser | null> {
   try {
+    let token = '';
     const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null;
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else {
+      // Intentar obtener de las cookies si es un Request de Next.js
+      const cookieHeader = request.headers.get('cookie');
+      if (cookieHeader) {
+        const matches = cookieHeader.match(/auth_token=([^;]+)/);
+        if (matches) token = matches[1];
+      }
     }
 
-    const token = authHeader.substring(7); // Remove 'Bearer '
+    if (!token) return null;
+
     const decoded = Buffer.from(token, 'base64').toString('utf-8');
     const [userId] = decoded.split(':');
 
@@ -112,12 +122,23 @@ export function requireCompanyAccess(user: AuthUser, companyId: string) {
 // Estandarizan el formato de éxito y error en todos los endpoints.
 // ============================================================
 
+// Helper para serializar objetos que contienen Decimal de Prisma
+function serialize(data: any): any {
+  return JSON.parse(JSON.stringify(data, (key, value) => {
+    // Si es un Decimal (Prisma), convertir a número o string
+    if (value && typeof value === 'object' && value.d && value.s && value.e) {
+      return Number(value); 
+    }
+    return value;
+  }));
+}
+
 export function success(data: unknown, status = 200) {
-  return NextResponse.json({ success: true, data }, { status });
+  return NextResponse.json({ success: true, data: serialize(data) }, { status });
 }
 
 export function created(data: unknown) {
-  return NextResponse.json({ success: true, data }, { status: 201 });
+  return NextResponse.json({ success: true, data: serialize(data) }, { status: 201 });
 }
 
 export function error(message: string, status = 400) {

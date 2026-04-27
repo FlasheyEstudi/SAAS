@@ -161,6 +161,7 @@ export function ConfirmDialog({
   cancelLabel = 'Cancelar',
   variant = 'default',
   loading = false,
+  children,
 }: {
   open: boolean;
   onClose: () => void;
@@ -171,6 +172,7 @@ export function ConfirmDialog({
   cancelLabel?: string;
   variant?: 'default' | 'destructive';
   loading?: boolean;
+  children?: React.ReactNode;
 }) {
   if (!open) return null;
 
@@ -189,7 +191,9 @@ export function ConfirmDialog({
         transition={{ duration: 0.2 }}
       >
         <h3 className="text-lg font-playfair text-vintage-800 dark:text-zinc-100 mb-2">{title}</h3>
-        <p className="text-sm text-vintage-600 dark:text-zinc-400 mb-6">{description}</p>
+        <p className="text-sm text-vintage-600 dark:text-zinc-400 mb-4">{description}</p>
+        
+        {children && <div className="mb-6">{children}</div>}
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}

@@ -19,6 +19,21 @@ if (typeof window !== 'undefined') {
   }
 }
 
+export class ApiError extends Error {
+  success = false;
+  error: string;
+  code?: string;
+  data?: any;
+
+  constructor(message: string, code?: string, data?: any) {
+    super(message);
+    this.name = 'ApiError';
+    this.error = message;
+    this.code = code;
+    this.data = data;
+  }
+}
+
 class ApiClient {
   private baseUrl: string;
 
@@ -87,9 +102,34 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
+    // Inject companyId into body for POST/PUT/PATCH if not present
+    let body = options.body;
+    const companyId = this.getCompanyId();
+    if (
+      companyId &&
+      body &&
+      typeof body === 'string' &&
+      options.method !== 'GET' &&
+      !url.includes('auth') &&
+      !url.includes('login') &&
+      !url.includes('/register')
+    ) {
+      try {
+        const parsedBody = JSON.parse(body);
+        if (typeof parsedBody === 'object' && !parsedBody.companyId) {
+          parsedBody.companyId = companyId;
+          body = JSON.stringify(parsedBody);
+        }
+      } catch (e) {
+        // Not JSON, ignore
+      }
+    }
+
     const response = await fetch(fullUrl, {
       ...options,
+      body,
       headers,
+      credentials: 'include', // Support HTTP-Only Cookies
     });
 
     // Handle 401 - redirect to login
@@ -100,30 +140,31 @@ class ApiClient {
         localStorage.removeItem('user');
         window.dispatchEvent(new CustomEvent('auth:logout'));
       }
-      throw { success: false, error: 'Sesión expirada', code: 'UNAUTHORIZED' };
+      throw new ApiError('Sesión expirada', 'UNAUTHORIZED');
     }
 
     // Handle 403
     if (response.status === 403) {
       toast.error('No tienes permisos para esta acción');
-      throw { success: false, error: 'Acceso denegado', code: 'FORBIDDEN' };
+      throw new ApiError('Acceso denegado', 'FORBIDDEN');
     }
 
     // Handle 404
     if (response.status === 404) {
-      throw { success: false, error: 'Recurso no encontrado', code: 'NOT_FOUND' };
+      throw new ApiError('Recurso no encontrado', 'NOT_FOUND');
     }
 
     // Handle other errors
     if (!response.ok) {
       let errorMessage = 'Error desconocido';
+      let errorData: any = null;
       try {
-        const errorData = await response.json();
+        errorData = await response.json();
         errorMessage = errorData.error || errorData.message || errorMessage;
       } catch {
         // Use default error message
       }
-      throw { success: false, error: errorMessage, code: String(response.status) };
+      throw new ApiError(errorMessage, String(response.status), errorData);
     }
 
     // Handle empty responses (204)

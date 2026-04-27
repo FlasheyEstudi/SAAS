@@ -13,6 +13,16 @@ const AI_ENABLED = process.env.AI_ENABLED === 'true' || false;
 // TYPES
 // ============================================================
 
+interface AiContext {
+  companyId: string;
+  companyName: string;
+  companyTaxId?: string;
+  userId: string;
+  userName: string;
+  userRole: string;
+  currentDate: string;
+}
+
 interface OllamaMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content: string;
@@ -150,8 +160,21 @@ async function callOllamaAPI(messages: OllamaMessage[]): Promise<OllamaResponse>
   return data;
 }
 
-const SYSTEM_PROMPT = `Eres GANESHA, un asistente financiero experto.
-Para consultar datos, DEBES generar un llamado a herramienta usando formato XML estricto que contenga JSON válido.
+const SYSTEM_PROMPT_TEMPLATE = `Eres GANESHA, un asesor financiero e inteligencia artificial avanzada.
+Estás hablando directamente con el usuario actual del sistema.
+
+====== CONTEXTO OBLIGATORIO ======
+FECHA ACTUAL: {{CURRENT_DATE}}
+USUARIO: {{USER_NAME}} (Rol: {{USER_ROLE}})
+EMPRESA SELECCIONADA: {{COMPANY_NAME}} (RUC/Id: {{COMPANY_TAX_ID}})
+
+REGLAS DE COMUNICACIÓN:
+1. Trata al usuario con máximo respeto profesional pero cercano e intuitivo (ej. "Hola {{USER_NAME}}").
+2. Usa el nombre de la empresa "{{COMPANY_NAME}}" cuando sea relevante para demostrar que estás analizando SUS datos, no datos genéricos.
+3. Si te piden resúmenes o datos, usa el formato XML proporcionado.
+
+====== HERRAMIENTAS ======
+Para consultar datos del sistema, DEBES generar un llamado a herramienta usando formato XML estricto que contenga JSON válido.
 
 EJEMPLO 1 (Una sola empresa):
 <TOOL:get_ledger_data>{"target_view": "balance_sheet", "consolidated": false}</TOOL>
@@ -161,7 +184,7 @@ EJEMPLO 2 (Empresas consolidadas):
 
 VISTAS PERMITIDAS en target_view: trial_balance, balance_sheet, income_statement, ar_aging, ap_aging, cash_flow.
 
-REGLA DE ORO: Responde INMEDIATAMENTE con la etiqueta <TOOL>. Tu JSON interno no debe contener sintaxis como "true/false", solo "true" o "false". Nunca des explicaciones antes de usar la herramienta.`;
+REGLA DE ORO: Responde INMEDIATAMENTE con la etiqueta <TOOL> sin dar explicaciones iniciales si el usuario solicitó un dato explícito.`;
 const AI_TOOLS: OllamaTool[] = [
   {
     type: 'function',
@@ -274,7 +297,7 @@ function safeJsonStringify(obj: any): string {
 async function chatWithOllama(
   userMessage: string,
   chatHistory: OllamaMessage[] = [],
-  companyId?: string
+  context?: AiContext
 ): Promise<{
   response: string;
   toolCalls?: OllamaResponse['message']['tool_calls'];
@@ -284,10 +307,17 @@ async function chatWithOllama(
     const available = await isOllamaAvailable();
     if (available) {
       try {
+        const dynamicPrompt = SYSTEM_PROMPT_TEMPLATE
+          .replace(/\{\{CURRENT_DATE\}\}/g, context?.currentDate || new Date().toISOString())
+          .replace(/\{\{USER_NAME\}\}/g, context?.userName || 'Usuario')
+          .replace(/\{\{USER_ROLE\}\}/g, context?.userRole || 'Analista')
+          .replace(/\{\{COMPANY_NAME\}\}/g, context?.companyName || 'Empresa Desconocida')
+          .replace(/\{\{COMPANY_TAX_ID\}\}/g, context?.companyTaxId || 'N/A');
+
         const messages: OllamaMessage[] = [
           {
             role: 'system',
-            content: SYSTEM_PROMPT + (companyId ? `\n\nContexto: Empresa ID ${companyId}` : ''),
+            content: dynamicPrompt,
           },
           ...chatHistory.slice(-10),
           { role: 'user', content: userMessage },
@@ -311,7 +341,7 @@ async function chatWithOllama(
             }
           }
 
-          if (toolCalls && toolCalls.length > 0 && companyId) {
+          if (toolCalls && toolCalls.length > 0 && context?.companyId) {
             messages.push({
               role: 'assistant',
               content: data.message.content || '',
@@ -324,7 +354,7 @@ async function chatWithOllama(
                 const result = await executeAiTool(
                   tool.function.name,
                   tool.function.arguments,
-                  companyId
+                  context.companyId
                 );
 
                 messages.push({
@@ -430,9 +460,9 @@ export {
   OLLAMA_URL, 
   OLLAMA_MODEL, 
   AI_TOOLS, 
-  SYSTEM_PROMPT, 
+  SYSTEM_PROMPT_TEMPLATE, 
   isOllamaAvailable, 
   listModels, 
   chatWithOllama 
 };
-export type { OllamaMessage, OllamaTool, OllamaResponse };
+export type { OllamaMessage, OllamaTool, OllamaResponse, AiContext };

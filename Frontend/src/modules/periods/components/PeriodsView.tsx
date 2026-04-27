@@ -15,22 +15,19 @@ import { usePeriods } from '../hooks/usePeriods';
 const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 export function PeriodsView() {
-  const { periods: rawPeriods = [], isLoading: loading, closePeriod, reopenPeriod, isClosing, isReopening } = usePeriods();
+  const { 
+    periods = [], 
+    isLoading: loading, 
+    closePeriod, 
+    reopenPeriod,
+    createPeriod, 
+    isClosing, 
+    isReopening 
+  } = usePeriods();
 
-  // GANESHA MOCK DATA for fiscal periods 2025
-  const mockPeriods = Array.from({ length: 12 }, (_, i) => ({
-    id: `p25-${i + 1}`,
-    name: `${months[i]} 2026`,
-    month: i + 1,
-    year: 2026,
-    startDate: `2026-${String(i + 1).padStart(2, '0')}-01`,
-    endDate: `2026-${String(i + 1).padStart(2, '0')}-${[31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][i]}`,
-    status: i < 3 ? 'CLOSED' : 'OPEN',
-    entryCount: i < 3 ? [45, 38, 52][i] : 0
-  }));
-
-  const periods = (rawPeriods?.length > 0) ? rawPeriods : mockPeriods;
   const [confirmAction, setConfirmAction] = useState<{ id: string; action: 'close' | 'reopen' } | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newPeriod, setNewPeriod] = useState({ year: new Date().getFullYear(), month: new Date().getMonth() + 1 });
 
   const handleClose = async () => {
     if (!confirmAction) return;
@@ -56,16 +53,30 @@ export function PeriodsView() {
     }
   };
 
-  const openPeriods = (periods || []).filter(p => p.status === 'OPEN');
-  const closedPeriods = (periods || []).filter(p => p.status === 'CLOSED');
+  const handleCreate = async () => {
+    try {
+      // We need companyId, usually from a context or global state
+      // Assuming it's handled in the hook or we find it
+      await createPeriod({ ...newPeriod, companyId: (periods[0] as any)?.companyId || '' });
+      setShowCreateModal(false);
+    } catch (err) {
+      // Handled by hook
+    }
+  };
+
+  const openPeriods = (periods || []).filter((p: any) => p.status === 'OPEN');
+  const closedPeriods = (periods || []).filter((p: any) => p.status === 'CLOSED');
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-playfair font-bold text-vintage-900">Períodos Contables</h2>
-        <p className="text-sm text-vintage-600 mt-1">Gestión de períodos fiscales 2025</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-playfair font-bold text-vintage-900">Períodos Contables</h2>
+          <p className="text-sm text-vintage-600 mt-1">Gestión de períodos fiscales</p>
+        </div>
+        <PastelButton onClick={() => setShowCreateModal(true)}><CalendarDays className="w-4 h-4 mr-2" />Nuevo Período</PastelButton>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -150,6 +161,27 @@ export function PeriodsView() {
         title={confirmAction?.action === 'close' ? 'Cerrar Período' : 'Reabrir Período'}
         description={confirmAction?.action === 'close' ? '¿Cerrar este período? No se podrán crear nuevas pólizas.' : '¿Reabrir este período? Se permitirá la captura de pólizas.'}
       />
+
+      <ConfirmDialog
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onConfirm={handleCreate}
+        title="Nuevo Período Contable"
+        description="Seleccione el mes y año para el nuevo período."
+      >
+        <div className="grid grid-cols-2 gap-4 mt-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-vintage-600 ml-1">Año</label>
+            <input type="number" value={newPeriod.year} onChange={e => setNewPeriod({ ...newPeriod, year: parseInt(e.target.value) })} className="w-full px-3 py-2 text-sm bg-vintage-50 border border-vintage-200 rounded-xl" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-vintage-600 ml-1">Mes</label>
+            <select value={newPeriod.month} onChange={e => setNewPeriod({ ...newPeriod, month: parseInt(e.target.value) })} className="w-full px-3 py-2 text-sm bg-vintage-50 border border-vintage-200 rounded-xl">
+              {months.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+            </select>
+          </div>
+        </div>
+      </ConfirmDialog>
     </div>
   );
 }

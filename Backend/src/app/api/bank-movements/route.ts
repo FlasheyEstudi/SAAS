@@ -12,26 +12,30 @@ export async function GET(request: Request) {
     const { page, limit, sortBy, sortOrder } = parsePagination(searchParams);
 
     const bankAccountId = searchParams.get('bankAccountId');
-    if (!bankAccountId) {
-      return error('El parámetro bankAccountId es obligatorio');
+    const companyId = searchParams.get('companyId');
+
+    if (!bankAccountId && !companyId) {
+      return error('Se requiere bankAccountId o companyId');
     }
 
-    // Verify bank account exists
-    const bankAccount = await db.bankAccount.findUnique({ where: { id: bankAccountId } });
-    if (!bankAccount) {
-      return error('La cuenta bancaria no existe');
-    }
+    const where: Prisma.BankMovementWhereInput = {};
 
-    const where: Prisma.BankMovementWhereInput = { bankAccountId };
+    if (bankAccountId) {
+      const bankAccount = await db.bankAccount.findUnique({ where: { id: bankAccountId } });
+      if (!bankAccount) return error('La cuenta bancaria no existe');
+      where.bankAccountId = bankAccountId;
+    } else if (companyId) {
+      where.bankAccount = { companyId };
+    }
 
     const status = searchParams.get('status');
     if (status && ['RECONCILED', 'PENDING', 'EXCLUDED'].includes(status)) {
-      where.status = status;
+      where.status = status as any;
     }
 
     const movementType = searchParams.get('movementType');
     if (movementType && ['DEBIT', 'CREDIT'].includes(movementType)) {
-      where.movementType = movementType;
+      where.movementType = movementType as any;
     }
 
     const dateFrom = searchParams.get('dateFrom');
@@ -51,12 +55,6 @@ export async function GET(request: Request) {
         where,
         include: {
           bankAccount: { select: { id: true, bankName: true, accountNumber: true } },
-          journalLine: {
-            include: {
-              account: { select: { id: true, code: true, name: true } },
-              journalEntry: { select: { id: true, entryNumber: true, description: true } },
-            },
-          },
         },
         orderBy: { [sortBy]: sortOrder },
         skip: (page - 1) * limit,

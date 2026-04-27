@@ -76,10 +76,10 @@ export function InvoiceListView() {
 
   // Compute summary from real data — the backend summary returns { totalAmount, totalBalanceDue }
   // but we also compute from invoices array as a reliable fallback
-  const totalInvoiced = rawSummary?.totalAmount || invoices.reduce((s: number, i: any) => s + (i.totalAmount || 0), 0);
-  const pendingAmount = invoices.filter((i: any) => i.status === 'PENDING' || i.status === 'PARTIAL').reduce((s: number, i: any) => s + (i.balanceDue || 0), 0);
-  const overdueAmount = invoices.filter((i: any) => i.status === 'OVERDUE').reduce((s: number, i: any) => s + (i.balanceDue || 0), 0);
-  const paidAmount = invoices.filter((i: any) => i.status === 'PAID').reduce((s: number, i: any) => s + (i.totalAmount || 0), 0);
+  const totalInvoiced = Number(rawSummary?.totalAmount || invoices.reduce((s: number, i: any) => s + (Number(i.totalAmount) || 0), 0));
+  const pendingAmount = Number(rawSummary?.totalBalanceDue || invoices.filter((i: any) => i.status === 'PENDING' || i.status === 'PARTIAL').reduce((s: number, i: any) => s + (Number(i.balanceDue) || 0), 0));
+  const overdueAmount = Number(invoices.filter((i: any) => i.status === 'OVERDUE').reduce((s: number, i: any) => s + (Number(i.balanceDue) || 0), 0));
+  const paidAmount = Number(invoices.filter((i: any) => i.status === 'PAID').reduce((s: number, i: any) => s + (Number(i.totalAmount) || 0), 0));
   const total = rawTotal || invoices.length;
 
 
@@ -92,11 +92,11 @@ export function InvoiceListView() {
       const companyName = 'GANESHA Compañía Demo';
       
       const exportData = invoices.map((inv: any) => ({
-        invoiceNumber: inv.invoiceNumber,
-        date: inv.invoiceDate,
+        invoiceNumber: inv.number,
+        date: inv.issueDate,
         thirdParty: { name: getThirdPartyName(inv.thirdPartyId) },
-        subtotal: inv.subtotalAmount || (inv.totalAmount / 1.15),
-        taxAmount: inv.taxAmount || (inv.totalAmount - (inv.totalAmount / 1.15)),
+        subtotal: inv.subtotal || (Number(inv.totalAmount) / 1.15),
+        taxAmount: inv.taxAmount || (Number(inv.totalAmount) - (Number(inv.totalAmount) / 1.15)),
         total: inv.totalAmount,
         status: inv.status
       }));
@@ -130,8 +130,14 @@ export function InvoiceListView() {
   const handlePay = useCallback(async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setPayingId(id);
+    const invoice = invoices.find(inv => inv.id === id);
+    if (!invoice) return;
     try {
-      const ok = await payInvoice(id);
+      const ok = await payInvoice({ 
+        id, 
+        amount: invoice.balanceDue,
+        description: `Pago registrado desde listado - ${new Date().toLocaleDateString()}`
+      });
       if (ok) toast.success('Factura pagada correctamente');
       else toast.error('No se pudo registrar el pago');
     } catch {
@@ -258,10 +264,10 @@ export function InvoiceListView() {
           renderRow={(row) => (
             <>
               <td className="px-4 py-3">
-                <span className="text-sm font-semibold text-vintage-800">{row.invoiceNumber}</span>
+                <span className="text-sm font-semibold text-vintage-800">{row.number}</span>
               </td>
               <td className="px-4 py-3">
-                <span className="text-sm text-vintage-600">{formatDate(row.invoiceDate)}</span>
+                <span className="text-sm text-vintage-600">{formatDate(row.issueDate)}</span>
               </td>
               <td className="px-4 py-3">
                 <span className="text-sm text-vintage-700 line-clamp-1">{getThirdPartyName(row.thirdPartyId)}</span>

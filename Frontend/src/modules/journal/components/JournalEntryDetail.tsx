@@ -14,7 +14,7 @@ import {
   Layers,
   CheckCircle2,
 } from 'lucide-react';
-import { useJournalEntries } from '../hooks/useJournalEntries';
+import { useJournalEntries, useJournalEntry } from '../hooks/useJournalEntries';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
@@ -45,22 +45,23 @@ const itemVariants = {
 export function JournalEntryDetail() {
   const { viewParams, navigate } = useAppStore();
   const entryId = viewParams?.id;
-  const { getEntry, postEntry, periods } = useJournalEntries();
+  const { postEntry, periods } = useJournalEntries();
+  const { entry: initialEntry, isLoading: detailLoading } = useJournalEntry(entryId || '');
 
   const [entry, setEntry] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [posting, setPosting] = useState(false);
 
   useEffect(() => {
-    if (!entryId) {
-      navigate('journal');
-      return;
+    if (initialEntry) {
+      setEntry(initialEntry);
     }
-    setIsLoading(true);
-    const data = getEntry(entryId);
-    setEntry(data ?? null);
-    setIsLoading(false);
-  }, [entryId, getEntry, navigate]);
+  }, [initialEntry]);
+
+  useEffect(() => {
+    if (!entryId && !detailLoading) {
+      navigate('journal');
+    }
+  }, [entryId, detailLoading, navigate]);
 
   const handleBack = useCallback(() => {
     navigate('journal');
@@ -104,7 +105,7 @@ export function JournalEntryDetail() {
     );
   };
 
-  if (isLoading) {
+  if (detailLoading && !entry) {
     return <PageLoader text="Cargando póliza..." />;
   }
 

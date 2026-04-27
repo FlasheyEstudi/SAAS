@@ -123,14 +123,26 @@ export function requireCompanyAccess(user: AuthUser, companyId: string) {
 // ============================================================
 
 // Helper para serializar objetos que contienen Decimal de Prisma
+// Helper para serializar objetos que contienen Decimal de Prisma y evitar errores circulares
 function serialize(data: any): any {
-  return JSON.parse(JSON.stringify(data, (key, value) => {
-    // Si es un Decimal (Prisma), convertir a número o string
+  const cache = new Set();
+  const serialized = JSON.stringify(data, (key, value) => {
+    // Manejo de Decimal (Prisma)
     if (value && typeof value === 'object' && value.d && value.s && value.e) {
-      return Number(value); 
+      return Number(value);
+    }
+    // Manejo de BigInt
+    if (typeof value === 'bigint') {
+      return value.toString();
+    }
+    // Evitar referencias circulares
+    if (typeof value === 'object' && value !== null) {
+      if (cache.has(value)) return '[Circular]';
+      cache.add(value);
     }
     return value;
-  }));
+  });
+  return JSON.parse(serialized);
 }
 
 export function success(data: unknown, status = 200) {

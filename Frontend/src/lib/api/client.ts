@@ -206,6 +206,33 @@ class ApiClient {
     }, params);
   }
 
+  async postStream(url: string, data?: any): Promise<ReadableStreamDefaultReader<Uint8Array>> {
+    const fullUrl = this.buildUrl(url);
+    const token = this.getToken();
+    const companyId = this.getCompanyId();
+
+    const body = data || {};
+    if (companyId && !body.companyId) {
+      body.companyId = companyId;
+    }
+    body.stream = true;
+
+    const response = await fetch(fullUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      throw new Error('Error en la comunicación con la IA');
+    }
+
+    return response.body!.getReader();
+  }
+
   async delete<T = any>(url: string, params?: Record<string, any>): Promise<T> {
     return this.request<T>(url, { method: 'DELETE' }, params);
   }

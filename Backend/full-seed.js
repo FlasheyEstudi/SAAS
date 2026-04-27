@@ -73,7 +73,7 @@ async function main() {
         email: 'admin@alpha.com.ni',
         name: 'Carlos Mendoza',
         role: 'ADMIN',
-        password: hashedPassword,
+        passwordHash: hashedPassword,
       }
     });
     await db.userCompany.create({

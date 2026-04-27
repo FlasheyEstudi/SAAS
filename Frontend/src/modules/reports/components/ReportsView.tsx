@@ -126,15 +126,15 @@ export function ReportsView() {
   const [period, setPeriod] = useState(`${new Date().getFullYear()}-${(new Date().getMonth() + 1).toString().padStart(2, '0')}`);
 
   const {
-    isLoading,
-    trialBalance: trialBalanceData,
-    balanceSheet: balanceSheetData,
-    incomeStatement: incomeStatementData,
-  } = useReports(year, period.split('-')[1]) as any;
+    isLoading = false,
+    trialBalance: trialBalanceData = null,
+    balanceSheet: balanceSheetData = null,
+    incomeStatement: incomeStatementData = null,
+  } = (useReports(year, period.split('-')[1]) || {}) as any;
 
   // Auto-select latest period if empty
   useEffect(() => {
-    if (dynamicPeriods.length > 0 && dynamicPeriods.length > 0 && !dynamicPeriods.some(p => `${p.year}-${p.month.toString().padStart(2, '0')}` === period)) {
+    if (dynamicPeriods && dynamicPeriods.length > 0 && !dynamicPeriods.some(p => `${p.year}-${p.month.toString().padStart(2, '0')}` === period)) {
       const latest = dynamicPeriods[dynamicPeriods.length - 1];
       if (latest) {
         setYear(latest.year.toString());
@@ -143,18 +143,23 @@ export function ReportsView() {
     }
   }, [dynamicPeriods, period]);
 
-  // Extract unique years from dynamic periods
-  const years: string[] = dynamicPeriods.map((p: any) => p.year.toString()).filter((v: string, i: number, a: string[]) => a.indexOf(v) === i).sort().reverse();
-  const availablePeriods: string[] = dynamicPeriods
-    .filter(p => !year || p.year.toString() === year)
-    .map(p => `${p.year}-${p.month.toString().padStart(2, '0')}`);
+  // Si no hay datos todavía, evitamos cálculos pesados
+  const safeTrialBalanceData = trialBalanceData || { accounts: [], totals: { totalDebit: 0, totalCredit: 0 } };
+  const safeBalanceSheetData = balanceSheetData || { totalAssets: 0, totalLiabilities: 0, totalEquity: 0, assets: [], liabilities: [], equity: [] };
+  const safeIncomeStatementData = incomeStatementData || { totalIncome: 0, totalExpenses: 0, netIncome: 0, income: [], expenses: [] };
 
-  const trialBalance = trialBalanceData?.accounts || [];
-  const totals = trialBalanceData?.totals || { totalDebit: 0, totalCredit: 0 };
+  const trialBalance = safeTrialBalanceData.accounts || [];
+  const totals = safeTrialBalanceData.totals || { totalDebit: 0, totalCredit: 0 };
   const totalDebit = totals.totalDebit;
   const totalCredit = totals.totalCredit;
 
-  const balanceSheet = balanceSheetData || { 
+  // Extract unique years from dynamic periods
+  const years: string[] = (dynamicPeriods || []).map((p: any) => p.year.toString()).filter((v: string, i: number, a: string[]) => a.indexOf(v) === i).sort().reverse();
+  const availablePeriods: string[] = (dynamicPeriods || [])
+    .filter(p => !year || p.year.toString() === year)
+    .map(p => `${p.year}-${p.month.toString().padStart(2, '0')}`);
+
+  const balanceSheet = safeBalanceSheetData || { 
     totalAssets: 0, 
     totalLiabilities: 0, 
     totalEquity: 0, 
@@ -163,7 +168,7 @@ export function ReportsView() {
     equity: [] 
   };
   
-  const incomeStatement = incomeStatementData || { 
+  const incomeStatement = safeIncomeStatementData || { 
     totalIncome: 0, 
     totalExpenses: 0, 
     netIncome: 0, 

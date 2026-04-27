@@ -39,6 +39,7 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body
         className={`${playfair.variable} ${inter.variable} ${geistMono.variable} font-sans antialiased`}
+        suppressHydrationWarning
       >
         <Providers>
           {children}

@@ -98,55 +98,60 @@ export function useAI() {
 
       const historyPayload = messages.map(({ role, content }) => ({ role, content }));
 
-      const response = await apiClient.post(AI.chat, {
+      // Creamos un mensaje vacío para el asistente que iremos llenando
+      const aiMessage: ChatMessage = {
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, aiMessage]);
+
+      const reader = await apiClient.postStream(AI.chat, {
         message: content,
         history: historyPayload,
         companyId,
       });
 
-      const toolCalls = response?.toolCalls;
-      let aiResponse = response?.response || '';
+      const decoder = new TextDecoder();
+      let fullContent = '';
+      let buffer = ''; // Acumulador para fragmentos incompletos
 
-      if (!aiResponse && toolCalls?.length) {
-        aiResponse = `El asistente solicitó ejecutar la función ${toolCalls[0].function.name}. Espera mientras se procesan los datos.`;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        
+        const lines = buffer.split('\n');
+        // El último elemento podría estar incompleto, lo dejamos en el buffer
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const json = JSON.parse(line);
+            if (json.message?.content) {
+              fullContent += json.message.content;
+              setMessages(prev => {
+                const newMessages = [...prev];
+                const lastMessage = newMessages[newMessages.length - 1];
+                if (lastMessage && lastMessage.role === 'assistant') {
+                  lastMessage.content = fullContent;
+                }
+                return newMessages;
+              });
+            }
+          } catch (e) {
+            // Si falla, lo re-agregamos al inicio del buffer para el siguiente intento
+            buffer = line + buffer;
+          }
+        }
       }
-
-      if (!aiResponse && response.data?.message) {
-        aiResponse = typeof response.data.message === 'string'
-          ? response.data.message
-          : JSON.stringify(response.data.message, null, 2);
-      }
-
-      const isDataOnly = !response?.response && (response?.toolCalls || response?.data);
-
-      const metadata = {
-        isDataOnly: !!isDataOnly,
-        downloadConfig: response?.downloadUrl ? {
-          url: response.downloadUrl,
-          type: response.reportType || 'report',
-          format: response.format || 'pdf'
-        } : undefined
-      };
-
-      const aiMessage: ChatMessage = {
-        role: 'assistant',
-        content: aiResponse || 'El asistente no obtuvo una respuesta válida.',
-        timestamp: new Date(),
-        metadata
-      };
-      setMessages(prev => [...prev, aiMessage]);
       
       return aiMessage;
     } catch (error) {
-      console.error('Error sending message to AI:', error instanceof Error ? error : JSON.stringify(error, null, 2));
-      toast.error('No se pudo obtener respuesta de la IA');
-      const errorMessage: ChatMessage = { 
-        role: 'assistant', 
-        content: 'Lo siento, ocurrió un error al procesar tu solicitud. Por favor intenta nuevamente.',
-        timestamp: new Date(),
-        isError: true
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      console.error('Error sending message to AI:', error);
+      toast.error('No se pudo obtener respuesta en tiempo real');
       return null;
     } finally {
       setIsTyping(false);

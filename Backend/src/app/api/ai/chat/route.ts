@@ -1,17 +1,7 @@
 import { success, error, serverError, validateAuth, requireAuth, requireCompanyAccess } from '@/lib/api-helpers';
-import { chatWithOllama, isOllamaAvailable, AI_TOOLS, OLLAMA_MODEL } from '@/lib/ollama';
-import type { OllamaMessage } from '@/lib/ollama';
-
-// ============================================================
-// POST /api/ai/chat - AI chat endpoint (Ollama Llama 3.2:1b)
-// Body: { message: string, companyId: string, history?: OllamaMessage[] }
-//
-// Connects to the local Ollama instance running Llama 3.2:1b.
-// Returns AI response with optional tool calls for the frontend.
-// Falls back to keyword-based guidance when Ollama is offline.
-// ============================================================
-
+import { chatWithOllama, isOllamaAvailable, chatWithOllamaStream } from '@/lib/ollama';
 import { db } from '@/lib/db';
+import { getFinancialSnapshot } from '@/services/financial-reports.service';
 
 export async function POST(request: Request) {
   try {
@@ -19,26 +9,32 @@ export async function POST(request: Request) {
     const authError = requireAuth(user);
     if (authError) return authError;
 
+    console.log('[AI-Chat] Iniciando solicitud para usuario:', user!.email);
     const body = await request.json();
-    const { message, companyId, history } = body;
+    const { message, companyId, history, stream = false } = body;
 
-    if (!message || typeof message !== 'string') {
-      return error('El mensaje es obligatorio');
-    }
+    if (!message || typeof message !== 'string') return error('El mensaje es obligatorio');
+    if (!companyId || typeof companyId !== 'string') return error('El companyId es obligatorio');
 
-    if (!companyId || typeof companyId !== 'string') {
-      return error('El companyId es obligatorio');
-    }
-
-    // SEGURIDAD CRÍTICA: Validar que el usuario tenga acceso a esta empresa
     const companyError = requireCompanyAccess(user!, companyId);
-    if (companyError) return companyError;
+    if (companyError) {
+      console.log('[AI-Chat] Error de acceso a empresa:', companyId);
+      return companyError;
+    }
 
-    // Obtener detalles de la empresa para inyectar como contexto
     const company = await db.company.findUnique({
       where: { id: companyId },
       select: { name: true, taxId: true }
     });
+
+    let financialSnapshot = 'Sin datos disponibles en este momento.';
+    try {
+      console.log('[AI-Chat] Obteniendo snapshot financiero...');
+      financialSnapshot = await getFinancialSnapshot(companyId);
+      console.log('[AI-Chat] Snapshot obtenido con éxito.');
+    } catch (snapshotErr) {
+      console.error('[AI-Chat] Error getting financial snapshot:', snapshotErr);
+    }
 
     const aiContext = {
       companyId: companyId,
@@ -47,51 +43,38 @@ export async function POST(request: Request) {
       userId: user!.id,
       userName: user!.name,
       userRole: user!.role,
-      currentDate: new Date().toLocaleDateString('es-NI', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+      currentDate: new Date().toLocaleDateString('es-NI', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+      financialSnapshot
     };
 
-    // Validate history array if provided
-    let chatHistory: OllamaMessage[] = [];
+    // Validate history
+    let chatHistory: any[] = [];
     if (Array.isArray(history)) {
-      chatHistory = history.filter(
-        (msg: unknown) =>
-          msg &&
-          typeof msg === 'object' &&
-          ['system', 'user', 'assistant', 'tool'].includes((msg as OllamaMessage).role) &&
-          typeof (msg as OllamaMessage).content === 'string'
-      );
+      chatHistory = history.filter(msg => msg && typeof msg === 'object' && msg.role && msg.content);
     }
 
-    // Check Ollama availability in parallel with the chat request
-    const [ollamaAvailable, result] = await Promise.all([
-      isOllamaAvailable(),
-      chatWithOllama(message, chatHistory, aiContext),
-    ]);
+    if (stream) {
+      console.log('[AI-Chat] Iniciando flujo streaming con Ollama...');
+      const ollamaStream = await chatWithOllamaStream(message, chatHistory, aiContext);
+      console.log('[AI-Chat] Flujo de streaming iniciado correctamente.');
+      return new Response(ollamaStream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+    }
 
-    const responseData: {
-      response: string;
-      toolCalls?: typeof result.toolCalls;
-      usedFallback: boolean;
-      ollamaAvailable: boolean;
-      model: string;
-      tools?: typeof AI_TOOLS;
-    } = {
+    console.log('[AI-Chat] Iniciando chat síncrono...');
+    const result = await chatWithOllama(message, chatHistory, aiContext);
+    return success({
       response: result.response,
       usedFallback: result.usedFallback,
-      ollamaAvailable,
-      model: OLLAMA_MODEL,
-    };
-
-    // Include tool calls if the model returned them
-    if (result.toolCalls && result.toolCalls.length > 0) {
-      responseData.toolCalls = result.toolCalls;
-      // Return tool definitions so the frontend can render them
-      responseData.tools = AI_TOOLS;
-    }
-
-    return success(responseData);
-  } catch (err) {
-    console.error('Error in AI chat endpoint:', err);
-    return serverError('Error al procesar la solicitud de IA');
+      ollamaAvailable: true,
+    });
+  } catch (err: any) {
+    console.error('[AI-Chat] Error FATAL en el chat:', err);
+    return serverError('Error al procesar solicitud: ' + err.message);
   }
 }

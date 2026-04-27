@@ -245,7 +245,6 @@ export async function getBalanceSheet(companyId: string, periodId: string, conso
   }
 
   // 3. Propagación jerárquica de saldos (de abajo hacia arriba)
-  // Ordenamos por nivel descendente para procesar hojas antes que padres
   const sortedByLevel = [...allAccounts].sort((a, b) => b.level - a.level);
   for (const account of sortedByLevel) {
     if (account.parentId && balanceMap.has(account.id)) {
@@ -268,8 +267,6 @@ export async function getBalanceSheet(companyId: string, periodId: string, conso
 
   for (const account of allAccounts) {
     const totals = balanceMap.get(account.id)!;
-    
-    // Omitimos cuentas vacías si son hojas para no llenar el reporte
     if (!account.isGroup && totals.totalDebit === 0 && totals.totalCredit === 0) continue;
 
     const row: BalanceSheetRow = {
@@ -323,7 +320,6 @@ export async function getIncomeStatement(companyId: string, periodId: string, co
     targetCompanyIds = [companyId, ...branches.map(b => b.id)];
   }
 
-  // Obtenemos cuentas de Ingresos y Gastos
   const allAccounts = await db.account.findMany({
     where: {
       companyId: { in: targetCompanyIds },
@@ -362,8 +358,6 @@ export async function getIncomeStatement(companyId: string, periodId: string, co
     const acc = allAccounts.find(a => a.id === agg.accountId);
     if (!acc) continue;
 
-    // Ingresos: Haber - Debe
-    // Gastos: Debe - Haber
     const balance = acc.accountType === 'INCOME' ? (credit - debit) : (debit - credit);
 
     balanceMap.set(agg.accountId, { 
@@ -373,7 +367,6 @@ export async function getIncomeStatement(companyId: string, periodId: string, co
     });
   }
 
-  // Propagación jerárquica
   const sortedByLevel = [...allAccounts].sort((a, b) => b.level - a.level);
   for (const account of sortedByLevel) {
     if (account.parentId && balanceMap.has(account.id)) {
@@ -432,7 +425,6 @@ export async function getIncomeStatement(companyId: string, periodId: string, co
 
 export async function getAgingReport(companyId: string, invoiceType?: 'SALE' | 'PURCHASE', asOfDate?: Date) {
   const targetDate = asOfDate || new Date();
-  
   const where: Prisma.InvoiceWhereInput = {
     companyId,
     balanceDue: { gt: 0 },
@@ -454,7 +446,6 @@ export async function getAgingReport(companyId: string, invoiceType?: 'SALE' | '
   });
 
   type BucketKey = 'current' | 'overdue_31_60' | 'overdue_61_90' | 'overdue_90_plus';
-
   const buckets: Record<BucketKey, { count: number; total: number }> = {
     current: { count: 0, total: 0 },
     overdue_31_60: { count: 0, total: 0 },
@@ -469,16 +460,10 @@ export async function getAgingReport(companyId: string, invoiceType?: 'SALE' | '
     if (inv.dueDate) {
       const diffMs = targetDate.getTime() - inv.dueDate.getTime();
       daysOverdue = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-
-      if (daysOverdue <= 30) {
-        bucket = 'current';
-      } else if (daysOverdue <= 60) {
-        bucket = 'overdue_31_60';
-      } else if (daysOverdue <= 90) {
-        bucket = 'overdue_61_90';
-      } else {
-        bucket = 'overdue_90_plus';
-      }
+      if (daysOverdue <= 30) bucket = 'current';
+      else if (daysOverdue <= 60) bucket = 'overdue_31_60';
+      else if (daysOverdue <= 90) bucket = 'overdue_61_90';
+      else bucket = 'overdue_90_plus';
     }
 
     buckets[bucket].count += 1;
@@ -497,17 +482,9 @@ export async function getAgingReport(companyId: string, invoiceType?: 'SALE' | '
     };
   });
 
-  details.sort((a, b) => {
-    const nameCompare = a.thirdPartyName.localeCompare(b.thirdPartyName);
-    if (nameCompare !== 0) return nameCompare;
-    return a.invoiceNumber.localeCompare(b.invoiceNumber);
-  });
-
-  const totalOutstanding = roundTwo(Object.values(buckets).reduce((sum, b) => sum + b.total, 0));
-
   return {
     buckets,
-    totalOutstanding,
+    totalOutstanding: roundTwo(Object.values(buckets).reduce((sum, b) => sum + b.total, 0)),
     details,
   };
 }
@@ -525,54 +502,85 @@ export async function getCashFlow(companyId: string, periodId?: string, year?: n
   });
 
   const allLines = entries.flatMap(e => e.lines);
-
   let netIncome = 0;
   for (const line of allLines) {
     if (line.account.accountType === 'INCOME') netIncome += Number(line.credit || 0) - Number(line.debit || 0);
     if (line.account.accountType === 'EXPENSE') netIncome -= Number(line.debit || 0) - Number(line.credit || 0);
   }
-  netIncome = roundTwo(netIncome);
 
   let changeInReceivables = 0;
   let changeInPayables = 0;
-  let changeInInventory = 0;
-  let depreciationExpense = 0;
-
   for (const line of allLines) {
-    if (line.account.accountType === 'ASSET') {
-      const code = line.account.code;
-      if (code.startsWith('1.3')) changeInReceivables += Number(line.debit || 0) - Number(line.credit || 0);
-    }
-    if (line.account.accountType === 'LIABILITY') {
-      const code = line.account.code;
-      if (code.startsWith('2.1')) changeInPayables += Number(line.credit || 0) - Number(line.debit || 0);
-    }
-    if (line.account.accountType === 'ASSET' && line.account.code.startsWith('1.2')) {
-      changeInInventory += Number(line.debit || 0) - Number(line.credit || 0);
-    }
-    if (line.account.code.toLowerCase().includes('depreciacion') || line.account.code.toLowerCase().includes('depreciación')) {
-      depreciationExpense += Number(line.debit || 0) - Number(line.credit || 0);
-    }
+    if (line.account.accountType === 'ASSET' && line.account.code.startsWith('1.3')) changeInReceivables += Number(line.debit || 0) - Number(line.credit || 0);
+    if (line.account.accountType === 'LIABILITY' && line.account.code.startsWith('2.1')) changeInPayables += Number(line.credit || 0) - Number(line.debit || 0);
   }
 
-  const operatingActivities = netIncome + depreciationExpense - changeInReceivables + changeInPayables - changeInInventory;
-  const investingActivities = 0;
-  const financingActivities = 0;
+  const operatingActivities = netIncome - changeInReceivables + changeInPayables;
 
   return {
-    companyId,
     netIncome: roundTwo(netIncome),
-    adjustments: {
-      depreciation: roundTwo(depreciationExpense),
-      changeInReceivables: roundTwo(changeInReceivables),
-      changeInPayables: roundTwo(changeInPayables),
-      changeInInventory: roundTwo(changeInInventory),
-    },
-    cashFlow: {
-      operatingActivities: roundTwo(operatingActivities),
-      investingActivities: roundTwo(investingActivities),
-      financingActivities: roundTwo(financingActivities),
-      netChange: roundTwo(operatingActivities + investingActivities + financingActivities),
-    },
+    operatingActivities: roundTwo(operatingActivities),
+    netChange: roundTwo(operatingActivities)
   };
+}
+
+export async function getFinancialSnapshot(companyId: string) {
+  try {
+    const period = await resolvePeriod(companyId);
+    if (!period) return 'No hay períodos contables configurados.';
+
+    // Obtener tendencia de los últimos 3 meses de forma ultra-rápida
+    const last3Periods = await db.accountingPeriod.findMany({
+      where: { companyId },
+      orderBy: [{ year: 'desc' }, { month: 'desc' }],
+      take: 3
+    });
+
+    const trendData = await Promise.all(last3Periods.reverse().map(async (p) => {
+      try {
+        const journalEntries = await db.journalEntry.findMany({
+          where: { periodId: p.id, status: { in: ['POSTED', 'DRAFT'] } },
+          select: { id: true }
+        });
+        
+        const entryIds = journalEntries.map(e => e.id);
+        if (entryIds.length === 0) return { label: `${p.month}/${p.year}`, ingresos: 0, gastos: 0 };
+
+        const lines = await db.journalEntryLine.findMany({
+          where: {
+            journalEntryId: { in: entryIds },
+            account: { accountType: { in: ['INCOME', 'EXPENSE'] } }
+          },
+          select: { debit: true, credit: true, account: { select: { accountType: true } } }
+        });
+
+        let ingresos = 0;
+        let gastos = 0;
+
+        for (const line of lines) {
+          if (line.account.accountType === 'INCOME') ingresos += Number(line.credit || 0) - Number(line.debit || 0);
+          else gastos += Number(line.debit || 0) - Number(line.credit || 0);
+        }
+        
+        return { 
+          label: `${p.month}/${p.year}`, 
+          ingresos: roundTwo(ingresos), 
+          gastos: roundTwo(gastos) 
+        };
+      } catch (err) {
+        return { label: `${p.month}/${p.year}`, ingresos: 0, gastos: 0 };
+      }
+    }));
+
+    const trendTable = trendData.map(d => `| ${d.label} | ${d.ingresos} | ${d.gastos} |`).join('\n');
+
+    return `
+DATOS REALES CARGADOS:
+| Mes | Ingresos | Gastos |
+| --- | --- | --- |
+${trendTable}
+`.trim();
+  } catch (err) {
+    return 'Error al obtener el snapshot financiero.';
+  }
 }

@@ -91,13 +91,13 @@ export async function GET(request: Request) {
 
     for (const line of currentLines) {
       if (line.account.accountType === 'INCOME') {
-        currentIncome += line.credit - line.debit;
+        currentIncome += Number(line.credit) - Number(line.debit);
       } else if (line.account.accountType === 'EXPENSE') {
-        currentExpenses += line.debit - line.credit;
+        currentExpenses += Number(line.debit) - Number(line.credit);
       } else if (line.account.accountType === 'ASSET') {
-        currentAssets += line.debit - line.credit;
+        currentAssets += Number(line.debit) - Number(line.credit);
       } else if (line.account.accountType === 'LIABILITY') {
-        currentLiabilities += line.credit - line.debit;
+        currentLiabilities += Number(line.credit) - Number(line.debit);
       }
     }
 
@@ -131,13 +131,13 @@ export async function GET(request: Request) {
 
       for (const line of prevLines) {
         if (line.account.accountType === 'INCOME') {
-          prevIncome += line.credit - line.debit;
+          prevIncome += Number(line.credit) - Number(line.debit);
         } else if (line.account.accountType === 'EXPENSE') {
-          prevExpenses += line.debit - line.credit;
+          prevExpenses += Number(line.debit) - Number(line.credit);
         } else if (line.account.accountType === 'ASSET') {
-          prevAssets += line.debit - line.credit;
+          prevAssets += Number(line.debit) - Number(line.credit);
         } else if (line.account.accountType === 'LIABILITY') {
-          prevLiabilities += line.credit - line.debit;
+          prevLiabilities += Number(line.credit) - Number(line.debit);
         }
       }
 
@@ -202,9 +202,9 @@ export async function GET(request: Request) {
 
       for (const line of pLines) {
         if (line.account.accountType === 'INCOME') {
-          pIncome += line.credit - line.debit;
+          pIncome += Number(line.credit) - Number(line.debit);
         } else if (line.account.accountType === 'EXPENSE') {
-          pExpenses += line.debit - line.credit;
+          pExpenses += Number(line.debit) - Number(line.credit);
         }
       }
 
@@ -224,7 +224,7 @@ export async function GET(request: Request) {
 
     for (const line of expenseLines) {
       const ccName = line.costCenter?.name || 'Sin centro de costo';
-      costCenterMap.set(ccName, (costCenterMap.get(ccName) || 0) + (line.debit - line.credit));
+      costCenterMap.set(ccName, (costCenterMap.get(ccName) || 0) + (Number(line.debit) - Number(line.credit)));
     }
 
     for (const [ccName, amount] of costCenterMap) {

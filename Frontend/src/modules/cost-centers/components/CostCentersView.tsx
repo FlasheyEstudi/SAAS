@@ -11,7 +11,11 @@ import { StatusBadge, ConfirmDialog } from '@/components/ui/vintage-ui';
 
 import { useCostCenters } from '../hooks/useCostCenters';
 
+import { exportCostCentersExcel } from '@/lib/utils/export';
+import { useAppStore } from '@/lib/stores/useAppStore';
+
 export function CostCentersView() {
+  const currentCompany = useAppStore(s => s.currentCompany);
   const { 
     costCenters: centers = [], 
     isLoading: loading,
@@ -21,6 +25,14 @@ export function CostCentersView() {
     isCreating,
     isUpdating
   } = useCostCenters();
+
+  const handleExport = async () => {
+    if (!centers.length) return;
+    toast.loading('Generando reporte...');
+    await exportCostCentersExcel(centers, currentCompany?.name || 'GANESHA');
+    toast.dismiss();
+    toast.success('Catálogo de centros de costo exportado');
+  };
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
@@ -62,7 +74,10 @@ export function CostCentersView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h2 className="text-2xl font-playfair font-bold text-vintage-900">Centros de Costo</h2><p className="text-sm text-vintage-600 mt-1">Gestión de centros de coste y departamentos</p></div>
-        <PastelButton onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Nuevo Centro</PastelButton>
+        <div className="flex gap-2">
+          <PastelButton variant="outline" onClick={handleExport}><Target className="w-4 h-4 mr-2" />Exportar Excel</PastelButton>
+          <PastelButton onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Nuevo Centro</PastelButton>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

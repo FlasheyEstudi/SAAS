@@ -23,6 +23,9 @@ import { PastelButton } from '@/components/ui/pastel-button';
 import { AnimatedTable, Pagination } from '@/components/tables/animated-table';
 import { formatDate } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
+import { exportAuditExcel } from '@/lib/utils/export';
+import { useAppStore } from '@/lib/stores/useAppStore';
+import { toast } from 'sonner';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -55,6 +58,7 @@ function getActionColor(action: string) {
 }
 
 export function AuditView() {
+  const currentCompany = useAppStore(s => s.currentCompany);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [entityType, setEntityType] = useState('');
@@ -65,6 +69,14 @@ export function AuditView() {
     search: search || undefined,
     entityType: entityType || undefined,
   });
+
+  const handleExport = async () => {
+    if (!logs.length) return;
+    toast.loading('Generando reporte...');
+    await exportAuditExcel(logs, currentCompany?.name || 'GANESHA');
+    toast.dismiss();
+    toast.success('Bitácora exportada a Excel');
+  };
 
   const tableHeaders = [
     { key: 'timestamp', label: 'Fecha', align: 'left' as const, className: 'w-[180px]' },
@@ -91,6 +103,12 @@ export function AuditView() {
             <h1 className="text-2xl font-playfair text-vintage-800">Auditoría de Sistema</h1>
             <p className="text-sm text-vintage-500">Trazabilidad completa de acciones y cambios</p>
           </div>
+        </div>
+        <div className="flex gap-2">
+          <PastelButton variant="outline" onClick={handleExport} className="gap-2">
+            <FileText className="w-4 h-4" />
+            Exportar Excel
+          </PastelButton>
         </div>
       </motion.div>
 

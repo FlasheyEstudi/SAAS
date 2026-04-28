@@ -42,14 +42,24 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 };
 
+import { exportJournalEntryPDF } from '@/lib/utils/export';
+
 export function JournalEntryDetail() {
-  const { viewParams, navigate } = useAppStore();
+  const { viewParams, navigate, currentCompany } = useAppStore();
   const entryId = viewParams?.id;
   const { postEntry, periods } = useJournalEntries();
   const { entry: initialEntry, isLoading: detailLoading } = useJournalEntry(entryId || '');
 
   const [entry, setEntry] = useState<any>(null);
   const [posting, setPosting] = useState(false);
+
+  const handlePrint = async () => {
+    if (!entry) return;
+    toast.loading('Generando documento...');
+    await exportJournalEntryPDF(entry, currentCompany?.name || 'GANESHA');
+    toast.dismiss();
+    toast.success('Póliza exportada a PDF');
+  };
 
   useEffect(() => {
     if (initialEntry) {
@@ -148,6 +158,10 @@ export function JournalEntryDetail() {
         </div>
         <div className="flex items-center gap-3">
           {getStatusBadge(entry.status)}
+          <PastelButton variant="outline" onClick={handlePrint} className="gap-2">
+             <FileText className="w-4 h-4" />
+             Imprimir
+          </PastelButton>
           {isDraft && (
             <>
               <PastelButton variant="outline" onClick={handleEdit} className="gap-2">
@@ -348,7 +362,7 @@ export function JournalEntryDetail() {
                           'text-sm font-mono',
                           line.debit > 0 ? 'text-vintage-800 font-medium' : 'text-vintage-300'
                         )}>
-                          {line.debit > 0 ? formatCurrency(line.debit, 'MXN') : '—'}
+                          {line.debit > 0 ? formatCurrency(line.debit, 'NIO') : '—'}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -356,7 +370,7 @@ export function JournalEntryDetail() {
                           'text-sm font-mono',
                           line.credit > 0 ? 'text-vintage-800 font-medium' : 'text-vintage-300'
                         )}>
-                          {line.credit > 0 ? formatCurrency(line.credit, 'MXN') : '—'}
+                          {line.credit > 0 ? formatCurrency(line.credit, 'NIO') : '—'}
                         </span>
                       </td>
                     </motion.tr>
@@ -377,12 +391,12 @@ export function JournalEntryDetail() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <span className="text-sm font-bold font-mono text-vintage-800">
-                      {formatCurrency(entry.totalDebit, 'MXN')}
+                      {formatCurrency(entry.totalDebit, 'NIO')}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <span className="text-sm font-bold font-mono text-vintage-800">
-                      {formatCurrency(entry.totalCredit, 'MXN')}
+                      {formatCurrency(entry.totalCredit, 'NIO')}
                     </span>
                   </td>
                 </tr>

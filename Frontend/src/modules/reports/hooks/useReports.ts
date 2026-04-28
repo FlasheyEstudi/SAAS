@@ -17,13 +17,14 @@ export interface ReportParams {
 /**
  * Hook for reports - consumes real Backend APIs
  */
-export function useReports(year?: number | string, month?: number | string) {
+export function useReports(year?: number | string, month?: number | string, accountId?: string) {
   const companyId = useAppStore(s => s.companyId);
 
   const queryParams = { 
     ...(companyId ? { companyId } : {}),
     ...(year ? { year } : {}),
-    ...(month ? { month } : {})
+    ...(month ? { month } : {}),
+    ...(accountId ? { accountId } : {})
   };
 
   // Trial Balance report

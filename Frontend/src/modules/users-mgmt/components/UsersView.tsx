@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { UserCog, Shield, Edit2, Trash2 } from 'lucide-react';
+import { UserCog, Shield, Edit2, Trash2, Users, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { StatusBadge, ConfirmDialog } from '@/components/ui/vintage-ui';
@@ -10,12 +10,15 @@ import { PastelButton } from '@/components/ui/pastel-button';
 import { formatDate, getInitials } from '@/lib/utils/format';
 
 import { useUsers } from '../hooks/useUsers';
+import { exportUsersExcel } from '@/lib/utils/export';
+import { useAppStore } from '@/lib/stores/useAppStore';
 
 const roleLabels: Record<string, string> = { ADMIN: 'Administrador', ACCOUNTANT: 'Contador', MANAGER: 'Gerente', VIEWER: 'Visor' };
 const roleColors: Record<string, string> = { ADMIN: 'error', ACCOUNTANT: 'success', MANAGER: 'warning', VIEWER: 'neutral' };
 
 export function UsersView() {
-  const { users, isLoading: loading, createUser, updateUser, deleteUser, isCreating, isUpdating, isDeleting } = useUsers();
+  const currentCompany = useAppStore(s => s.currentCompany);
+  const { users, isLoading: loading, createUser, updateUser, deleteUser, isCreating, isUpdating, isDeleting } = useUsers() as any;
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
@@ -54,13 +57,27 @@ export function UsersView() {
     }
   };
 
+  const handleExport = async () => {
+    if (!users.length) return;
+    toast.loading('Generando reporte...');
+    await exportUsersExcel(users, currentCompany?.name || 'GANESHA');
+    toast.dismiss();
+    toast.success('Lista de usuarios exportada');
+  };
+
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div><h2 className="text-2xl font-playfair font-bold text-vintage-900">Usuarios</h2><p className="text-sm text-vintage-600 mt-1">Gestión de usuarios y permisos</p></div>
-        <PastelButton onClick={openCreate}>Nuevo Usuario</PastelButton>
+        <div><h2 className="text-2xl font-playfair font-bold text-vintage-900">Usuarios</h2><p className="text-sm text-vintage-600 mt-1">Gestión de acceso y roles de usuario</p></div>
+        <div className="flex gap-2">
+          <PastelButton variant="outline" onClick={handleExport} className="gap-2">
+            <Users className="w-4 h-4" />
+            Exportar Excel
+          </PastelButton>
+          <PastelButton onClick={() => { setEditing(null); setShowForm(true); }}><Plus className="w-4 h-4 mr-2" />Nuevo Usuario</PastelButton>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">

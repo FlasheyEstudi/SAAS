@@ -13,8 +13,20 @@ import { useCostCenters } from '@/modules/cost-centers/hooks/useCostCenters';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
+import { exportConceptsExcel } from '@/lib/utils/export';
+import { useAppStore } from '@/lib/stores/useAppStore';
+
 export function FinancialConceptsView() {
+  const currentCompany = useAppStore(s => s.currentCompany);
   const { concepts, isLoading, createConcept, updateConcept, deleteConcept, isCreating, isUpdating } = useFinancialConcepts();
+
+  const handleExport = async () => {
+    if (!concepts.length) return;
+    toast.loading('Generando reporte...');
+    await exportConceptsExcel(concepts, currentCompany?.name || 'GANESHA');
+    toast.dismiss();
+    toast.success('Catálogo de conceptos exportado');
+  };
   const { accounts } = useAccounts();
   const { costCenters } = useCostCenters();
   
@@ -86,7 +98,13 @@ export function FinancialConceptsView() {
           <h2 className="text-2xl font-playfair font-bold text-vintage-900">Conceptos Financieros</h2>
           <p className="text-sm text-vintage-600 mt-1">Definición de conceptos operativos con asignación contable automática</p>
         </div>
-        <PastelButton onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Nuevo Concepto</PastelButton>
+        <div className="flex gap-2">
+          <PastelButton variant="outline" onClick={handleExport} className="gap-2">
+            <BookOpen className="w-4 h-4" />
+            Exportar Excel
+          </PastelButton>
+          <PastelButton onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Nuevo Concepto</PastelButton>
+        </div>
       </div>
 
       <div className="relative">

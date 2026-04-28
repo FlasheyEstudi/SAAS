@@ -12,6 +12,7 @@ import { StatusBadge, ConfirmDialog } from '@/components/ui/vintage-ui';
 import { formatCurrency } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 import { useThirdParties } from '../hooks/useThirdParties';
+import { useAppStore } from '@/lib/stores/useAppStore';
 
 interface ThirdParty { id: string; name: string; taxId: string; type: 'CUSTOMER' | 'SUPPLIER' | 'BOTH'; email: string; phone: string; balance: number; isActive: boolean; }
 
@@ -30,7 +31,8 @@ export function ThirdPartiesView() {
   const handleExport = async (format: 'excel' | 'pdf') => {
     try {
       toast.loading('Generando exportación...');
-      const companyName = 'GANESHA Compañía Demo';
+      const currentCompany = useAppStore.getState().currentCompany;
+      const companyName = currentCompany?.name || 'GANESHA Compañía';
       if (format === 'excel') {
         await exportThirdPartiesExcel(parties, companyName);
       } else {

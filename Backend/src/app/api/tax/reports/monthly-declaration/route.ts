@@ -118,15 +118,15 @@ export async function GET(request: Request) {
     const ivaTrasladado = allTaxEntries.filter(
       e => e.taxType === 'IVA' && !e.isRetention && e.invoice.invoiceType === 'SALE'
     );
-    const totalIvaTrasladado = ivaTrasladado.reduce((s, e) => s + e.taxAmount, 0);
-    const baseGravableVentas = ivaTrasladado.reduce((s, e) => s + e.taxableBase, 0);
+    const totalIvaTrasladado = ivaTrasladado.reduce((s, e) => s + Number(e.taxAmount), 0);
+    const baseGravableVentas = ivaTrasladado.reduce((s, e) => s + Number(e.taxableBase), 0);
 
     // ─── IVA ACREDITABLE (de compras) ───
     const ivaAcreditable = allTaxEntries.filter(
       e => e.taxType === 'IVA' && !e.isRetention && e.invoice.invoiceType === 'PURCHASE'
     );
-    const totalIvaAcreditable = ivaAcreditable.reduce((s, e) => s + e.taxAmount, 0);
-    const baseGravableCompras = ivaAcreditable.reduce((s, e) => s + e.taxableBase, 0);
+    const totalIvaAcreditable = ivaAcreditable.reduce((s, e) => s + Number(e.taxAmount), 0);
+    const baseGravableCompras = ivaAcreditable.reduce((s, e) => s + Number(e.taxableBase), 0);
 
     // ─── RETENCIONES DE IVA ───
     const retIvaEfectuada = allTaxEntries.filter(
@@ -135,8 +135,8 @@ export async function GET(request: Request) {
     const retIvaSufrida = allTaxEntries.filter(
       e => e.taxType === 'RET_IVA' && e.invoice.invoiceType === 'PURCHASE'
     );
-    const totalRetIvaEfectuada = retIvaEfectuada.reduce((s, e) => s + e.withholdingAmount, 0);
-    const totalRetIvaSufrida = retIvaSufrida.reduce((s, e) => s + e.withholdingAmount, 0);
+    const totalRetIvaEfectuada = retIvaEfectuada.reduce((s, e) => s + Number(e.withholdingAmount), 0);
+    const totalRetIvaSufrida = retIvaSufrida.reduce((s, e) => s + Number(e.withholdingAmount), 0);
 
     // ─── RETENCIONES DE ISR ───
     const retIsrEfectuada = allTaxEntries.filter(
@@ -145,18 +145,18 @@ export async function GET(request: Request) {
     const retIsrSufrida = allTaxEntries.filter(
       e => e.taxType === 'RET_ISR' && e.invoice.invoiceType === 'PURCHASE'
     );
-    const totalRetIsrEfectuada = retIsrEfectuada.reduce((s, e) => s + e.withholdingAmount, 0);
-    const totalRetIsrSufrida = retIsrSufrida.reduce((s, e) => s + e.withholdingAmount, 0);
+    const totalRetIsrEfectuada = retIsrEfectuada.reduce((s, e) => s + Number(e.withholdingAmount), 0);
+    const totalRetIsrSufrida = retIsrSufrida.reduce((s, e) => s + Number(e.withholdingAmount), 0);
 
     // ─── IEPS ───
     const iepsEntries = allTaxEntries.filter(e => e.taxType === 'IEPS');
-    const totalIeps = iepsEntries.reduce((s, e) => s + e.taxAmount, 0);
-    const totalIepsCompras = iepsEntries.filter(e => e.invoice.invoiceType === 'PURCHASE').reduce((s, e) => s + e.taxAmount, 0);
-    const totalIepsVentas = iepsEntries.filter(e => e.invoice.invoiceType === 'SALE').reduce((s, e) => s + e.taxAmount, 0);
+    const totalIeps = iepsEntries.reduce((s, e) => s + Number(e.taxAmount), 0);
+    const totalIepsCompras = iepsEntries.filter(e => e.invoice.invoiceType === 'PURCHASE').reduce((s, e) => s + Number(e.taxAmount), 0);
+    const totalIepsVentas = iepsEntries.filter(e => e.invoice.invoiceType === 'SALE').reduce((s, e) => s + Number(e.taxAmount), 0);
 
     // ─── IMPUESTO CEDULAR ───
     const cedularEntries = allTaxEntries.filter(e => e.taxType === 'CEDULAR');
-    const totalCedular = cedularEntries.reduce((s, e) => s + e.taxAmount + e.withholdingAmount, 0);
+    const totalCedular = cedularEntries.reduce((s, e) => s + Number(e.taxAmount) + Number(e.withholdingAmount), 0);
 
     // ─── CÁLCULO DEL IVA A PAGAR / A FAVOR ───
     // IVA a cargo = IVA trasladado
@@ -185,15 +185,15 @@ export async function GET(request: Request) {
       operaciones: {
         ventas: {
           totalFacturas: ventas._count,
-          subtotal: r(ventas._sum.subtotal || 0),
-          impuestos: r(ventas._sum.taxAmount || 0),
-          total: r(ventas._sum.totalAmount || 0),
+          subtotal: r(Number(ventas._sum.subtotal || 0)),
+          impuestos: r(Number(ventas._sum.taxAmount || 0)),
+          total: r(Number(ventas._sum.totalAmount || 0)),
         },
         compras: {
           totalFacturas: compras._count,
-          subtotal: r(compras._sum.subtotal || 0),
-          impuestos: r(compras._sum.taxAmount || 0),
-          total: r(compras._sum.totalAmount || 0),
+          subtotal: r(Number(compras._sum.subtotal || 0)),
+          impuestos: r(Number(compras._sum.taxAmount || 0)),
+          total: r(Number(compras._sum.totalAmount || 0)),
         },
       },
 

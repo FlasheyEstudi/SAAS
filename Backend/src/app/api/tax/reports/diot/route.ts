@@ -123,7 +123,7 @@ export async function GET(request: Request) {
         });
       }
 
-      const proveedor = proveedoresMap.get(ruc)!;
+      const proveedor = proveedoresMap.get(rucIdent)!;
 
       // Separar impuestos por tasa
       let iva16 = 0;
@@ -139,30 +139,30 @@ export async function GET(request: Request) {
 
       for (const te of invoice.taxEntries) {
         if (te.taxType === 'IVA') {
-          const rate = te.taxRate.rate;
+          const rate = Number(te.taxRate.rate);
           if (rate >= 0.15 && rate <= 0.17) {
-            iva16 += te.taxAmount;
-            baseGravable16 += te.taxableBase;
+            iva16 += Number(te.taxAmount);
+            baseGravable16 += Number(te.taxableBase);
           } else if (rate >= 0.07 && rate <= 0.09) {
-            iva8 += te.taxAmount;
-            baseGravable8 += te.taxableBase;
+            iva8 += Number(te.taxAmount);
+            baseGravable8 += Number(te.taxableBase);
           } else {
-            iva0 += te.taxAmount;
-            baseGravable0 += te.taxableBase;
+            iva0 += Number(te.taxAmount);
+            baseGravable0 += Number(te.taxableBase);
           }
         } else if (te.taxType === 'RET_IVA') {
-          retencionIva += te.withholdingAmount;
+          retencionIva += Number(te.withholdingAmount);
         } else if (te.taxType === 'RET_ISR') {
-          retencionIsr += te.withholdingAmount;
+          retencionIsr += Number(te.withholdingAmount);
         } else if (te.taxType === 'IEPS') {
-          ieps += te.taxAmount;
+          ieps += Number(te.taxAmount);
         }
       }
 
       const operacion = {
         factura: invoice.number,
         fecha: invoice.issueDate.toISOString().split('T')[0],
-        montoTotal: Math.round(invoice.totalAmount * 100) / 100,
+        montoTotal: Math.round(Number(invoice.totalAmount) * 100) / 100,
         baseGravable16: Math.round(baseGravable16 * 100) / 100,
         iva16: Math.round(iva16 * 100) / 100,
         baseGravable8: Math.round(baseGravable8 * 100) / 100,
@@ -178,7 +178,7 @@ export async function GET(request: Request) {
       proveedor.operaciones.push(operacion);
 
       // Acumular totales
-      proveedor.totales.montoTotal += invoice.totalAmount;
+      proveedor.totales.montoTotal += Number(invoice.totalAmount);
       proveedor.totales.iva16 += iva16;
       proveedor.totales.iva8 += iva8;
       proveedor.totales.iva0 += iva0;

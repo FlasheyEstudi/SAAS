@@ -44,12 +44,24 @@ const taxTypes = [
   { value: 'CEDULAR', label: 'Impuesto Cedular', color: 'bg-vintage-100 text-vintage-600' },
 ];
 
+import { exportTaxesExcel } from '@/lib/utils/export';
+import { useAppStore } from '@/lib/stores/useAppStore';
+
 export function TaxView() {
+  const currentCompany = useAppStore(s => s.currentCompany);
   const { 
     rates, entries, isLoading, 
     createRate, updateRate, deleteRate,
     isCreating, isUpdating, isDeleting 
   } = useTaxes();
+
+  const handleExport = async () => {
+    if (!entries.length) return;
+    toast.loading('Generando reporte...');
+    await exportTaxesExcel(entries, currentCompany?.name || 'GANESHA', 'Actual');
+    toast.dismiss();
+    toast.success('Libro de impuestos exportado');
+  };
 
   const [activeTab, setActiveTab] = useState('rates');
   const [showForm, setShowForm] = useState(false);
@@ -136,6 +148,10 @@ export function TaxView() {
           </div>
         </div>
         <div className="flex gap-2">
+            <PastelButton variant="outline" className="gap-2" onClick={handleExport}>
+              <Receipt className="w-4 h-4" />
+              Exportar Excel
+            </PastelButton>
             <PastelButton variant="outline" className="gap-2 hidden md:flex">
               <HistoryIcon className="w-4 h-4" />
               Reporte DIOT

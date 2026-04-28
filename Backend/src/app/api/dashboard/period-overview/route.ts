@@ -42,13 +42,13 @@ export async function GET(request: Request) {
     let totalCredit = 0;
 
     for (const line of lines) {
-      totalDebit += line.debit;
-      totalCredit += line.credit;
+      totalDebit += Number(line.debit);
+      totalCredit += Number(line.credit);
       if (line.accountId) {
         const account = await db.account.findUnique({ where: { id: line.accountId }, select: { accountType: true } });
         if (account) {
-          if (account.accountType === 'INCOME') totalIncome += line.credit - line.debit;
-          if (account.accountType === 'EXPENSE') totalExpenses += line.debit - line.credit;
+          if (account.accountType === 'INCOME') totalIncome += Number(line.credit) - Number(line.debit);
+          if (account.accountType === 'EXPENSE') totalExpenses += Number(line.debit) - Number(line.credit);
         }
       }
     }
@@ -83,8 +83,8 @@ export async function GET(request: Request) {
       if (trendMap.has(key)) {
         const item = trendMap.get(key);
         for (const line of entry.lines) {
-          if (line.account.accountType === 'INCOME') item.ingresos += (line.credit - line.debit);
-          if (line.account.accountType === 'EXPENSE') item.egresos += (line.debit - line.credit);
+          if (line.account.accountType === 'INCOME') item.ingresos += (Number(line.credit) - Number(line.debit));
+          if (line.account.accountType === 'EXPENSE') item.egresos += (Number(line.debit) - Number(line.credit));
         }
         item.utilidad = item.ingresos - item.egresos;
       }
@@ -100,7 +100,7 @@ export async function GET(request: Request) {
       const account = await db.account.findUnique({ where: { id: line.accountId }, select: { accountType: true, name: true } });
       if (account?.accountType === 'EXPENSE') {
         const catName = account.name;
-        categoryMap.set(catName, (categoryMap.get(catName) || 0) + (line.debit - line.credit));
+        categoryMap.set(catName, (categoryMap.get(catName) || 0) + (Number(line.debit) - Number(line.credit)));
       }
     }
 

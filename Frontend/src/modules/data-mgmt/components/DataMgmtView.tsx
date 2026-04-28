@@ -30,12 +30,25 @@ const exportItems = [
 ];
 
 import { useDataMgmt } from '../hooks/useDataMgmt';
+import { useAccounts } from '@/modules/accounts/hooks/useAccounts';
+import { useThirdParties } from '@/modules/third-parties/hooks/useThirdParties';
+import { useJournalEntries } from '@/modules/journal/hooks/useJournalEntries';
+import { useReports } from '@/modules/reports/hooks/useReports';
 
 export function DataMgmtView() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
+  const currentCompany = useAppStore(s => s.currentCompany);
   const companyId = useAppStore(s => s.companyId);
   const { importData, isImporting } = useDataMgmt();
+
+  // Data Hooks for Export
+  const { accounts } = useAccounts();
+  const { parties } = useThirdParties();
+  const { entries } = useJournalEntries();
+  const { trialBalance } = useReports();
+  const tbData = trialBalance as any;
+  const tbTotals = tbData?.totals || { totalDebit: 0, totalCredit: 0 };
 
   const handleImportClick = (entity: string) => { 
     setSelectedEntity(entity);
@@ -66,25 +79,26 @@ export function DataMgmtView() {
     if (!companyId) { toast.error('Selecciona una empresa'); return; }
     try {
       toast.loading('Generando exportación...');
-      const companyName = 'GANESHA Compañía Demo';
+      const companyName = currentCompany?.name || 'GANESHA Compañía';
       
       // Map titles to actual export functions
       if (title.includes('Balanza')) {
         const period = new Date().toISOString().slice(0, 7);
-        const totals = { totalDebit: 0, totalCredit: 0, totalBalance: 0 };
-        if (format === 'Excel') await exportTrialBalanceExcel([], companyName, period, totals);
-        else await exportTrialBalancePDF([], companyName, period, totals);
+        const { totalDebit, totalCredit } = tbTotals;
+        if (format === 'Excel') await exportTrialBalanceExcel(trialBalance, companyName, period, { totalDebit, totalCredit, totalBalance: totalDebit - totalCredit });
+        else await exportTrialBalancePDF(trialBalance, companyName, period, { totalDebit, totalCredit, totalBalance: totalDebit - totalCredit });
       } else if (title.includes('Cuentas')) {
-        if (format === 'Excel') await exportAccountsExcel([], companyName);
-        else await exportAccountsPDF([], companyName);
+        if (format === 'Excel') await exportAccountsExcel(accounts, companyName);
+        else await exportAccountsPDF(accounts, companyName);
       } else if (title.includes('Pólizas')) {
-        if (format === 'Excel') await exportJournalEntriesExcel([], companyName);
-        else await exportJournalEntriesPDF([], companyName);
+        if (format === 'Excel') await exportJournalEntriesExcel(entries, companyName);
+        else await exportJournalEntriesPDF(entries, companyName);
       } else if (title.includes('Terceros')) {
-        if (format === 'Excel') await exportThirdPartiesExcel([], companyName);
-        else await exportThirdPartiesPDF([], companyName);
+        if (format === 'Excel') await exportThirdPartiesExcel(parties, companyName);
+        else await exportThirdPartiesPDF(parties, companyName);
       }
       toast.dismiss();
+      toast.success('Exportación completada');
     } catch {
       toast.dismiss();
       toast.error('Error al exportar');

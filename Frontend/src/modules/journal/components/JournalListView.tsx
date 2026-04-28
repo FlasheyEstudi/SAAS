@@ -74,7 +74,8 @@ export function JournalListView() {
   const handleExport = async (format: 'excel' | 'pdf') => {
     try {
       toast.loading('Generando exportación...');
-      const companyName = 'GANESHA Compañía Demo';
+      const currentCompany = useAppStore.getState().currentCompany;
+      const companyName = currentCompany?.name || 'GANESHA Compañía';
       if (format === 'excel') {
         await exportJournalEntriesExcel(entries, companyName);
       } else {
@@ -193,6 +194,10 @@ export function JournalListView() {
           <PastelButton variant="outline" onClick={() => handleExport('excel')} className="gap-2">
             <FileSpreadsheet className="w-4 h-4" />
             Excel
+          </PastelButton>
+          <PastelButton variant="outline" onClick={() => navigate('data-mgmt')} className="gap-2">
+            <FileText className="w-4 h-4" />
+            Importar
           </PastelButton>
           <PastelButton onClick={handleCreate} className="gap-2">
             <Plus className="w-4 h-4" />

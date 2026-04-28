@@ -12,6 +12,7 @@ import { StatusBadge, ConfirmDialog } from '@/components/ui/vintage-ui';
 import { formatCurrency } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 import { useAccounts } from '../hooks/useAccounts';
+import { useAppStore } from '@/lib/stores/useAppStore';
 
 interface Account {
   id: string; code: string; name: string; accountType: 'ASSET' | 'LIABILITY' | 'EQUITY' | 'INCOME' | 'EXPENSE';
@@ -81,7 +82,8 @@ export function AccountsView() {
   const handleExport = async (format: 'excel' | 'pdf') => {
     try {
       toast.loading('Generando exportación...');
-      const companyName = 'GANESHA Compañía Demo';
+      const currentCompany = useAppStore.getState().currentCompany;
+      const companyName = currentCompany?.name || 'GANESHA Compañía';
       const flatList = flattenAccounts(accounts);
       
       if (format === 'excel') {

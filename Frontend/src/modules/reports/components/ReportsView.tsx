@@ -18,14 +18,17 @@ import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
 import { VintageTabs, AnimatedCounter, PageLoader } from '@/components/ui/vintage-ui';
 import { AnimatedTable } from '@/components/tables/animated-table';
-import { formatCurrency } from '@/lib/utils/format';
+import { formatCurrency, formatDate } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { 
   exportTrialBalanceExcel, exportTrialBalancePDF,
   exportBalanceSheetExcel, exportBalanceSheetPDF,
-  exportIncomeStatementExcel, exportIncomeStatementPDF 
+  exportIncomeStatementExcel, exportIncomeStatementPDF,
+  exportCashFlowExcel, exportCashFlowPDF,
+  exportGeneralLedgerExcel, exportGeneralLedgerPDF
 } from '@/lib/utils/export';
+import { useAppStore } from '@/lib/stores/useAppStore';
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
@@ -122,15 +125,21 @@ function IncomeSection({ title, color, total, items }: any) {
 
 export function ReportsView() {
   const { periods: dynamicPeriods = [] } = usePeriods();
+  const currentCompany = useAppStore(s => s.currentCompany);
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [period, setPeriod] = useState(`${new Date().getFullYear()}-${(new Date().getMonth() + 1).toString().padStart(2, '0')}`);
+
+  const [activeTab, setActiveTab] = useState('trial-balance');
+  const [selectedAccountId, setSelectedAccountId] = useState<string>('');
 
   const {
     isLoading = false,
     trialBalance: trialBalanceData = null,
     balanceSheet: balanceSheetData = null,
     incomeStatement: incomeStatementData = null,
-  } = (useReports(year, period.split('-')[1]) || {}) as any;
+    cashFlow: cashFlowData = null,
+    generalLedger: generalLedgerData = null,
+  } = (useReports(year, period.split('-')[1], selectedAccountId) || {}) as any;
 
   // Auto-select latest period if empty
   useEffect(() => {
@@ -176,13 +185,10 @@ export function ReportsView() {
     expenses: [] 
   };
 
-
-  const [activeTab, setActiveTab] = useState('trial-balance');
-
   const handleExport = async (format: string) => {
     try {
       toast.loading('Generando reporte...');
-      const companyName = 'GANESHA Compañía Demo';
+      const companyName = currentCompany?.name || 'GANESHA Compañía';
       
       if (activeTab === 'trial-balance') {
         if (format === 'excel') {
@@ -202,6 +208,23 @@ export function ReportsView() {
         } else {
           await exportIncomeStatementPDF(incomeStatement.income || [], incomeStatement.expenses || [], incomeStatement.netIncome || 0, companyName, period);
         }
+      } else if (activeTab === 'cash-flow') {
+        if (format === 'excel') {
+          await exportCashFlowExcel(cashFlowData, companyName, period);
+        } else {
+          await exportCashFlowPDF(cashFlowData, companyName, period);
+        }
+      } else if (activeTab === 'general-ledger') {
+        const selectedAcc = trialBalance.find((a: any) => a.accountId === selectedAccountId);
+        if (!selectedAcc || !generalLedgerData) {
+          toast.error('Selecciona una cuenta con movimientos');
+          return;
+        }
+        if (format === 'excel') {
+          await exportGeneralLedgerExcel(selectedAcc, generalLedgerData.movements || [], companyName, period);
+        } else {
+          await exportGeneralLedgerPDF(selectedAcc, generalLedgerData.movements || [], companyName, period);
+        }
       }
       
       toast.dismiss();
@@ -218,6 +241,8 @@ export function ReportsView() {
     { id: 'trial-balance', label: 'Balanza de Comprobación', icon: <Scale className="w-4 h-4" /> },
     { id: 'balance-sheet', label: 'Balance General', icon: <PieChartIcon className="w-4 h-4" /> },
     { id: 'income-statement', label: 'Estado de Resultados', icon: <BarChart3 className="w-4 h-4" /> },
+    { id: 'cash-flow', label: 'Flujo de Efectivo', icon: <TrendingUp className="w-4 h-4" /> },
+    { id: 'general-ledger', label: 'Libro Mayor', icon: <FileSpreadsheet className="w-4 h-4" /> },
   ];
 
   // ── Trial Balance Data ──
@@ -236,20 +261,6 @@ export function ReportsView() {
     { name: 'Patrimonio', value: balanceSheet.totalEquity, color: PIE_COLORS[2] },
   ];
 
-  // ── Income Statement Bar Data ──
-  const incomeBarData = [
-    { name: 'Servicios', amount: 1850000, type: 'Ingreso' },
-    { name: 'Ventas', amount: 650000, type: 'Ingreso' },
-    { name: 'Otros', amount: 85000, type: 'Ingreso' },
-    { name: 'Costo Ventas', amount: 620000, type: 'Gasto' },
-    { name: 'Nóminas', amount: 540000, type: 'Gasto' },
-    { name: 'IMSS', amount: 162000, type: 'Gasto' },
-    { name: 'Oficina', amount: 85000, type: 'Gasto' },
-    { name: 'Arrendamiento', amount: 180000, type: 'Gasto' },
-    { name: 'Depreciación', amount: 140000, type: 'Gasto' },
-    { name: 'Serv. Prof.', amount: 120000, type: 'Gasto' },
-    { name: 'Servicios', amount: 45000, type: 'Gasto' },
-  ];
 
   const expenseCompareData = [
     { name: 'Ingresos', ingresos: incomeStatement.totalIncome, gastos: 0 },
@@ -500,67 +511,133 @@ export function ReportsView() {
           {/* ── INCOME STATEMENT ── */}
           {activeTab === 'income-statement' && (
             <div className="space-y-6">
-              {/* Summary cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <VintageCard hover={false} className="p-4">
                   <div className="flex items-center gap-2 mb-1">
                     <TrendingUp className="w-4 h-4 text-success dark:text-emerald-400" />
                     <p className="text-xs text-vintage-500 dark:text-zinc-500 font-medium uppercase tracking-wider">Total Ingresos</p>
                   </div>
-                  <AnimatedCounter value={incomeStatement.totalIncome} prefix="$" decimals={0} className="text-xl font-playfair text-success dark:text-emerald-400" />
+                  <AnimatedCounter value={incomeStatement.totalIncome} prefix="C$" decimals={0} className="text-xl font-playfair text-success dark:text-emerald-400" />
                 </VintageCard>
                 <VintageCard hover={false} className="p-4">
                   <div className="flex items-center gap-2 mb-1">
                     <TrendingDown className="w-4 h-4 text-error dark:text-red-400" />
                     <p className="text-xs text-vintage-500 dark:text-zinc-500 font-medium uppercase tracking-wider">Total Gastos</p>
                   </div>
-                  <AnimatedCounter value={incomeStatement.totalExpenses} prefix="$" decimals={0} className="text-xl font-playfair text-error dark:text-red-400" />
+                  <AnimatedCounter value={incomeStatement.totalExpenses} prefix="C$" decimals={0} className="text-xl font-playfair text-error dark:text-red-400" />
                 </VintageCard>
                 <VintageCard hover={false} className="p-4">
-                  <p className="text-xs text-vintage-500 dark:text-zinc-500 font-medium uppercase tracking-wider">Margen Bruto</p>
-                  <AnimatedCounter value={incomeStatement.grossMargin || 0} suffix="%" decimals={1} className="text-xl font-playfair text-vintage-800 dark:text-zinc-100" />
+                  <p className="text-xs text-vintage-500 dark:text-zinc-500 font-medium uppercase tracking-wider">Utilidad Neta</p>
+                  <AnimatedCounter value={incomeStatement.netIncome} prefix="C$" decimals={0} className="text-xl font-playfair text-vintage-800 dark:text-zinc-100" />
                 </VintageCard>
                 <VintageCard hover={false} variant="gradient" className="p-4">
-                  <p className="text-xs text-vintage-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Utilidad Neta</p>
-                  <AnimatedCounter value={incomeStatement.netIncome || 0} prefix="$" decimals={0} className="text-2xl font-playfair text-success dark:text-emerald-400 font-bold" />
+                  <p className="text-xs text-white/70 font-medium uppercase tracking-wider">Margen Operativo</p>
+                  <p className="text-2xl font-playfair text-white font-bold">
+                    {incomeStatement.totalIncome > 0 ? ((incomeStatement.netIncome / incomeStatement.totalIncome) * 100).toFixed(1) : 0}%
+                  </p>
                 </VintageCard>
               </div>
 
-              {/* Charts row */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <VintageCard hover={false} className="p-5">
-                  <h3 className="text-lg font-playfair text-vintage-800 dark:text-zinc-100 mb-4">Ingresos vs Gastos</h3>
-                  <div className="h-72">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={expenseCompareData} barSize={50}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e8e0d8" className="dark:opacity-10" />
-                        <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#7a6f65' }} className="dark:fill-zinc-500 font-sans" />
-                        <YAxis tick={{ fontSize: 12, fill: '#7a6f65' }} tickFormatter={(v) => `$${(v / 1000000).toFixed(1)}M`} className="dark:fill-zinc-500 font-sans" />
-                        <Tooltip content={<VintageTooltip />} />
-                        <Legend />
-                        <Bar dataKey="ingresos" fill={INCOME_COLOR} name="Ingresos" radius={[6, 6, 0, 0]} />
-                        <Bar dataKey="gastos" fill={EXPENSE_COLOR} name="Gastos" radius={[6, 6, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </VintageCard>
-
-                {/* Breakdown lists */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <IncomeSection 
-                    title="Ingresos" 
-                    color="bg-success" 
-                    total={incomeStatement.totalIncome} 
-                    items={incomeStatement.income} 
-                  />
-                  <IncomeSection 
-                    title="Gastos" 
-                    color="bg-error" 
-                    total={incomeStatement.totalExpenses} 
-                    items={incomeStatement.expenses} 
-                  />
-                </div>
+                <IncomeSection title="Ingresos" color="bg-success" total={incomeStatement.totalIncome} items={incomeStatement.income} />
+                <IncomeSection title="Gastos" color="bg-error" total={incomeStatement.totalExpenses} items={incomeStatement.expenses} />
               </div>
+            </div>
+          )}
+
+          {/* ── CASH FLOW ── */}
+          {activeTab === 'cash-flow' && cashFlowData && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <VintageCard hover={false} className="p-6">
+                  <p className="text-sm text-vintage-500 font-medium mb-1 uppercase tracking-wider">Utilidad Neta</p>
+                  <p className="text-3xl font-playfair text-vintage-800 dark:text-zinc-100">{formatCurrency(cashFlowData.netIncome, 'NIO')}</p>
+                </VintageCard>
+                <VintageCard hover={false} className="p-6">
+                  <p className="text-sm text-vintage-500 font-medium mb-1 uppercase tracking-wider">Actividades Operativas</p>
+                  <p className="text-3xl font-playfair text-vintage-800 dark:text-zinc-100">{formatCurrency(cashFlowData.operatingActivities, 'NIO')}</p>
+                </VintageCard>
+                <VintageCard hover={false} variant="gradient" className="p-6">
+                  <p className="text-sm text-white/70 font-medium mb-1 uppercase tracking-wider">Cambio Neto en Efectivo</p>
+                  <p className="text-3xl font-playfair text-white font-bold">{formatCurrency(cashFlowData.netChange, 'NIO')}</p>
+                </VintageCard>
+              </div>
+
+              <VintageCard hover={false} className="p-8 flex flex-col items-center justify-center text-center bg-vintage-50/50 dark:bg-zinc-900/30">
+                <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mb-4">
+                  <TrendingUp className="w-8 h-8 text-success" />
+                </div>
+                <h3 className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 mb-2">Análisis de Flujo de Efectivo</h3>
+                <p className="text-vintage-600 dark:text-zinc-400 max-w-md">
+                  Este reporte resume las fuentes y usos de efectivo durante el periodo seleccionado, permitiendo entender la liquidez real de la empresa.
+                </p>
+              </VintageCard>
+            </div>
+          )}
+
+          {/* ── GENERAL LEDGER ── */}
+          {activeTab === 'general-ledger' && (
+            <div className="space-y-6">
+              <VintageCard hover={false} className="p-4 flex flex-col sm:flex-row items-center gap-4 bg-vintage-50/30 dark:bg-zinc-900/30 border-dashed">
+                <div className="flex-1 w-full">
+                  <label className="block text-xs font-semibold text-vintage-600 dark:text-zinc-500 mb-1.5 ml-1 uppercase">Seleccionar Cuenta:</label>
+                  <select 
+                    value={selectedAccountId} 
+                    onChange={(e) => setSelectedAccountId(e.target.value)}
+                    className="w-full px-4 py-2.5 text-sm bg-white dark:bg-zinc-900 border border-vintage-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400"
+                  >
+                    <option value="">— Seleccione una cuenta —</option>
+                    {trialBalance.filter((a: any) => !a.isGroup).map((acc: any) => (
+                      <option key={acc.accountId} value={acc.accountId}>
+                        {acc.accountCode} - {acc.accountName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {selectedAccountId && generalLedgerData && (
+                  <div className="flex gap-4">
+                    <div className="text-right">
+                      <p className="text-[10px] text-vintage-500 uppercase">Saldo Inicial</p>
+                      <p className="text-sm font-mono font-bold dark:text-zinc-300">{formatCurrency(generalLedgerData.initialBalance || 0, 'NIO')}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] text-vintage-500 uppercase">Saldo Final</p>
+                      <p className="text-sm font-mono font-bold text-success dark:text-emerald-400">{formatCurrency(generalLedgerData.finalBalance || 0, 'NIO')}</p>
+                    </div>
+                  </div>
+                )}
+              </VintageCard>
+
+              {selectedAccountId ? (
+                generalLedgerData && generalLedgerData.movements?.length > 0 ? (
+                  <AnimatedTable
+                    headers={[
+                      { key: 'date', label: 'Fecha', align: 'left' },
+                      { key: 'type', label: 'Tipo', align: 'center' },
+                      { key: 'desc', label: 'Descripción', align: 'left' },
+                      { key: 'debit', label: 'Debe', align: 'right' },
+                      { key: 'credit', label: 'Haber', align: 'right' },
+                      { key: 'balance', label: 'Saldo', align: 'right' },
+                    ]}
+                    data={generalLedgerData.movements}
+                    keyExtractor={(row: any) => `${row.date}-${row.description}-${row.debit}`}
+                    renderRow={(row: any) => (
+                      <>
+                        <td className="px-4 py-2 text-sm text-vintage-600 dark:text-zinc-500">{formatDate(row.date)}</td>
+                        <td className="px-4 py-2 text-center text-xs font-bold text-vintage-500 dark:text-zinc-500">{row.entryType}</td>
+                        <td className="px-4 py-2 text-sm text-vintage-700 dark:text-zinc-300">{row.description}</td>
+                        <td className="px-4 py-2 text-right text-sm font-mono text-vintage-600 dark:text-zinc-400">{formatCurrency(row.debit, 'NIO')}</td>
+                        <td className="px-4 py-2 text-right text-sm font-mono text-vintage-600 dark:text-zinc-400">{formatCurrency(row.credit, 'NIO')}</td>
+                        <td className="px-4 py-2 text-right text-sm font-mono font-bold text-vintage-800 dark:text-zinc-100">{formatCurrency(row.runningBalance, 'NIO')}</td>
+                      </>
+                    )}
+                  />
+                ) : (
+                  <div className="py-20 text-center text-vintage-500 italic">No hay movimientos registrados para esta cuenta en el periodo.</div>
+                )
+              ) : (
+                <div className="py-20 text-center text-vintage-500">Por favor, seleccione una cuenta para visualizar el Libro Mayor.</div>
+              )}
             </div>
           )}
         </motion.div>

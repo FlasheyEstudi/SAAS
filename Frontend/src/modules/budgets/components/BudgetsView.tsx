@@ -13,17 +13,28 @@ import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 
 import { useBudgets } from '../hooks/useBudgets';
+import { exportBudgetsExcel } from '@/lib/utils/export';
+import { useAppStore } from '@/lib/stores/useAppStore';
 
 const statusColors: Record<string, string> = { DRAFT: 'neutral', APPROVED: 'info', ACTIVE: 'success', CLOSED: 'warning' };
 const statusLabels: Record<string, string> = { DRAFT: 'Borrador', APPROVED: 'Aprobado', ACTIVE: 'Activo', CLOSED: 'Cerrado' };
 
 export function BudgetsView() {
   const { budgets = [], isLoading: loading, createBudget, updateBudget, deleteBudget, isCreating, isUpdating, isDeleting } = useBudgets() as any;
+  const currentCompany = useAppStore(s => s.currentCompany);
   const [selected, setSelected] = useState<any | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', description: '', totalBudgeted: 0 });
+
+  const handleExport = async () => {
+    if (!budget) return;
+    toast.loading('Generando reporte...');
+    await exportBudgetsExcel(budget, currentCompany?.name || 'GANESHA');
+    toast.dismiss();
+    toast.success('Presupuesto exportado a Excel');
+  };
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
@@ -118,6 +129,10 @@ export function BudgetsView() {
       <div className="flex justify-between items-center">
         <div><h2 className="text-2xl font-playfair font-bold text-vintage-900">Presupuestos</h2><p className="text-sm text-vintage-600 mt-1">Comparación presupuesto vs real</p></div>
         <div className="flex gap-2">
+          <PastelButton variant="outline" size="sm" onClick={handleExport}>
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Exportar Excel
+          </PastelButton>
           <PastelButton variant="outline" size="sm" onClick={() => {
             if (!budget) return;
             setFormData({ name: budget.name, description: budget.description || '', totalBudgeted: budget.totalBudgeted });

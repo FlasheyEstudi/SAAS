@@ -159,6 +159,7 @@ interface PDFExportOptions {
   headers: string[];
   data: any[][];
   orientation?: 'p' | 'l';
+  additionalInfo?: string;
 }
 
 export async function exportToPDFTemplate(options: PDFExportOptions): Promise<void> {
@@ -788,26 +789,180 @@ export async function exportBanksPDF(
   });
 }
 
+
 /**
- * Export Audit Logs to Excel
+ * Export Cash Flow (Flujo de Efectivo)
  */
-export async function exportAuditExcel(
-  logs: any[],
-  company: string
+export async function exportCashFlowExcel(
+  data: any,
+  company: string,
+  period: string = ''
 ): Promise<void> {
-  const headers = ['Fecha/Hora', 'Usuario', 'Acción', 'Entidad', 'Detalles'];
-  const rows = logs.map(log => [
-    formatDate(log.timestamp, 'dd/MM/yy HH:mm'),
-    log.user?.name || 'Sistema',
-    log.action,
-    log.entityId || '-',
-    log.details
+  const headers = ['Concepto', 'Monto'];
+  const rows: any[][] = [
+    ['Utilidad Neta', data.netIncome],
+    ['Actividades de Operación', data.operatingActivities],
+    ['Variación Neta en Efectivo', data.netChange]
+  ];
+
+  await exportToExcelTemplate({
+    filename: `Flujo_Efectivo_${period.replace('-', '_')}`,
+    sheetName: 'Flujo',
+    title: 'Estado de Flujo de Efectivo',
+    company,
+    period: `Período: ${period}`,
+    headers,
+    data: rows,
+  });
+}
+
+export async function exportCashFlowPDF(
+  data: any,
+  company: string,
+  period: string = ''
+): Promise<void> {
+  const headers = ['Concepto', 'Monto'];
+  const rows: any[][] = [
+    ['Utilidad Neta', `C$ ${data.netIncome.toLocaleString()}`],
+    ['Actividades de Operación', `C$ ${data.operatingActivities.toLocaleString()}`],
+    ['Variación Neta en Efectivo', { content: `C$ ${data.netChange.toLocaleString()}`, styles: { fontStyle: 'bold' } }]
+  ];
+
+  await exportToPDFTemplate({
+    filename: `Flujo_Efectivo_${period.replace('-', '_')}`,
+    title: 'Estado de Flujo de Efectivo',
+    company,
+    period: `Período: ${period}`,
+    headers,
+    data: rows,
+  });
+}
+
+/**
+ * Export General Ledger (Libro Mayor)
+ */
+export async function exportGeneralLedgerExcel(
+  account: any,
+  movements: any[],
+  company: string,
+  period: string = ''
+): Promise<void> {
+  const headers = ['Fecha', 'Tipo', 'Número', 'Descripción', 'Debe', 'Haber', 'Saldo'];
+  const rows = movements.map(m => [
+    formatDate(m.date),
+    m.entryType,
+    m.entryNumber,
+    m.description,
+    m.debit,
+    m.credit,
+    m.runningBalance
   ]);
 
   await exportToExcelTemplate({
-    filename: 'Bitacora_Auditoria',
-    sheetName: 'Bitácora',
-    title: 'Bitácora de Auditoría',
+    filename: `Libro_Mayor_${account.code}_${period.replace('-', '_')}`,
+    sheetName: 'Libro Mayor',
+    title: `Libro Mayor: ${account.code} - ${account.name}`,
+    company,
+    period: `Período: ${period}`,
+    headers,
+    data: rows,
+  });
+}
+
+export async function exportGeneralLedgerPDF(
+  account: any,
+  movements: any[],
+  company: string,
+  period: string = ''
+): Promise<void> {
+  const headers = ['Fecha', 'Tipo', 'Num', 'Descripción', 'Debe', 'Haber', 'Saldo'];
+  const rows = movements.map(m => [
+    formatDate(m.date),
+    m.entryType,
+    m.entryNumber,
+    m.description,
+    `C$ ${m.debit.toLocaleString()}`,
+    `C$ ${m.credit.toLocaleString()}`,
+    `C$ ${m.runningBalance.toLocaleString()}`
+  ]);
+
+  await exportToPDFTemplate({
+    filename: `Libro_Mayor_${account.code}_${period.replace('-', '_')}`,
+    title: `Libro Mayor: ${account.code} - ${account.name}`,
+    company,
+    period: `Período: ${period}`,
+    headers,
+    data: rows,
+    orientation: 'l'
+  });
+}
+
+/**
+ * Export Audit Logs to PDF
+ */
+
+
+/**
+ * Export Fixed Assets to Excel/PDF
+ */
+export async function exportAssetsExcel(assets: any[], company: string): Promise<void> {
+  const headers = ['Activo', 'Categoría', 'Fecha Adq.', 'Costo', 'Valor Libros', 'Dep. Acum.', 'Estado'];
+  const rows = assets.map(a => [
+    a.name,
+    a.assetType,
+    formatDate(a.purchaseDate),
+    a.purchaseAmount,
+    a.currentBookValue,
+    a.accumulatedDepreciation,
+    a.status
+  ]);
+
+  await exportToExcelTemplate({
+    filename: 'Activos_Fijos',
+    sheetName: 'Activos',
+    title: 'INVENTARIO DE ACTIVOS FIJOS',
+    company,
+    headers,
+    data: rows
+  });
+}
+
+export async function exportAssetsPDF(assets: any[], company: string): Promise<void> {
+  const headers = ['Activo', 'Categoría', 'Adquisición', 'Costo', 'Valor Libros', 'Estado'];
+  const rows = assets.map(a => [
+    a.name,
+    a.assetType,
+    formatDate(a.purchaseDate),
+    `C$ ${a.purchaseAmount.toLocaleString()}`,
+    `C$ ${a.currentBookValue.toLocaleString()}`,
+    a.status
+  ]);
+
+  await exportToPDFTemplate({
+    filename: 'Activos_Fijos',
+    title: 'INVENTARIO DE ACTIVOS FIJOS',
+    company,
+    headers,
+    data: rows,
+    orientation: 'l'
+  });
+}
+
+/**
+ * Export Budgets to Excel/PDF
+ */
+export async function exportBudgetsExcel(budget: any, company: string): Promise<void> {
+  const headers = ['Cuenta', 'Presupuestado', 'Ejecutado', 'Variación', '%'];
+  const rows = (budget.lines || []).map((l: any) => {
+    const v = (l.budgetedAmount || 0) - (l.actualAmount || 0);
+    const p = l.budgetedAmount > 0 ? ((l.actualAmount / l.budgetedAmount) * 100).toFixed(1) : '0';
+    return [l.account?.name || l.accountId, l.budgetedAmount, l.actualAmount, v, `${p}%`];
+  });
+
+  await exportToExcelTemplate({
+    filename: `Presupuesto_${budget.name.replace(' ', '_')}`,
+    sheetName: 'Presupuesto',
+    title: `PRESUPUESTO: ${budget.name}`,
     company,
     headers,
     data: rows
@@ -815,27 +970,246 @@ export async function exportAuditExcel(
 }
 
 /**
- * Export Audit Logs to PDF
+ * Export Taxes to Excel/PDF
  */
-export async function exportAuditPDF(
-  logs: any[],
+export async function exportTaxesExcel(entries: any[], company: string, period: string): Promise<void> {
+  const headers = ['Fecha', 'Tasa', 'Tipo', '%', 'Base Gravable', 'Monto Impuesto', 'Referencia'];
+  const rows = entries.map(e => [
+    formatDate(e.createdAt),
+    e.taxRate?.name,
+    e.taxRate?.taxType,
+    e.taxRate?.rate,
+    e.taxableBase,
+    e.taxAmount,
+    e.invoiceId.substring(0, 8).toUpperCase()
+  ]);
+
+  await exportToExcelTemplate({
+    filename: `Reporte_Impuestos_${period}`,
+    sheetName: 'Impuestos',
+    title: 'REPORTE DE IMPUESTOS CAUSADOS',
+    company,
+    period,
+    headers,
+    data: rows
+  });
+}
+
+/**
+ * Export Cost Centers to Excel/PDF
+ */
+export async function exportCostCentersExcel(centers: any[], company: string): Promise<void> {
+  const headers = ['Código', 'Nombre', 'Descripción', 'Pólizas', 'Estado'];
+  const rows = centers.map(c => [
+    c.code,
+    c.name,
+    c.description || '-',
+    c.journalEntryCount || 0,
+    c.isActive ? 'Activo' : 'Inactivo'
+  ]);
+
+  await exportToExcelTemplate({
+    filename: 'Centros_de_Costo',
+    sheetName: 'CentrosCosto',
+    title: 'CATÁLOGO DE CENTROS DE COSTO',
+    company,
+    headers,
+    data: rows
+  });
+}
+
+/**
+ * Export Exchange Rates to Excel
+ */
+export async function exportExchangeExcel(rates: any[], company: string): Promise<void> {
+  const headers = ['De', 'A', 'Tasa', 'Fecha', 'Fuente'];
+  const rows = rates.map(r => [
+    r.fromCurrency,
+    r.toCurrency,
+    r.rate,
+    formatDate(r.date || r.effectiveDate),
+    r.source || 'Manual'
+  ]);
+
+  await exportToExcelTemplate({
+    filename: 'Tipos_de_Cambio',
+    sheetName: 'Divisas',
+    title: 'HISTORIAL DE TIPOS DE CAMBIO',
+    company,
+    headers,
+    data: rows
+  });
+}
+
+/**
+ * Export Users to Excel
+ */
+export async function exportUsersExcel(users: any[], company: string): Promise<void> {
+  const headers = ['Nombre', 'Email', 'Rol', 'Estado', 'Último Acceso'];
+  const rows = users.map(u => [
+    u.name,
+    u.email,
+    u.role,
+    u.isActive ? 'Activo' : 'Inactivo',
+    u.lastLogin ? formatDate(u.lastLogin) : '-'
+  ]);
+
+  await exportToExcelTemplate({
+    filename: 'Usuarios_Sistema',
+    sheetName: 'Usuarios',
+    title: 'CATÁLOGO DE USUARIOS DEL SISTEMA',
+    company,
+    headers,
+    data: rows
+  });
+}
+
+/**
+ * Export Financial Concepts to Excel
+ */
+export async function exportConceptsExcel(concepts: any[], company: string): Promise<void> {
+  const headers = ['Código', 'Nombre', 'Categoría', 'Cuenta Contable', 'Centro de Costo', 'Estado'];
+  const rows = concepts.map(c => [
+    c.code,
+    c.name,
+    c.category,
+    c.account ? `${c.account.code} - ${c.account.name}` : '-',
+    c.costCenter ? `${c.costCenter.code} - ${c.costCenter.name}` : '-',
+    c.isActive ? 'Activo' : 'Inactivo'
+  ]);
+
+  await exportToExcelTemplate({
+    filename: 'Conceptos_Financieros',
+    sheetName: 'Conceptos',
+    title: 'CATÁLOGO DE CONCEPTOS FINANCIEROS',
+    company,
+    headers,
+    data: rows
+  });
+}
+
+/**
+ * Export Single Journal Entry (Póliza) to PDF
+ */
+export async function exportJournalEntryPDF(
+  entry: any,
   company: string
 ): Promise<void> {
-  const headers = [['Fecha/Hora', 'Usuario', 'Acción', 'Entidad', 'Detalles']];
-  const rows = logs.map(l => [
-    formatDate(l.timestamp, 'dd/MM/yy HH:mm'),
-    l.user?.name || 'Sistema',
-    l.action,
-    l.entityId || '-',
-    l.details
+  const headers = ['Cuenta', 'Descripción', 'Debe', 'Haber'];
+  const rows = (entry.lines || []).map((l: any) => [
+    l.account ? `${l.account.code}\n${l.account.name}` : l.accountId,
+    l.description || '',
+    l.debit > 0 ? `C$ ${l.debit.toLocaleString()}` : '-',
+    l.credit > 0 ? `C$ ${l.credit.toLocaleString()}` : '-'
+  ]);
+
+  // Add summary row
+  rows.push([
+    { content: 'TOTALES', colSpan: 2, styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: `C$ ${(entry.totalDebit || 0).toLocaleString()}`, styles: { fontStyle: 'bold' } },
+    { content: `C$ ${(entry.totalCredit || 0).toLocaleString()}`, styles: { fontStyle: 'bold' } }
   ]);
 
   await exportToPDFTemplate({
-    filename: 'Bitacora_Auditoria',
-    title: 'BITÁCORA DE AUDITORÍA',
+    filename: `Poliza_${entry.entryNumber}`,
+    title: `PÓLIZA CONTABLE: ${entry.entryNumber}`,
     company,
-    headers: headers[0],
+    period: `Fecha: ${formatDate(entry.entryDate)} | Tipo: ${entry.entryType}`,
+    headers,
     data: rows,
-    orientation: 'l'
+    orientation: 'p',
+    additionalInfo: `Descripción: ${entry.description}\nEstado: ${entry.status}`
+  });
+}
+
+/**
+ * Export Audit Bitácora
+ */
+export async function exportAuditExcel(logs: any[], company: string): Promise<void> {
+  const headers = ['Fecha', 'Usuario', 'Acción', 'Entidad', 'ID Entidad', 'Detalles'];
+  const rows = logs.map(log => [
+    formatDate(log.timestamp || log.createdAt),
+    log.userName || log.user?.name || log.userId || '-',
+    log.action || '-',
+    log.entityType || log.entity || '-',
+    log.entityId || '-',
+    log.details || '-'
+  ]);
+
+  await exportToExcelTemplate({
+    filename: 'Bitacora_Auditoria',
+    sheetName: 'Auditoría',
+    title: 'BITÁCORA DE AUDITORÍA Y CONTROL',
+    company,
+    headers,
+    data: rows
+  });
+}
+
+/**
+ * Export Payment Terms
+ */
+export async function exportPaymentTermsExcel(terms: any[], company: string): Promise<void> {
+  const headers = ['Nombre', 'Días de Crédito', 'Predeterminado', 'Estado'];
+  const rows = terms.map(t => [
+    t.name,
+    t.days,
+    t.isDefault ? 'SÍ' : 'NO',
+    t.isActive ? 'Activo' : 'Inactivo'
+  ]);
+
+  await exportToExcelTemplate({
+    filename: 'Terminos_Pago',
+    sheetName: 'Términos',
+    title: 'CATÁLOGO DE TÉRMINOS DE PAGO',
+    company,
+    headers,
+    data: rows
+  });
+}
+
+/**
+ * Export Accounting Periods
+ */
+export async function exportPeriodsExcel(periods: any[], company: string): Promise<void> {
+  const headers = ['Período', 'Año', 'Estado', 'Fecha Apertura', 'Fecha Cierre'];
+  const rows = periods.map(p => [
+    p.name,
+    p.year,
+    p.status,
+    formatDate(p.startDate),
+    formatDate(p.endDate)
+  ]);
+
+  await exportToExcelTemplate({
+    filename: 'Periodos_Contables',
+    sheetName: 'Períodos',
+    title: 'HISTORIAL DE PERÍODOS CONTABLES',
+    company,
+    headers,
+    data: rows
+  });
+}
+
+/**
+ * Export Closing Entries
+ */
+export async function exportClosingEntriesExcel(entries: any[], company: string): Promise<void> {
+  const headers = ['Fecha', 'Descripción', 'Tipo', 'Total Debe', 'Total Haber'];
+  const rows = entries.map(e => [
+    formatDate(e.createdAt),
+    e.description,
+    e.entryType,
+    e.totalDebit,
+    e.totalCredit
+  ]);
+
+  await exportToExcelTemplate({
+    filename: 'Asientos_Cierre',
+    sheetName: 'Cierres',
+    title: 'REGISTRO DE ASIENTOS DE CIERRE',
+    company,
+    headers,
+    data: rows
   });
 }

@@ -9,9 +9,22 @@ import { FloatingInput } from '@/components/ui/floating-input';
 import { StatusBadge } from '@/components/ui/vintage-ui';
 import { usePaymentTerms, PaymentTerm } from '../hooks/usePaymentTerms';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+
+import { exportPaymentTermsExcel } from '@/lib/utils/export';
+import { useAppStore } from '@/lib/stores/useAppStore';
 
 export function PaymentTermsView() {
+  const currentCompany = useAppStore(s => s.currentCompany);
   const { terms, isLoading, createTerm, updateTerm, isCreating } = usePaymentTerms();
+
+  const handleExport = async () => {
+    if (!terms.length) return;
+    toast.loading('Generando reporte...');
+    await exportPaymentTermsExcel(terms, currentCompany?.name || 'GANESHA');
+    toast.dismiss();
+    toast.success('Términos de pago exportados');
+  };
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<PaymentTerm | null>(null);
   
@@ -57,7 +70,16 @@ export function PaymentTermsView() {
           <h2 className="text-2xl font-playfair font-bold text-vintage-900">Términos de Pago</h2>
           <p className="text-sm text-vintage-600 mt-1">Configuración de plazos de crédito para clientes y proveedores</p>
         </div>
-        <PastelButton onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Nuevo Término</PastelButton>
+        <div className="flex gap-2">
+          <PastelButton variant="outline" onClick={handleExport} className="gap-2">
+            <Clock className="w-4 h-4" />
+            Exportar Excel
+          </PastelButton>
+          <PastelButton onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nuevo Término
+          </PastelButton>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -119,8 +141,4 @@ export function PaymentTermsView() {
       )}
     </div>
   );
-}
-
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(' ');
 }

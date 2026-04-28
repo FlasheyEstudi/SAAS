@@ -11,10 +11,22 @@ import { StatusBadge, ConfirmDialog } from '@/components/ui/vintage-ui';
 import { formatCurrency, formatDate, getStatusLabel } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 import { useFixedAssets, FixedAsset } from '../hooks/useFixedAssets';
+import { exportAssetsExcel, exportAssetsPDF } from '@/lib/utils/export';
 import { useAppStore } from '@/lib/stores/useAppStore';
 
 export function AssetsView() {
   const { assets = [], summary: rawSummary, loading, depreciating, refreshAssets, depreciateAsset, bulkDepreciate, getAssetHistory, createAsset, updateAsset, deleteAsset } = useFixedAssets();
+  const currentCompany = useAppStore(s => s.currentCompany);
+
+  const handleExport = async (format: 'excel' | 'pdf') => {
+    if (!assets.length) return;
+    toast.loading(`Generando reporte ${format}...`);
+    const name = currentCompany?.name || 'GANESHA';
+    if (format === 'excel') await exportAssetsExcel(assets, name);
+    else await exportAssetsPDF(assets, name);
+    toast.dismiss();
+    toast.success('Inventario de activos exportado');
+  };
 
   // Compute summary from real data — prefer hook summary, fallback to computing from assets array
   const summary = {
@@ -128,6 +140,14 @@ export function AssetsView() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div><h2 className="text-2xl font-playfair font-bold text-vintage-900">Activos Fijos</h2><p className="text-sm text-vintage-600 mt-1">Control de activos fijos y depreciación</p></div>
         <div className="flex gap-2">
+          <PastelButton variant="outline" onClick={() => handleExport('pdf')} className="gap-2">
+            <Calculator className="w-4 h-4" />
+            PDF
+          </PastelButton>
+          <PastelButton variant="outline" onClick={() => handleExport('excel')} className="gap-2">
+            <History className="w-4 h-4" />
+            Excel
+          </PastelButton>
           <PastelButton variant="outline" onClick={handleBulkDepreciate} disabled={depreciating}><Calculator className="w-4 h-4 mr-2" />Depreciar Todos</PastelButton>
           <PastelButton onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Nuevo Activo</PastelButton>
         </div>

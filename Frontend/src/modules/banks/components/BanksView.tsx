@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { exportBanksExcel, exportBanksPDF } from '@/lib/utils/export';
 import { useBanks } from '../hooks/useBanks';
+import { useAppStore } from '@/lib/stores/useAppStore';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
 import { AnimatedTable, Pagination, FilterBar } from '@/components/tables/animated-table';
@@ -103,7 +104,8 @@ export function BanksView() {
   const handleExport = async (format: 'excel' | 'pdf') => {
     try {
       toast.loading('Generando estado de cuenta...');
-      const companyName = 'GANESHA Compañía Demo';
+      const currentCompany = useAppStore.getState().currentCompany;
+      const companyName = currentCompany?.name || 'GANESHA Compañía';
       
       const selectedAcc = accounts.find((a: any) => a.id === accountFilter);
       const accNameStr = selectedAcc ? `${selectedAcc.bankName} - ${selectedAcc.accountNumber}` : 'Todas las Cuentas';

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { success, error, serverError } from '@/lib/api-helpers';
+import { Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 // ============================================================
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
             companyId,
             year: 2026,
             month: months[i],
-            status: periodStatuses[i],
+            status: periodStatuses[i] as any,
             closedAt: periodStatuses[i] !== 'OPEN' ? new Date(2026, months[i], 28, 18, 0, 0) : null,
           },
         });
@@ -201,8 +202,8 @@ export async function POST(request: NextRequest) {
               companyId,
               code: acct.code,
               name: acct.name,
-              accountType: acct.accountType,
-              nature: acct.nature,
+              accountType: acct.accountType as any,
+              nature: acct.nature as any,
               level: acct.level,
               isGroup: acct.isGroup,
               parentId: acct.parentCode ? accountMap.get(acct.parentCode)! : null,
@@ -272,7 +273,7 @@ export async function POST(request: NextRequest) {
       const thirdParties = await tx.thirdParty.createMany({
         data: thirdPartiesData.map(tp => ({
           companyId,
-          type: tp.type,
+          type: tp.type as any,
           name: tp.name,
           taxId: tp.taxId,
           email: tp.email,
@@ -628,8 +629,8 @@ export async function POST(request: NextRequest) {
             entryNumber: entry.entryNumber,
             description: entry.description,
             entryDate: entry.entryDate,
-            entryType: entry.entryType,
-            status: entry.status,
+            entryType: entry.entryType as any,
+            status: entry.status as any,
             postedAt: new Date(),
             totalDebit,
             totalCredit,
@@ -697,7 +698,7 @@ export async function POST(request: NextRequest) {
       await tx.bankMovement.createMany({
         data: bankMovementsData.map(m => ({
           bankAccountId: bbvaAccount!.id,
-          ...m,
+          ...(m as any),
         })),
       });
 
@@ -736,7 +737,7 @@ export async function POST(request: NextRequest) {
       const invoices = await tx.invoice.createMany({
         data: invoicesData.map(inv => ({
           companyId,
-          ...inv,
+          ...(inv as any),
         })),
       });
 
@@ -765,6 +766,17 @@ export async function POST(request: NextRequest) {
         createdUsers.push(user);
       }
 
+      // Link users to company (Memberships)
+      for (const u of createdUsers) {
+        await tx.userCompany.create({
+          data: {
+            userId: u.id,
+            companyId,
+            role: u.role === 'ADMIN' ? 'OWNER' : (u.role === 'MANAGER' ? 'ADMIN' : 'ACCOUNTANT'),
+          }
+        });
+      }
+
       // --------------------------------------------------------
       // 11. AUDIT LOG (5 sample entries)
       // --------------------------------------------------------
@@ -777,7 +789,7 @@ export async function POST(request: NextRequest) {
             entityType: 'Company',
             entityId: companyId,
             entityLabel: 'Grupo Empresarial Alpha S.A. de C.V.',
-            oldValues: null,
+            oldValues: Prisma.DbNull,
             newValues: JSON.stringify({ name: 'Grupo Alpha S.A.', taxId: 'J0310000000001' }),
             ipAddress: '192.168.1.100',
             userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
@@ -803,7 +815,7 @@ export async function POST(request: NextRequest) {
             entityType: 'JournalEntry',
             entityId: createdEntryIds[1],
             entityLabel: 'Póliza 0002 - Venta de contado',
-            oldValues: null,
+            oldValues: Prisma.DbNull,
             newValues: JSON.stringify({ entryNumber: '0002', totalDebit: 125000, totalCredit: 125000 }),
             ipAddress: '192.168.1.101',
             userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
@@ -829,7 +841,7 @@ export async function POST(request: NextRequest) {
             entityType: 'User',
             entityId: createdUsers[2].id,
             entityLabel: 'Roberto López',
-            oldValues: null,
+            oldValues: Prisma.DbNull,
             newValues: JSON.stringify({ lastLoginAt: '2026-06-01T09:00:00Z' }),
             ipAddress: '192.168.1.102',
             userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
@@ -899,7 +911,7 @@ export async function POST(request: NextRequest) {
             companyId,
             code: fa.code,
             name: fa.name,
-            assetType: fa.assetType,
+            assetType: fa.assetType as any,
             purchaseDate: fa.purchaseDate,
             purchaseAmount: fa.purchaseAmount,
             salvageValue: fa.salvageValue,
@@ -907,7 +919,7 @@ export async function POST(request: NextRequest) {
             depreciationMethod: fa.depreciationMethod,
             currentBookValue: fa.currentBookValue,
             accumulatedDepreciation: fa.accumulatedDepreciation,
-            status: fa.status,
+            status: fa.status as any,
             location: fa.location,
             accountId: fa.accountId || null,
           },

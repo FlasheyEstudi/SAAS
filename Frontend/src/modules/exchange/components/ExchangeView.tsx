@@ -10,8 +10,20 @@ import { FloatingInput } from '@/components/ui/floating-input';
 import { formatDate } from '@/lib/utils/format';
 import { useExchangeRates } from '../hooks/useExchangeRates';
 
+import { exportExchangeExcel } from '@/lib/utils/export';
+import { useAppStore } from '@/lib/stores/useAppStore';
+
 export function ExchangeView() {
+  const currentCompany = useAppStore(s => s.currentCompany);
   const { exchangeRates: rates, isLoading: loading, createExchangeRate, isCreating } = useExchangeRates();
+
+  const handleExport = async () => {
+    if (!rates.length) return;
+    toast.loading('Generando reporte...');
+    await exportExchangeExcel(rates, currentCompany?.name || 'GANESHA');
+    toast.dismiss();
+    toast.success('Historial de divisas exportado');
+  };
   const [amount, setAmount] = useState('1000');
   const [fromCurrency, setFromCurrency] = useState('USD');
   const [toCurrency, setToCurrency] = useState('NIO');
@@ -93,6 +105,12 @@ export function ExchangeView() {
         <div>
           <h2 className="text-2xl font-playfair font-bold text-vintage-900">Tipos de Cambio</h2>
           <p className="text-sm text-vintage-600 mt-1">Gestión de paridades y conversor multi-moneda</p>
+        </div>
+        <div className="flex gap-2">
+          <PastelButton variant="outline" onClick={handleExport} className="gap-2">
+            <ArrowLeftRight className="w-4 h-4" />
+            Exportar Excel
+          </PastelButton>
         </div>
       </div>
 

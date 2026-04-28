@@ -10,8 +10,20 @@ import { useClosingEntries, ClosingEntry } from '../hooks/useClosingEntries';
 import { usePeriods } from '../hooks/usePeriods';
 import { formatCurrency, formatDate } from '@/lib/utils/format';
 
+import { exportClosingEntriesExcel } from '@/lib/utils/export';
+import { useAppStore } from '@/lib/stores/useAppStore';
+
 export function ClosingEntriesView() {
+  const currentCompany = useAppStore(s => s.currentCompany);
   const { entries, isLoading, generateClosing, deleteClosing, isGenerating } = useClosingEntries();
+
+  const handleExport = async () => {
+    if (!entries.length) return;
+    toast.loading('Generando reporte...');
+    await exportClosingEntriesExcel(entries, currentCompany?.name || 'GANESHA');
+    toast.dismiss();
+    toast.success('Historial de cierres exportado');
+  };
   const { periods } = usePeriods();
   const [selectedPeriod, setSelectedPeriod] = useState('');
   const [closingType, setClosingType] = useState<'MONTHLY' | 'ANNUAL'>('MONTHLY');
@@ -37,8 +49,14 @@ export function ClosingEntriesView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-playfair font-bold text-vintage-900">Cierne de Períodos</h2>
+          <h2 className="text-2xl font-playfair font-bold text-vintage-900">Cierre de Períodos</h2>
           <p className="text-sm text-vintage-600 mt-1">Generación de asientos de cierre y bloqueo de períodos contables</p>
+        </div>
+        <div className="flex gap-2">
+          <PastelButton variant="outline" onClick={handleExport} className="gap-2">
+            <History className="w-4 h-4" />
+            Exportar Excel
+          </PastelButton>
         </div>
       </div>
 

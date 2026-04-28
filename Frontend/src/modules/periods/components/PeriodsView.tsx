@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CalendarDays, Lock, Unlock, Eye } from 'lucide-react';
+import { CalendarDays, Lock, Unlock, Eye, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
@@ -14,7 +14,11 @@ import { usePeriods } from '../hooks/usePeriods';
 
 const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
+import { exportPeriodsExcel } from '@/lib/utils/export';
+import { useAppStore } from '@/lib/stores/useAppStore';
+
 export function PeriodsView() {
+  const currentCompany = useAppStore(s => s.currentCompany);
   const { 
     periods = [], 
     isLoading: loading, 
@@ -24,6 +28,14 @@ export function PeriodsView() {
     isClosing, 
     isReopening 
   } = usePeriods();
+
+  const handleExport = async () => {
+    if (!periods.length) return;
+    toast.loading('Generando reporte...');
+    await exportPeriodsExcel(periods, currentCompany?.name || 'GANESHA');
+    toast.dismiss();
+    toast.success('Historial de períodos exportado');
+  };
 
   const [confirmAction, setConfirmAction] = useState<{ id: string; action: 'close' | 'reopen' } | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -76,7 +88,13 @@ export function PeriodsView() {
           <h2 className="text-2xl font-playfair font-bold text-vintage-900">Períodos Contables</h2>
           <p className="text-sm text-vintage-600 mt-1">Gestión de períodos fiscales</p>
         </div>
-        <PastelButton onClick={() => setShowCreateModal(true)}><CalendarDays className="w-4 h-4 mr-2" />Nuevo Período</PastelButton>
+        <div className="flex gap-2">
+          <PastelButton variant="outline" onClick={handleExport} className="gap-2">
+            <CalendarDays className="w-4 h-4" />
+            Exportar Excel
+          </PastelButton>
+          <PastelButton onClick={() => setShowCreateModal(true)}><Plus className="w-4 h-4 mr-2" />Nuevo Período</PastelButton>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

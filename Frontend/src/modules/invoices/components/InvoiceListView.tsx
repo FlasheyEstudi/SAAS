@@ -89,7 +89,8 @@ export function InvoiceListView() {
   const handleExport = async (format: 'excel' | 'pdf') => {
     try {
       toast.loading('Generando reporte de facturas...');
-      const companyName = 'GANESHA Compañía Demo';
+      const currentCompany = useAppStore.getState().currentCompany;
+      const companyName = currentCompany?.name || 'GANESHA Compañía';
       
       const exportData = invoices.map((inv: any) => ({
         invoiceNumber: inv.number,

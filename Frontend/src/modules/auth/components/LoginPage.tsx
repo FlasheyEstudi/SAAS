@@ -124,8 +124,8 @@ export function LoginPage() {
         >
           <VintageCard variant="premium" className="p-10 bg-zinc-950/40 border border-white/5 backdrop-blur-3xl">
             <div className="flex flex-col items-center mb-10 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center shadow-2xl shadow-orange-500/20 mb-6">
-                <Bot className="w-8 h-8 text-white" />
+              <div className="w-20 h-20 rounded-2xl overflow-hidden flex items-center justify-center shadow-2xl shadow-orange-500/20 mb-6">
+                <img src="/images/logo_ganesha.png" alt="Ganesha Logo" className="w-full h-full object-cover" />
               </div>
               <h1 className="text-3xl font-playfair font-bold text-white mb-2 tracking-tight transition-all">Mente Enfocada</h1>
               <p className="text-[10px] text-zinc-500 uppercase tracking-[0.3em] font-black">Acceso a la Prosperidad</p>

@@ -85,9 +85,9 @@ export function RegisterPage() {
         >
           <VintageCard variant="premium" className="p-10 bg-zinc-950/60 border border-white/5 backdrop-blur-3xl shadow-2xl">
             <div className="flex flex-col items-center mb-10 text-center">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-purple-600 via-amber-500 to-orange-600 flex items-center justify-center shadow-2xl shadow-purple-500/20 mb-6 p-1">
-                <div className="w-full h-full rounded-full bg-black flex items-center justify-center">
-                  <Sparkles className="w-8 h-8 text-amber-500" />
+              <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-purple-600 via-amber-500 to-orange-600 flex items-center justify-center shadow-2xl shadow-purple-500/20 mb-6 p-1">
+                <div className="w-full h-full rounded-full bg-black overflow-hidden flex items-center justify-center">
+                  <img src="/images/logo_ganesha.png" alt="Ganesha Logo" className="w-full h-full object-cover" />
                 </div>
               </div>
               <h1 className="text-4xl font-playfair font-bold text-white mb-2 uppercase tracking-tighter">Inicia tu Prosperidad</h1>

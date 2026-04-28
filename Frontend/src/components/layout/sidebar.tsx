@@ -92,9 +92,9 @@ export function Sidebar() {
         <div className="flex items-center gap-3">
           <div 
             onClick={() => navigate('dashboard')}
-            className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-black font-black text-xs shrink-0 shadow-lg shadow-orange-500/20 cursor-pointer"
+            className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center shrink-0 shadow-lg shadow-orange-500/20 cursor-pointer"
           >
-             G
+             <img src="/images/logo_ganesha.png" alt="Ganesha Logo" className="w-full h-full object-cover" />
           </div>
           {!sidebarCollapsed && (
             <motion.div

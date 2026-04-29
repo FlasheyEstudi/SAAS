@@ -59,6 +59,13 @@ export async function GET(request: Request) {
           code: true,
           name: true,
           parentId: true,
+          parent: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+            },
+          },
           accountType: true,
           nature: true,
           level: true,

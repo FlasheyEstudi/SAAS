@@ -48,12 +48,23 @@ export async function GET(request: NextRequest) {
       ];
     }
 
+    const includeLines = searchParams.get('includeLines') === 'true';
+
     const [entries, total] = await Promise.all([
       db.journalEntry.findMany({
         where,
         include: {
           _count: { select: { lines: true } },
           period: { select: { id: true, year: true, month: true, status: true } },
+          ...(includeLines ? {
+            lines: {
+              include: {
+                account: { select: { id: true, code: true, name: true } },
+                costCenter: { select: { id: true, code: true, name: true } },
+              },
+              orderBy: { createdAt: 'asc' },
+            }
+          } : {}),
         },
         orderBy: { [sortBy]: sortOrder },
         skip: (page - 1) * limit,

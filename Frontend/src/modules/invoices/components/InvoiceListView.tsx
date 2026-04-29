@@ -93,12 +93,12 @@ export function InvoiceListView() {
       const companyName = currentCompany?.name || 'GANESHA Compañía';
       
       const exportData = invoices.map((inv: any) => ({
-        invoiceNumber: inv.number,
-        date: inv.issueDate,
+        number: inv.number,
+        issueDate: inv.issueDate,
         thirdParty: { name: getThirdPartyName(inv.thirdPartyId) },
         subtotal: inv.subtotal || (Number(inv.totalAmount) / 1.15),
         taxAmount: inv.taxAmount || (Number(inv.totalAmount) - (Number(inv.totalAmount) / 1.15)),
-        total: inv.totalAmount,
+        totalAmount: inv.totalAmount,
         status: inv.status
       }));
 

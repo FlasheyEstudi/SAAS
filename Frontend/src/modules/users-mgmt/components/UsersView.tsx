@@ -114,7 +114,7 @@ export function UsersView() {
                   </td>
                   <td className="px-4 py-3 text-sm text-vintage-600">{u.email || '-'}</td>
                   <td className="px-4 py-3 text-center"><StatusBadge status={(u.role ? roleColors[u.role] : 'neutral') as any} label={u.role ? roleLabels[u.role] : 'N/A'} /></td>
-                  <td className="px-4 py-3 text-xs text-vintage-500">{u.lastLogin ? formatDate(u.lastLogin, 'dd/MM/yyyy HH:mm') : 'Nunca'}</td>
+                  <td className="px-4 py-3 text-xs text-vintage-500">{u.lastLoginAt ? formatDate(u.lastLoginAt, 'dd/MM/yyyy HH:mm') : 'Nunca'}</td>
                   <td className="px-4 py-3 text-center"><StatusBadge status={u.isActive ? 'success' : 'neutral'} label={u.isActive ? 'Activo' : 'Inactivo'} /></td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-1">

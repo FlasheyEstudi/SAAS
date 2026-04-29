@@ -50,6 +50,7 @@ export function useJournalEntries() {
         page: page.toString(),
         limit: limit.toString(),
         companyId: companyId || '',
+        includeLines: 'true', // We'll include lines for now to fix reports easily
       });
       if (search) params.append('search', search);
       if (typeFilter) params.append('entryType', typeFilter);

@@ -42,16 +42,29 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const [thirdParties, total] = await Promise.all([
+    const [thirdPartiesRaw, total] = await Promise.all([
       db.thirdParty.findMany({
         where,
-        include: { _count: { select: { invoices: true } } },
+        include: { 
+          _count: { select: { invoices: true } },
+          invoices: {
+            where: { status: { not: 'CANCELLED' } },
+            select: { balanceDue: true }
+          }
+        },
         orderBy: { [sortBy]: sortOrder },
         skip: (page - 1) * limit,
         take: limit,
       }),
       db.thirdParty.count({ where }),
     ]);
+
+    // Calcular el balance total para cada tercero
+    const thirdParties = thirdPartiesRaw.map(tp => {
+      const balance = tp.invoices.reduce((sum, inv) => sum + Number(inv.balanceDue || 0), 0);
+      const { invoices, ...rest } = tp;
+      return { ...rest, balance };
+    });
 
     return success({
       data: thirdParties,

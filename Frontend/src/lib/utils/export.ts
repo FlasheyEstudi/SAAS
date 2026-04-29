@@ -512,18 +512,23 @@ export async function exportJournalEntriesExcel(
   const rows: any[][] = [];
 
   entries.forEach((entry) => {
-    entry.lines?.forEach((line: any, idx: number) => {
+    const lines = entry.lines || [];
+    lines.forEach((line: any, idx: number) => {
       rows.push([
-        idx === 0 ? entry.date : '',
+        idx === 0 ? formatDate(entry.entryDate) : '',
         idx === 0 ? entry.entryType : '',
         idx === 0 ? entry.entryNumber : '',
         idx === 0 ? entry.description : '',
-        line.accountCode,
-        line.concept,
-        line.debit,
-        line.credit,
+        line.account?.code || line.accountId || '',
+        line.description || '',
+        Number(line.debit) || 0,
+        Number(line.credit) || 0,
       ]);
     });
+    // Add subtotal row for each entry if there are multiple lines
+    if (lines.length > 0) {
+      rows.push(['', '', '', 'TOTAL PÓLIZA', '', '', Number(entry.totalDebit) || 0, Number(entry.totalCredit) || 0]);
+    }
     rows.push(['', '', '', '', '', '', '', '']); // Separator
   });
 
@@ -550,18 +555,29 @@ export async function exportJournalEntriesPDF(
   const rows: any[][] = [];
 
   entries.forEach(entry => {
-    entry.lines?.forEach((line: any, idx: number) => {
+    const lines = entry.lines || [];
+    lines.forEach((line: any, idx: number) => {
       rows.push([
         idx === 0 ? formatDate(entry.entryDate) : '',
         idx === 0 ? entry.entryType : '',
         idx === 0 ? entry.entryNumber : '',
         idx === 0 ? entry.description : '',
-        line.accountCode,
-        `C$ ${line.debit.toLocaleString()}`,
-        `C$ ${line.credit.toLocaleString()}`
+        line.account?.code || line.accountId || '',
+        `C$ ${(Number(line.debit) || 0).toLocaleString()}`,
+        `C$ ${(Number(line.credit) || 0).toLocaleString()}`
       ]);
     });
-    rows.push([{ content: '', colSpan: 7, styles: { fillColor: [240, 240, 240] } }]);
+    rows.push([{ 
+      content: `SUBTOTAL PÓLIZA ${entry.entryNumber}`, 
+      colSpan: 5, 
+      styles: { halign: 'right', fontStyle: 'bold', fillColor: [245, 245, 245] } 
+    }, {
+      content: `C$ ${(Number(entry.totalDebit) || 0).toLocaleString()}`,
+      styles: { fontStyle: 'bold', fillColor: [245, 245, 245] }
+    }, {
+      content: `C$ ${(Number(entry.totalCredit) || 0).toLocaleString()}`,
+      styles: { fontStyle: 'bold', fillColor: [245, 245, 245] }
+    }]);
   });
 
   await exportToPDFTemplate({
@@ -588,10 +604,10 @@ export async function exportThirdPartiesExcel(
   const rows = thirdParties.map(tp => [
     tp.name,
     tp.taxId,
-    tp.thirdPartyType,
+    tp.type,
     tp.email,
     tp.phone,
-    tp.balance,
+    tp.balance || 0,
   ]);
 
   await exportToExcelTemplate({
@@ -615,10 +631,10 @@ export async function exportThirdPartiesPDF(
   const rows = thirdParties.map(tp => [
     tp.name,
     tp.taxId,
-    tp.thirdPartyType,
+    tp.type,
     tp.email,
     tp.phone,
-    `C$ ${tp.balance.toLocaleString()}`,
+    `C$ ${(tp.balance || 0).toLocaleString()}`,
   ]);
 
   await exportToPDFTemplate({
@@ -645,7 +661,7 @@ export async function exportAccountsExcel(
     acc.accountType,
     acc.nature,
     acc.level,
-    acc.parentAccount?.name || '',
+    acc.parent?.name || '',
   ]);
 
   await exportToExcelTemplate({
@@ -671,7 +687,7 @@ export async function exportAccountsPDF(
     acc.name,
     acc.accountType,
     acc.level,
-    acc.parentAccount?.name || '',
+    acc.parent?.name || '',
   ]);
 
   await exportToPDFTemplate({
@@ -692,12 +708,12 @@ export async function exportInvoicesExcel(
 ): Promise<void> {
   const headers = ['Número', 'Fecha', 'Tercero', 'Subtotal', 'IVA', 'Total', 'Estado'];
   const rows = invoices.map(inv => [
-    inv.invoiceNumber,
-    formatDate(inv.date),
+    inv.number,
+    formatDate(inv.issueDate || inv.date),
     inv.thirdParty?.name || '',
-    inv.subtotal,
-    inv.taxAmount,
-    inv.total,
+    Number(inv.subtotal) || 0,
+    Number(inv.taxAmount) || 0,
+    Number(inv.totalAmount || inv.total || 0),
     inv.status
   ]);
 
@@ -720,10 +736,10 @@ export async function exportInvoicesPDF(
 ): Promise<void> {
   const headers = ['Número', 'Fecha', 'Tercero', 'Total', 'Estado'];
   const rows = invoices.map(inv => [
-    inv.invoiceNumber,
-    formatDate(inv.date),
+    inv.number,
+    formatDate(inv.issueDate || inv.date),
     inv.thirdParty?.name || '',
-    `C$ ${inv.total.toLocaleString()}`,
+    `C$ ${(Number(inv.totalAmount || inv.total || 0)).toLocaleString()}`,
     inv.status
   ]);
 
@@ -747,11 +763,11 @@ export async function exportBanksExcel(
 ): Promise<void> {
   const headers = ['Fecha', 'Referencia', 'Descripción', 'Tipo', 'Monto'];
   const rows = movements.map(m => [
-    formatDate(m.date),
+    formatDate(m.movementDate || m.date),
     m.reference,
     m.description,
-    m.type,
-    m.amount
+    m.movementType || m.type,
+    Number(m.amount) || 0
   ]);
 
   await exportToExcelTemplate({
@@ -774,10 +790,10 @@ export async function exportBanksPDF(
 ): Promise<void> {
   const headers = ['Fecha', 'Ref', 'Descripción', 'Monto'];
   const rows = movements.map(m => [
-    formatDate(m.date),
+    formatDate(m.movementDate || m.date),
     m.reference,
     m.description,
-    `${m.type === 'DEBIT' ? '-' : '+'} C$ ${m.amount.toLocaleString()}`
+    `${(m.movementType || m.type) === 'DEBIT' ? '-' : '+'} C$ ${(Number(m.amount) || 0).toLocaleString()}`
   ]);
 
   await exportToPDFTemplate({
@@ -1004,7 +1020,7 @@ export async function exportCostCentersExcel(centers: any[], company: string): P
     c.code,
     c.name,
     c.description || '-',
-    c.journalEntryCount || 0,
+    c._count?.journalLines || c.journalEntryCount || 0,
     c.isActive ? 'Activo' : 'Inactivo'
   ]);
 
@@ -1051,7 +1067,7 @@ export async function exportUsersExcel(users: any[], company: string): Promise<v
     u.email,
     u.role,
     u.isActive ? 'Activo' : 'Inactivo',
-    u.lastLogin ? formatDate(u.lastLogin) : '-'
+    u.lastLoginAt ? formatDate(u.lastLoginAt) : '-'
   ]);
 
   await exportToExcelTemplate({
@@ -1099,15 +1115,15 @@ export async function exportJournalEntryPDF(
   const rows = (entry.lines || []).map((l: any) => [
     l.account ? `${l.account.code}\n${l.account.name}` : l.accountId,
     l.description || '',
-    l.debit > 0 ? `C$ ${l.debit.toLocaleString()}` : '-',
-    l.credit > 0 ? `C$ ${l.credit.toLocaleString()}` : '-'
+    Number(l.debit) > 0 ? `C$ ${Number(l.debit).toLocaleString()}` : '-',
+    Number(l.credit) > 0 ? `C$ ${Number(l.credit).toLocaleString()}` : '-'
   ]);
 
   // Add summary row
   rows.push([
     { content: 'TOTALES', colSpan: 2, styles: { halign: 'right', fontStyle: 'bold' } },
-    { content: `C$ ${(entry.totalDebit || 0).toLocaleString()}`, styles: { fontStyle: 'bold' } },
-    { content: `C$ ${(entry.totalCredit || 0).toLocaleString()}`, styles: { fontStyle: 'bold' } }
+    { content: `C$ ${(Number(entry.totalDebit) || 0).toLocaleString()}`, styles: { fontStyle: 'bold' } },
+    { content: `C$ ${(Number(entry.totalCredit) || 0).toLocaleString()}`, styles: { fontStyle: 'bold' } }
   ]);
 
   await exportToPDFTemplate({
@@ -1173,13 +1189,18 @@ export async function exportPaymentTermsExcel(terms: any[], company: string): Pr
  */
 export async function exportPeriodsExcel(periods: any[], company: string): Promise<void> {
   const headers = ['Período', 'Año', 'Estado', 'Fecha Apertura', 'Fecha Cierre'];
-  const rows = periods.map(p => [
-    p.name,
-    p.year,
-    p.status,
-    formatDate(p.startDate),
-    formatDate(p.endDate)
-  ]);
+  const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const rows = periods.map(p => {
+    const startDate = new Date(p.year, p.month - 1, 1);
+    const endDate = new Date(p.year, p.month, 0);
+    return [
+      months[p.month - 1] || p.name,
+      p.year,
+      p.status,
+      formatDate(p.startDate || startDate),
+      formatDate(p.endDate || endDate)
+    ];
+  });
 
   await exportToExcelTemplate({
     filename: 'Periodos_Contables',
@@ -1197,11 +1218,11 @@ export async function exportPeriodsExcel(periods: any[], company: string): Promi
 export async function exportClosingEntriesExcel(entries: any[], company: string): Promise<void> {
   const headers = ['Fecha', 'Descripción', 'Tipo', 'Total Debe', 'Total Haber'];
   const rows = entries.map(e => [
-    formatDate(e.createdAt),
-    e.description,
-    e.entryType,
-    e.totalDebit,
-    e.totalCredit
+    formatDate(e.journalEntry?.entryDate || e.createdAt),
+    e.journalEntry?.description || e.concept || 'Asiento de Cierre',
+    e.closingType,
+    Number(e.journalEntry?.totalDebit || e.totalIncome || 0),
+    Number(e.journalEntry?.totalCredit || e.totalExpense || 0)
   ]);
 
   await exportToExcelTemplate({

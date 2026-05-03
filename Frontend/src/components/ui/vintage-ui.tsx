@@ -143,9 +143,29 @@ export function VintageSkeleton({ className, lines = 3 }: { className?: string; 
 // Full page loading spinner
 export function PageLoader({ text = 'Cargando...' }: { text?: string }) {
   return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 animate-fade-in">
-      <Loader2 className="w-8 h-8 text-vintage-400 dark:text-zinc-600 animate-spin" />
-      <p className="text-sm text-vintage-600 dark:text-zinc-400 font-playfair">{text}</p>
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6 animate-fade-in">
+      <div className="relative">
+        <div className="w-20 h-20 border-2 border-primary/10 border-t-primary rounded-full animate-spin" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <motion.img 
+            src="/GaneshaLogo.png" 
+            alt="Ganesha Logo"
+            className="w-10 h-10 object-contain"
+            animate={{ 
+              scale: [1, 1.1, 1],
+              rotate: [0, 5, -5, 0]
+            }}
+            transition={{ 
+              duration: 2.5, 
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
+        </div>
+      </div>
+      <p className="text-xs text-vintage-500 dark:text-zinc-400 font-bold uppercase tracking-[0.3em] animate-pulse">
+        {text}
+      </p>
     </div>
   );
 }

@@ -12,11 +12,12 @@ export async function POST(request: Request) {
     if (!result.success) {
       return error(result.error.issues[0].message);
     }
-    const { email, password } = result.data;
+    const { password } = result.data;
+    const email = result.data.email.toLowerCase().trim();
 
     // 2. Buscar usuario
     const user = await db.user.findFirst({ 
-      where: { email, isActive: true },
+      where: { email: { equals: email } as any, isActive: true },
       include: {
         memberships: {
           include: {
@@ -27,6 +28,8 @@ export async function POST(request: Request) {
         }
       }
     });
+
+    console.log('[DEBUG LOGIN] User found:', user ? user.email : 'NOT FOUND', 'Email searched:', email);
 
     if (!user) return error('Credenciales inválidas');
 
@@ -55,6 +58,7 @@ export async function POST(request: Request) {
     }
 
     if (!passwordMatches) {
+      console.log('[DEBUG LOGIN] Password mismatch for:', email);
       return error('Credenciales inválidas');
     }
 
@@ -69,11 +73,13 @@ export async function POST(request: Request) {
 
     // 5. Send cookie (100/100 Hardening)
     const response = success({
+      token,
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
+        companyId: user.companyId,
         availableCompanies: user.memberships.map(m => ({
           id: m.companyId,
           name: m.company.name,

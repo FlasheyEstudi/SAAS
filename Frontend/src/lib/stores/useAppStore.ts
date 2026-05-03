@@ -135,15 +135,20 @@ export const useAppStore = create<AppState>()(
 
       // Auth actions
       login: (user, token, companyId, company = null) => {
-        localStorage.setItem('current_company_id', companyId);
+        const companies = user.availableCompanies || [];
+        const selectedCompany = company || (companies.length > 0 ? { id: companies[0].id, name: companies[0].name } : null);
+        const finalCompanyId = companyId || (selectedCompany ? selectedCompany.id : null);
+
+        if (finalCompanyId) localStorage.setItem('current_company_id', finalCompanyId);
         localStorage.setItem('user', JSON.stringify(user));
+        
         set({
           isAuthenticated: true,
           user,
           token,
-          companyId,
-          currentCompany: company,
-          availableCompanies: user.availableCompanies || [],
+          companyId: finalCompanyId,
+          currentCompany: selectedCompany as any,
+          availableCompanies: companies,
           currentView: 'dashboard',
         });
       },

@@ -1,8 +1,13 @@
 import { db } from '@/lib/db';
 import { success, serverError } from '@/lib/api-helpers';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const companyId = searchParams.get('companyId');
+
+    const where = companyId ? { companyId } : {};
+
     const [
       companyCount,
       periodCount,
@@ -21,21 +26,21 @@ export async function GET() {
       attachmentCount,
       exchangeRateCount,
     ] = await Promise.all([
-      db.company.count(),
-      db.accountingPeriod.count(),
-      db.account.count(),
-      db.costCenter.count(),
-      db.journalEntry.count(),
-      db.invoice.count(),
-      db.bankAccount.count(),
-      db.bankMovement.count(),
-      db.thirdParty.count(),
-      db.user.count(),
-      db.auditLog.count(),
-      db.fixedAsset.count(),
-      db.budget.count(),
-      db.notification.count(),
-      db.fileAttachment.count(),
+      db.company.count({ where: companyId ? { id: companyId } : {} }),
+      db.accountingPeriod.count({ where }),
+      db.account.count({ where }),
+      db.costCenter.count({ where }),
+      db.journalEntry.count({ where }),
+      db.invoice.count({ where }),
+      db.bankAccount.count({ where }),
+      db.bankMovement.count({ where: companyId ? { bankAccount: { companyId } } : {} }),
+      db.thirdParty.count({ where }),
+      db.user.count({ where: companyId ? { companies: { some: { id: companyId } } } : {} }),
+      db.auditLog.count({ where: companyId ? { companyId } : {} }),
+      db.fixedAsset.count({ where }),
+      db.budget.count({ where }),
+      db.notification.count({ where: companyId ? { user: { companies: { some: { id: companyId } } } } : {} }),
+      db.fileAttachment.count({ where: companyId ? { OR: [{ invoice: { companyId } }, { journalEntry: { companyId } }] } : {} }),
       db.exchangeRate.count(),
     ]);
 

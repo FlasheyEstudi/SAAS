@@ -14,12 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ERP Contable - API Explorer",
-  description: "ERP Contable Enterprise - Backend API Explorer",
+  title: "Ganesha SaaS - API Explorer",
+  description: "Ganesha SaaS Enterprise - Backend API Explorer",
   keywords: ["ERP", "Contable", "Accounting", "API Explorer", "Next.js", "TypeScript"],
-  authors: [{ name: "Z.ai Team" }],
+  authors: [{ name: "Ganesha Team" }],
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: "/logoBackend.png",
   },
   openGraph: {
     title: "ERP Contable - API Explorer",

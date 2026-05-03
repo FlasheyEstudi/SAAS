@@ -38,17 +38,21 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { formatDate } from '@/lib/utils/format';
+import { cn } from '@/lib/utils';
 
 export function Header() {
   const { 
-    user, 
+    user,
     logout, 
-    navigate, 
+    navigate,
     theme, 
     setTheme, 
     currentCompany, 
     availableCompanies, 
     setCurrentCompany,
+    setGlobalSearch,
+    globalSearch,
     notifications = []
   } = useAppStore();
 
@@ -75,40 +79,40 @@ export function Header() {
     { id: 'amethyst', name: 'Amethyst Vision', icon: <Sparkles className="w-4 h-4 text-purple-400" /> },
   ];
 
-  // Datos mock de notificaciones si no hay
-  const displayNotifications = notifications.length > 0 ? notifications : [
-    { id: '1', title: 'Cierre de Periodo', message: 'El periodo de Marzo ha sido cerrado con éxito.', type: 'success', time: 'hace 5 min' },
-    { id: '2', title: 'Nueva Factura', message: 'Distribuidora S.A ha emitido una nueva factura por C$12,500.', type: 'info', time: 'hace 10 min' },
-    { id: '3', title: 'Alerta de Auditoría', message: 'Se detectó un descuadre en la cuenta 1101-01.', type: 'error', time: 'hace 1 hora' },
-  ];
+  // Notificaciones reales del sistema
+  const displayNotifications = notifications;
 
   return (
-    <header className="h-16 border-b border-border bg-background/80 backdrop-blur-3xl px-6 flex items-center justify-between sticky top-0 z-40 transition-colors duration-500">
-      <div className="flex items-center gap-4 flex-1">
-        {/* LOGO REDISEÑADO CON CONTRASTE FIJO */}
+    <header className="h-16 border-b border-border bg-background/80 backdrop-blur-3xl px-6 grid grid-cols-3 items-center sticky top-0 z-40 transition-colors duration-500">
+      {/* SECCIÓN IZQUIERDA: Logo y Empresa */}
+      <div className="flex items-center gap-4">
         <div 
           onClick={() => navigate('dashboard')}
-          className="flex items-center gap-3 cursor-pointer group"
+          className="flex items-center gap-3 cursor-pointer group shrink-0"
         >
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20 transition-transform group-hover:scale-105">
-             <span className="font-black text-lg">G</span>
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/20 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+            <img 
+              src="/GaneshaLogo.png" 
+              alt="Ganesha Logo"
+              className="w-10 h-10 object-contain transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 drop-shadow-xl relative z-10"
+            />
           </div>
-          <div className="flex flex-col">
-            <h1 className="text-xl font-black uppercase tracking-[0.4em] text-foreground dark:text-zinc-100 leading-none">
+          <div className="flex flex-col hidden sm:flex">
+            <h1 className="text-xl font-black uppercase tracking-tighter text-foreground dark:text-zinc-100 leading-none">
               GANESHA
             </h1>
-            <span className="text-[8px] font-bold text-primary uppercase tracking-[0.6em] mt-1 opacity-80">
-              Intelligence
+            <span className="text-[9px] font-bold text-primary uppercase tracking-[0.4em] mt-1 opacity-80">
+              Soberanía Financiera
             </span>
           </div>
         </div>
         
-        {/* ACCESOS DIRECTOS DE EMPRESA (Restaurados) */}
-        <div className="hidden xl:flex items-center gap-2 ml-8 border-l border-muted pl-8">
+        <div className="hidden xl:flex items-center gap-2 border-l border-muted pl-4 ml-2">
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-all group outline-none">
               <Building2 className="w-4 h-4 text-primary opacity-70 group-hover:opacity-100" />
-              <span className="text-[10px] font-black uppercase tracking-widest">{currentCompany?.name || 'Seleccionar Empresa'}</span>
+              <span className="text-[10px] font-black uppercase tracking-widest truncate max-w-[120px]">{currentCompany?.name || 'Empresa'}</span>
               <ChevronDown className="w-3 h-3 opacity-50" />
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-64 bg-card border-border shadow-2xl p-2 rounded-xl flex flex-col gap-1" align="start">
@@ -143,17 +147,28 @@ export function Header() {
             <PlusCircle className="w-4 h-4" />
           </button>
         </div>
+      </div>
 
-        <div className="relative max-w-sm w-full ml-auto hidden lg:block">
+      {/* SECCIÓN CENTRAL: Buscador Centrado */}
+      <div className="flex justify-center w-full">
+        <div className="relative max-w-md w-full hidden lg:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground font-bold" />
           <Input 
-            placeholder="Buscar..." 
-            className="pl-10 bg-muted/20 border-none text-foreground placeholder:text-muted-foreground h-9 rounded-xl focus-visible:ring-primary/10 transition-all focus:bg-muted/40"
+            placeholder="Buscar en el sistema... (Enter)" 
+            className="pl-10 bg-muted/20 border-none text-foreground placeholder:text-muted-foreground h-9 rounded-xl focus-visible:ring-primary/10 transition-all focus:bg-muted/40 w-full"
+            value={globalSearch}
+            onChange={(e) => setGlobalSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                navigate('search');
+              }
+            }}
           />
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      {/* SECCIÓN DERECHA: IA, Notificaciones y Perfil */}
+      <div className="flex items-center justify-end gap-3 sm:gap-4">
         {/* IA Assistant Quick access (Mejorado) */}
         <button 
           onClick={() => navigate('ai-chat')}
@@ -172,37 +187,36 @@ export function Header() {
           <DropdownMenuContent className="w-80 p-2 bg-card border-border shadow-2xl rounded-2xl" align="end">
             <DropdownMenuLabel className="px-3 py-3 flex items-center justify-between">
               <span className="text-xs font-black uppercase tracking-widest text-foreground">Avisos Recientes</span>
-              <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">3 Nuevos</span>
+              <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{displayNotifications.length} Avisos</span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <div className="max-h-80 overflow-y-auto">
-              {displayNotifications.map((notif) => (
-                <DropdownMenuItem key={notif.id} className="p-3 cursor-pointer rounded-xl hover:bg-muted/30 mb-1 flex gap-3 items-start">
-                   <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                     notif.type === 'success' ? 'bg-green-500/10 text-green-500' :
-                     notif.type === 'error' ? 'bg-red-500/10 text-red-500' :
-                     'bg-blue-500/10 text-blue-500'
-                   }`}>
-                     {notif.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                   </div>
-                   <div className="flex-1">
-                      <p className="text-[11px] font-black text-foreground uppercase tracking-wide leading-tight">{notif.title}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">{notif.message}</p>
-                      <div className="flex items-center gap-1 mt-1.5 opacity-50">
-                         <Clock className="w-2.5 h-2.5" />
-                         <span className="text-[8px] font-bold uppercase">{notif.time || 'Ahora'}</span>
-                      </div>
-                   </div>
-                </DropdownMenuItem>
-              ))}
+              {displayNotifications.length > 0 ? (
+                displayNotifications.map((notif) => (
+                  <DropdownMenuItem key={notif.id} className="p-3 cursor-pointer rounded-xl hover:bg-muted/30 mb-1 flex gap-3 items-start">
+                    <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                      notif.type === 'SUCCESS' ? 'bg-green-500/10 text-green-500' :
+                      notif.type === 'ERROR' ? 'bg-red-500/10 text-red-500' :
+                      'bg-blue-500/10 text-blue-500'
+                    }`}>
+                      {notif.type === 'SUCCESS' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-[11px] font-black text-foreground uppercase tracking-wide leading-tight">{notif.title}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">{notif.message}</p>
+                        <div className="flex items-center gap-1 mt-1.5 opacity-50">
+                          <Clock className="w-2.5 h-2.5" />
+                          <span className="text-[8px] font-bold uppercase">{notif.createdAt ? formatDate(notif.createdAt, 'HH:mm') : 'Ahora'}</span>
+                        </div>
+                    </div>
+                  </DropdownMenuItem>
+                ))
+              ) : (
+                <div className="py-8 px-4 text-center">
+                  <p className="text-xs text-muted-foreground">No tienes notificaciones pendientes</p>
+                </div>
+              )}
             </div>
-            <DropdownMenuSeparator />
-            <button 
-              onClick={() => navigate('notifications')}
-              className="w-full py-3 text-[10px] font-black text-primary uppercase tracking-[0.2em] hover:bg-primary/5 rounded-xl transition-colors"
-            >
-              Ver toda la actividad
-            </button>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -211,7 +225,7 @@ export function Header() {
         {/* Profile Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-3 p-1 rounded-2xl hover:bg-muted/30 transition-all outline-none border border-transparent">
-            <div className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center overflow-hidden">
+            <div className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center overflow-hidden relative">
                <div className="w-full h-full bg-gradient-to-tr from-muted to-background flex items-center justify-center text-muted-foreground font-bold text-xs uppercase">
                  {user?.name?.substring(0, 1) || 'C'}
                </div>

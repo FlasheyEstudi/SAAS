@@ -1,20 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, useMotionValue, useSpring } from 'framer-motion';
 import { useAppStore } from '@/lib/stores/useAppStore';
-import { Bot, UserPlus, Sparkles, ArrowRight, ArrowLeft, Zap, ShieldCheck, Globe } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { PastelButton } from '@/components/ui/pastel-button';
-import { VintageCard } from '@/components/ui/vintage-card';
+import { Sparkles, ArrowLeft, ShieldCheck, Zap, Globe, ArrowRight, UserPlus, Mail, Lock, Building, Phone } from 'lucide-react';
 import { toast } from 'sonner';
-
 import { registerSchema } from '@/lib/schemas/auth';
 import { apiClient } from '@/lib/api/client';
 import { AUTH } from '@/lib/api/endpoints';
 
 export function RegisterPage() {
-  const { navigate } = useAppStore();
+  const navigate = useAppStore((s) => s.navigate);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ 
     name: '', 
@@ -24,15 +22,28 @@ export function RegisterPage() {
     password: '' 
   });
 
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const springX = useSpring(mouseX, { stiffness: 50, damping: 20 });
+  const springY = useSpring(mouseY, { stiffness: 50, damping: 20 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const { clientX, clientY } = e;
+      const moveX = (clientX - window.innerWidth / 2) / 40;
+      const moveY = (clientY - window.innerHeight / 2) / 40;
+      mouseX.set(moveX);
+      mouseY.set(moveY);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [mouseX, mouseY]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // 1. Zod Validation (100/100)
-    const result = registerSchema.safeParse({
-       ...formData,
-       companyId: undefined // Let backend create it from company name if needed, or fix schema
-    });
+    const result = registerSchema.safeParse(formData);
     if (!result.success) {
       toast.error(result.error.issues[0].message);
       setLoading(false);
@@ -40,183 +51,181 @@ export function RegisterPage() {
     }
 
     try {
-      // 2. Registro vía ApiClient
       await apiClient.post(AUTH.register, formData);
-
-      toast.success('El camino está despejado: Cuenta creada exitosamente. Bienvenido a la abundancia.');
+      toast.success('Cuenta creada exitosamente. Bienvenido.');
       navigate('login');
     } catch (err: any) {
       console.error('Register Error:', err);
-      toast.error(err.error || 'Obstáculo de red: El servidor sagrado no responde.');
+      toast.error(err.error || 'Error al conectar con el servidor.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Ganesha subtle */}
-      <div className="absolute inset-0 z-0 opacity-15 pointer-events-none scale-110">
-         <img 
-            src="/images/ganesha_hero.png" 
-            className="w-full h-full object-cover blur-md"
-            alt="fondo"
-         />
-         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
+    <div className="h-screen w-full bg-background flex overflow-hidden font-sans selection:bg-primary/30">
+      {/* Lado Izquierdo: Arte Minimalista */}
+      <div className="hidden lg:flex lg:w-[45%] relative bg-foreground/[0.02] items-center justify-center overflow-hidden border-r border-primary/5">
+        <div className="absolute inset-0 mandala-bg opacity-20 scale-110 rotate-180" />
+        
+        <motion.div 
+          style={{ x: springX, y: springY }}
+          className="relative z-10 flex flex-col items-center text-center p-12"
+        >
+          <div className="relative mb-8">
+            <div className="absolute inset-[-60px] bg-primary/10 blur-[100px] rounded-full animate-aura" />
+            <img 
+              src="/personaje.png" 
+              className="w-[400px] h-auto object-contain relative z-10 drop-shadow-[0_0_100px_rgba(var(--primary-rgb),0.3)] animate-float"
+              alt="Ganesha Creator"
+            />
+          </div>
+          
+          <div className="max-w-sm space-y-4">
+            <h2 className="text-4xl font-playfair font-bold text-foreground leading-none tracking-tighter">
+              Crea tu <span className="text-primary italic font-normal">Imperio.</span>
+            </h2>
+            <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+              Únete a la red de empresas más prósperas del mundo.
+            </p>
+          </div>
+        </motion.div>
       </div>
 
-      <motion.button
-        onClick={() => navigate('landing')}
-        className="absolute top-8 left-8 flex items-center gap-2 text-zinc-600 hover:text-white transition-colors z-10"
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span className="text-[10px] font-black uppercase tracking-widest">Regresar</span>
-      </motion.button>
+      {/* Lado Derecho: Formulario Compacto Premium */}
+      <div className="w-full lg:w-[55%] flex flex-col relative bg-background h-full">
+        {/* Header del Formulario */}
+        <div className="p-6 flex justify-between items-center">
+           <button
+            onClick={() => navigate('landing')}
+            className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-all group"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span className="text-[9px] font-black uppercase tracking-[0.3em]">Regresar</span>
+          </button>
+          <div className="flex items-center gap-2">
+             <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Registro Seguro</span>
+             <ShieldCheck className="w-4 h-4 text-primary" />
+          </div>
+        </div>
 
-      <div className="w-full max-w-6xl z-10 flex flex-col-reverse lg:flex-row gap-12 items-center">
-        {/* Formulario de Registro */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6 }}
-          className="w-full lg:w-3/5"
-        >
-          <VintageCard variant="premium" className="p-10 bg-zinc-950/60 border border-white/5 backdrop-blur-3xl shadow-2xl">
-            <div className="flex flex-col items-center mb-10 text-center">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-purple-600 via-amber-500 to-orange-600 flex items-center justify-center shadow-2xl shadow-purple-500/20 mb-6 p-1">
-                <div className="w-full h-full rounded-full bg-black overflow-hidden flex items-center justify-center">
-                  <img src="/images/logo_ganesha.png" alt="Ganesha Logo" className="w-full h-full object-cover" />
-                </div>
-              </div>
-              <h1 className="text-4xl font-playfair font-bold text-white mb-2 uppercase tracking-tighter">Inicia tu Prosperidad</h1>
-              <p className="text-[10px] text-amber-500/80 uppercase tracking-[0.4em] font-black">Registro maestro de Ganesha ERP</p>
-            </div>
+        <div className="flex-1 flex flex-col justify-center px-12 xl:px-24 w-full max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <h1 className="text-4xl font-playfair font-bold text-foreground mb-1 tracking-tighter uppercase leading-none">Iniciación</h1>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-[0.4em] font-black">Comienza tu viaje hacia la abundancia</p>
+          </motion.div>
 
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-1">Tu Nombre Completo</label>
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground ml-1">Nombre Completo</label>
+              <div className="relative group">
                 <Input
-                  placeholder="Ej: Juan Pérez"
-                  variant="premium"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-zinc-800"
+                  placeholder="Tu Nombre"
+                  className="h-13 bg-muted/20 border-primary/10 text-foreground placeholder:text-muted-foreground/30 pl-11 rounded-xl focus:bg-card focus:ring-1 focus:ring-primary/30 transition-all border shadow-sm"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
                 />
+                <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-40" />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-1">Nombre de Empresa / Razón Social</label>
-                <Input
-                  placeholder="Empresa Alfa S.A."
-                  variant="premium"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-zinc-800"
-                  value={formData.company}
-                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-1">Portal (Email)</label>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground ml-1">Portal de Email</label>
+              <div className="relative group">
                 <Input
                   type="email"
-                  placeholder="hola@ganesha.dev"
-                  variant="premium"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-zinc-800"
+                  placeholder="tu@email.com"
+                  className="h-13 bg-muted/20 border-primary/10 text-foreground placeholder:text-muted-foreground/30 pl-11 rounded-xl focus:bg-card focus:ring-1 focus:ring-primary/30 transition-all border shadow-sm"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
                 />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-40" />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-1">Contacto (Teléfono)</label>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground ml-1">Empresa</label>
+              <div className="relative group">
                 <Input
-                  placeholder="+505 1234 5678"
-                  variant="premium"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-zinc-800"
+                  placeholder="Nombre de Negocio"
+                  className="h-13 bg-muted/20 border-primary/10 text-foreground placeholder:text-muted-foreground/30 pl-11 rounded-xl focus:bg-card focus:ring-1 focus:ring-primary/30 transition-all border shadow-sm"
+                  value={formData.company}
+                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                  required
+                />
+                <Building className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-40" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground ml-1">Teléfono</label>
+              <div className="relative group">
+                <Input
+                  placeholder="+505 ..."
+                  className="h-13 bg-muted/20 border-primary/10 text-foreground placeholder:text-muted-foreground/30 pl-11 rounded-xl focus:bg-card focus:ring-1 focus:ring-primary/30 transition-all border shadow-sm"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 />
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-40" />
               </div>
-              <div className="md:col-span-2 space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-1">Palabra de Poder (Clave)</label>
+            </div>
+
+            <div className="md:col-span-2 space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground ml-1">Llave Maestra</label>
+              <div className="relative group">
                 <Input
                   type="password"
                   placeholder="••••••••"
-                  variant="premium"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-zinc-800"
+                  className="h-13 bg-muted/20 border-primary/10 text-foreground placeholder:text-muted-foreground/30 pl-11 rounded-xl focus:bg-card focus:ring-1 focus:ring-primary/30 transition-all border shadow-sm"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
                 />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-40" />
               </div>
+            </div>
 
-              <div className="md:col-span-2 mt-4">
-                <PastelButton
-                  type="submit"
-                  className="w-full h-16 bg-white text-black font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl shadow-white/5 hover:bg-amber-400 hover:scale-[1.01] transition-all border-none"
-                  disabled={loading}
-                >
-                  {loading ? 'Preparando Terreno...' : (
-                    <div className="flex items-center gap-3">
-                      <span>Solicitar Acceso a Ganesha</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </div>
-                  )}
-                </PastelButton>
-              </div>
-            </form>
+            <div className="md:col-span-2 pt-2">
+              <PastelButton
+                type="submit"
+                className="w-full h-14 bg-primary text-primary-foreground font-black uppercase tracking-[0.4em] text-[10px] shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all border-none"
+                disabled={loading}
+              >
+                {loading ? (
+                  <span>Creando...</span>
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                     <span>Crear mi Cuenta</span>
+                     <ArrowRight className="w-4 h-4" />
+                  </div>
+                )}
+              </PastelButton>
+            </div>
+          </form>
 
-            <p className="mt-8 text-center text-[10px] text-zinc-700 font-bold uppercase tracking-widest">
-              ¿Ya eres sabio?{' '}
+          <div className="mt-8 text-center">
+            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em]">
+              ¿Ya eres un iniciado?{' '}
               <button
                 onClick={() => navigate('login')}
-                className="text-amber-500 hover:text-amber-400 transition-colors"
+                className="text-primary hover:underline underline-offset-4 decoration-2 transition-all"
               >
-                Inicia Sesión aquí
+                Inicia sesión aquí
               </button>
             </p>
-          </VintageCard>
-        </motion.div>
+          </div>
+        </div>
 
-        {/* Sidebar de Beneficios en Registro */}
-        <motion.div 
-          initial={{ opacity: 0, x: 30 }} 
-          animate={{ opacity: 1, x: 0 }} 
-          className="hidden lg:flex flex-col gap-10 lg:w-2/5 pl-12 border-l border-white/5"
-        >
-          <div className="space-y-4">
-            <h3 className="text-white text-4xl font-playfair font-bold leading-tight">Inicia una nueva etapa corporativa</h3>
-            <p className="text-zinc-500 text-sm font-medium">Ganesha escala contigo, desde un pequeño emprendimiento hasta una corporación global.</p>
-          </div>
-          
-          <div className="grid gap-8">
-            {[
-              { icon: <Globe className="w-5 h-5 text-amber-500" />, t: 'Multi-Tenant Nativo', d: 'Gestiona subsidiarias o múltiples empresas con una sola mente.' },
-              { icon: <ShieldCheck className="w-5 h-5 text-amber-500" />, t: 'Nube Inmutable', d: 'Tus auditorías nunca se pierden. Registro histórico eterno y protegido.' },
-              { icon: <Zap className="w-5 h-5 text-amber-500" />, t: 'Alta Velocidad', d: 'De 1 a 10,000 agentes. Ganesha crece sin perder rendimiento.' }
-            ].map((item, idx) => (
-              <div key={idx} className="relative p-6 rounded-2xl bg-gradient-to-br from-white/5 to-transparent border border-white/5 group hover:border-amber-500/20 transition-all">
-                 <div className="mb-4">{item.icon}</div>
-                 <h4 className="text-amber-500 font-bold text-sm uppercase tracking-widest mb-2">{item.t}</h4>
-                 <p className="text-zinc-500 text-xs leading-relaxed">{item.d}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-auto pt-8 border-t border-white/5">
-               <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center">
-                         <Bot className="w-6 h-6 text-orange-500" />
-                    </div>
-                    <div>
-                         <div className="text-white font-bold text-sm tracking-tight">Activación Inmediata</div>
-                         <div className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest">Tu primer período configurado en segundos</div>
-                    </div>
-               </div>
-          </div>
-        </motion.div>
+        {/* Footer del Formulario */}
+        <div className="p-6 mt-auto text-center border-t border-primary/5">
+           <span className="text-[8px] text-muted-foreground/40 uppercase tracking-[0.5em] font-black">Ganesha Enterprise System © 2026</span>
+        </div>
       </div>
     </div>
   );

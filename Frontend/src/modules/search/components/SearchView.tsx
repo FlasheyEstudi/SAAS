@@ -20,9 +20,14 @@ const getIcon = (type: string) => {
 };
 
 export function SearchView() {
-  const [query, setQuery] = useState('');
-  const navigate = useAppStore((s) => s.navigate);
+  const { globalSearch, setGlobalSearch, navigate } = useAppStore();
+  const [query, setQuery] = useState(globalSearch);
   const { results, isLoading } = useSearch(query);
+
+  const handleSearchChange = (val: string) => {
+    setQuery(val);
+    setGlobalSearch(val);
+  };
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -31,7 +36,8 @@ export function SearchView() {
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-vintage-400" />
         <input
-          value={query} onChange={(e) => setQuery(e.target.value)}
+          value={query} 
+          onChange={(e) => handleSearchChange(e.target.value)}
           placeholder="Escribe para buscar en todo el sistema..."
           className="w-full pl-12 pr-4 py-4 text-lg bg-card border border-vintage-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-vintage-400 shadow-sm"
           autoFocus

@@ -19,9 +19,9 @@ export function CompaniesView() {
   const [showForm, setShowForm] = useState(false);
   const [editingCompany, setEditingCompany] = useState<any | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', taxId: '', address: '', phone: '', email: '', currency: 'MXN', parentId: '' });
+  const [form, setForm] = useState({ name: '', taxId: '', address: '', phone: '', email: '', currency: 'NIO', parentId: '' });
 
-  const openCreate = () => { setEditingCompany(null); setForm({ name: '', taxId: '', address: '', phone: '', email: '', currency: 'MXN', parentId: '' }); setShowForm(true); };
+  const openCreate = () => { setEditingCompany(null); setForm({ name: '', taxId: '', address: '', phone: '', email: '', currency: 'NIO', parentId: '' }); setShowForm(true); };
   const openEdit = (c: any) => { setEditingCompany(c); setForm({ name: c.name, taxId: c.taxId, address: c.address, phone: c.phone, email: c.email, currency: c.currency, parentId: c.parentId || '' }); setShowForm(true); };
   const handleSave = () => {
     if (!form.name || !form.taxId) { 
@@ -147,9 +147,10 @@ export function CompaniesView() {
                 <FloatingInput label="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
               </div>
               <FloatingSelect label="Moneda" value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}>
-                <option value="MXN">MXN - Peso Mexicano</option>
+                <option value="NIO">NIO - Córdoba Nicaragüense</option>
                 <option value="USD">USD - Dólar</option>
                 <option value="EUR">EUR - Euro</option>
+                <option value="MXN">MXN - Peso Mexicano</option>
               </FloatingSelect>
               
               <FloatingSelect label="Empresa Padre (Opcional)" value={form.parentId} onChange={(e) => setForm({ ...form, parentId: e.target.value })}>

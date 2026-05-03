@@ -1,187 +1,276 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { Bot, Sparkles, Zap, TrendingUp, ChevronRight, BookOpen, ShieldCheck, MousePointer2, PieChart, Layers, Clock, Globe } from 'lucide-react';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { useRef } from 'react';
+import { Bot, Sparkles, Zap, ChevronRight, ShieldCheck, PieChart, Layers, Clock, Globe, ArrowRight, Coins } from 'lucide-react';
 import { PastelButton } from '@/components/ui/pastel-button';
 import { useAppStore } from '@/lib/stores/useAppStore';
 
 export default function LandingPage() {
   const navigate = useAppStore((s) => s.navigate);
+  const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"]
+  });
+
+  const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+  const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.9]);
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-amber-500/30 overflow-x-hidden font-sans">
-      {/* Navbar Abstracto */}
-      <nav className="fixed top-0 w-full z-50 px-6 py-6 backdrop-blur-xl bg-black/40 border-b border-white/5">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 via-orange-500 to-purple-600 flex items-center justify-center font-bold text-white shadow-2xl shadow-orange-500/20">
-              <span className="text-xl">G</span>
+    <div ref={containerRef} className="min-h-screen bg-background mandala-bg text-foreground selection:bg-primary/30 overflow-x-hidden font-sans scroll-smooth">
+      {/* Navbar Minimalista Premium */}
+      <nav className="fixed top-0 w-full z-[100] px-8 py-6 backdrop-blur-2xl bg-background/40 border-b border-primary/5">
+        <div className="max-w-[1800px] mx-auto flex justify-between items-center">
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-4 cursor-pointer group"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          >
+            <div className="relative w-12 h-12 flex items-center justify-center">
+              <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full group-hover:scale-125 transition-transform duration-500" />
+              <img src="/GaneshaLogo.png" alt="Logo" className="w-10 h-10 object-contain relative z-10" />
             </div>
             <div className="flex flex-col">
               <span className="font-playfair text-2xl font-bold tracking-tighter leading-none">GANESHA</span>
-              <span className="text-[10px] uppercase tracking-[0.4em] text-amber-500/80 font-bold">Remover of Obstacles</span>
+              <span className="text-[8px] uppercase tracking-[0.6em] text-primary font-black">Removedor de Obstáculos</span>
             </div>
+          </motion.div>
+
+          <div className="hidden md:flex items-center gap-12 text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">
+             <a href="#sabiduria" className="hover:text-primary transition-colors">Sabiduría</a>
+             <a href="#ia" className="hover:text-primary transition-colors">Ganesha AI</a>
+             <a href="#prosperidad" className="hover:text-primary transition-colors">Prosperidad</a>
           </div>
-          <div className="flex items-center gap-8">
-            <button onClick={() => navigate('login')} className="text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-colors">Entrar</button>
-            <PastelButton onClick={() => navigate('register')} size="sm" className="bg-gradient-to-r from-amber-500 to-orange-600 border-none px-6 py-5 text-[10px] font-black uppercase tracking-widest shadow-xl shadow-orange-500/10 hover:scale-105 transition-transform">
-              Unirse a la Prosperidad
+
+          <div className="flex items-center gap-6">
+            <button onClick={() => navigate('login')} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">Entrar</button>
+            <PastelButton 
+              onClick={() => navigate('register')} 
+              className="bg-primary text-primary-foreground border-none px-8 py-6 text-[10px] font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(var(--primary-rgb),0.2)] hover:scale-105 active:scale-95 transition-all"
+            >
+              Comenzar
             </PastelButton>
           </div>
         </div>
       </nav>
 
-      {/* Hero: El Conocimiento es Poder */}
-      <section className="relative pt-40 pb-24 px-6">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[800px] bg-gradient-to-b from-orange-500/10 via-purple-500/5 to-transparent blur-[120px] -z-10" />
-        
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
-          <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1 }}>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-amber-400 text-[10px] font-black uppercase tracking-widest mb-8">
-              <Sparkles className="w-4 h-4" />
-              Sabiduría Analítica Basada en IA
-            </div>
-            <h1 className="text-6xl lg:text-8xl font-playfair font-bold leading-[0.9] mb-8">
-              Elimina los <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500 italic">Obstáculos</span> de tu Negocio.
-            </h1>
-            <p className="text-lg text-zinc-400 mb-12 max-w-xl leading-relaxed font-medium">
-              Inspirado en la antigua sabiduría y potenciado por tecnología de vanguardia. GANESHA procesa el caos de los datos para despejar el camino hacia tu éxito financiero.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-6">
-              <PastelButton onClick={() => navigate('register')} size="lg" className="h-16 px-10 bg-white text-black border-none hover:bg-amber-400 transition-colors group tracking-widest font-black uppercase text-xs">
-                Iniciar Proyecto
-                <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+      {/* Hero Section: El Despertar de la Riqueza */}
+      <section className="relative min-h-screen flex items-center pt-40 overflow-hidden px-8 lg:px-24">
+        <div className="max-w-[1800px] mx-auto grid lg:grid-cols-2 gap-16 items-center z-10 w-full">
+          
+          <motion.div 
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="flex flex-col items-start text-left"
+          >
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.5em] mb-10 backdrop-blur-xl"
+            >
+              <Sparkles className="w-4 h-4 animate-pulse" />
+              Soberanía Financiera Absoluta
+            </motion.div>
+
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="text-7xl md:text-[9rem] font-playfair font-bold leading-[0.85] tracking-tighter mb-10 text-foreground"
+            >
+              Remueve <br />
+              los <span className="italic font-normal text-primary">Obstáculos.</span>
+            </motion.h1>
+
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="text-xl md:text-2xl text-muted-foreground max-w-xl leading-relaxed font-medium mb-16 drop-shadow-sm"
+            >
+              No permitas que la complejidad detenga tu crecimiento. GANESHA fusiona IA con sabiduría para que tu camino sea siempre claro y próspero.
+            </motion.p>
+
+            <motion.div 
+               initial={{ opacity: 0, scale: 0.9 }}
+               animate={{ opacity: 1, scale: 1 }}
+               transition={{ delay: 0.8 }}
+               className="flex flex-col sm:flex-row gap-8"
+            >
+              <PastelButton onClick={() => navigate('register')} className="h-24 px-16 bg-primary text-primary-foreground border-none font-black uppercase tracking-[0.4em] text-xs shadow-[0_20px_60px_rgba(var(--primary-rgb),0.35)] hover:translate-y-[-5px] transition-all">
+                Reclamar mi Éxito
               </PastelButton>
-              <button className="h-16 px-10 rounded-2xl border border-white/10 hover:bg-white/5 transition-all text-xs font-black tracking-widest uppercase text-zinc-400 hover:text-white">
-                Ver Filosofía
+              <button className="flex items-center gap-4 text-[11px] font-black uppercase tracking-[0.5em] text-muted-foreground hover:text-primary transition-all group">
+                Ver Filosofía <ArrowRight className="w-4 h-4 group-hover:translate-x-2 transition-transform" />
               </button>
-            </div>
+            </motion.div>
           </motion.div>
 
           <motion.div 
-            initial={{ opacity: 0, scale: 0.8, rotate: 5 }} 
-            animate={{ opacity: 1, scale: 1, rotate: 0 }} 
-            transition={{ duration: 1.2, ease: "easeOut" }}
-            className="relative"
+            initial={{ opacity: 0, scale: 0.8, x: 100 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+            className="relative flex items-center justify-center"
           >
-            <div className="relative z-10 rounded-[2rem] overflow-hidden border border-white/10 shadow-[0_0_100px_rgba(245,158,11,0.15)] bg-zinc-900/50 backdrop-blur-3xl p-1">
-              <img 
-                src="/images/ganesha_hero.png"
-                className="w-full h-auto rounded-[1.8rem] object-contain"
-                alt="Ganesha Digital Deity"
-              />
-            </div>
-            {/* Elementos Sagrados flotando */}
-            <motion.div animate={{ y: [0, -20, 0] }} transition={{ duration: 4, repeat: Infinity }} className="absolute -top-10 -right-10 w-40 h-40 bg-amber-500/20 blur-[80px] rounded-full" />
-            <motion.div animate={{ y: [0, 20, 0] }} transition={{ duration: 5, repeat: Infinity }} className="absolute -bottom-10 -left-10 w-40 h-40 bg-purple-500/20 blur-[80px] rounded-full" />
+            <div className="absolute inset-0 bg-primary/20 blur-[150px] rounded-full animate-aura scale-110" />
+            <img 
+              src="/personaje.png" 
+              className="w-full max-w-[800px] h-auto object-contain animate-float drop-shadow-[0_0_120px_rgba(var(--primary-rgb),0.4)] relative z-10"
+              alt="Ganesha Master"
+            />
           </motion.div>
         </div>
+
+        {/* Efecto de fondo sutil */}
+        <div className="absolute bottom-0 left-0 w-full h-[50vh] bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none -z-0" />
       </section>
 
-      {/* Franja de Métricas / Confianza */}
-      <section className="py-12 border-y border-white/5 bg-white/[0.01]">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-zinc-500 text-[10px] uppercase font-black tracking-[0.3em]">
-           <div>100% cloud native</div>
-           <div>Zero data loss</div>
-           <div>AI Powered auditing</div>
-           <div>Multi-company engine</div>
+      {/* Experiencia de Datos (Métricas) */}
+      <section className="relative z-20 py-32 border-y border-primary/5 bg-background/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-12">
+          {[
+            { n: '100%', l: 'Arquitectura Cloud' },
+            { n: '256ms', l: 'Latencia IA' },
+            { n: '∞', l: 'Escalabilidad' },
+            { n: '99.9%', l: 'Paz Mental' },
+          ].map((m, i) => (
+            <div key={i} className="flex flex-col items-center">
+              <span className="text-4xl md:text-6xl font-playfair font-bold text-primary mb-2 tracking-tighter">{m.n}</span>
+              <span className="text-[9px] font-black uppercase tracking-[0.4em] text-muted-foreground">{m.l}</span>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* ¿Por qué usar GANESHA? - Funciones Maestras */}
-      <section className="py-32 px-6">
+      {/* Pilares de Sabiduria (Features) */}
+      <section id="sabiduria" className="py-60 px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-24 items-center mb-32">
-               <div>
-                    <h2 className="text-5xl font-playfair font-bold mb-8 leading-tight">
-                         Más que un software, es un <span className="text-amber-500">Asesor Sagrado</span> para tus finanzas.
-                    </h2>
-                    <p className="text-zinc-400 text-lg mb-10 leading-relaxed">
-                         Diseñamos Ganesha para empresas que ya no se conforman con hojas de cálculo estáticas. Queremos que tus números hablen, predigan y te protejan.
-                    </p>
-                    <div className="grid sm:grid-cols-2 gap-8 text-left">
-                         {[
-                              { icon: <PieChart className="w-5 h-5" />, t: 'Reportes Predictivos', d: 'Gráficos que no solo muestran el hoy, sino el mañana.' },
-                              { icon: <Layers className="w-5 h-5" />, t: 'Estructura Multi-Nivel', d: 'Plan de cuentas infinito para empresas multinacionales.' },
-                              { icon: <Clock className="w-5 h-5" />, t: 'Cierres en Segundos', d: 'Automatizamos el cierre mensual para que disfrutes tu tiempo.' },
-                              { icon: <Globe className="w-5 h-5" />, t: 'Moneda Universal', d: 'Múltiples divisas con tipos de cambio integrados en tiempo real.' },
-                         ].map((f, i) => (
-                              <div key={i}>
-                                   <div className="text-amber-500 mb-2">{f.icon}</div>
-                                   <h4 className="text-white font-bold text-sm mb-1 uppercase tracking-wider">{f.t}</h4>
-                                   <p className="text-zinc-500 text-xs">{f.d}</p>
-                              </div>
-                         ))}
-                    </div>
-               </div>
-               <div className="relative group">
-                    <div className="absolute inset-0 bg-amber-500/10 blur-[100px] group-hover:bg-amber-500/20 transition-all" />
-                    <div className="relative p-8 rounded-[3rem] bg-zinc-900/80 border border-white/10 backdrop-blur-3xl overflow-hidden aspect-video flex items-center justify-center">
-                         <div className="flex flex-col items-center">
-                              <Bot className="w-16 h-16 text-amber-500 animate-pulse" />
-                              <div className="mt-6 text-[10px] font-black uppercase tracking-widest text-zinc-500">IA Activa: Analizando Transacciones...</div>
-                         </div>
-                         {/* Abstract UI decor */}
-                         <div className="absolute top-10 right-10 w-24 h-1 bg-white/5 rounded-full" />
-                         <div className="absolute bottom-10 left-10 w-32 h-1 bg-white/5 rounded-full" />
-                    </div>
-               </div>
+          <div className="mb-32 text-center">
+             <div className="inline-block p-4 rounded-3xl bg-primary/5 mb-8">
+                <Coins className="w-10 h-10 text-primary" />
+             </div>
+             <h2 className="text-6xl md:text-8xl font-playfair font-bold mb-8 tracking-tighter">La Sabiduría Integrada</h2>
+             <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-medium">Cada función ha sido forjada para eliminar la fricción de tu crecimiento.</p>
           </div>
 
-          <div className="text-center mb-24">
-            <h2 className="text-4xl lg:text-6xl font-playfair font-bold mb-6 italic">Filosofía de <span className="text-amber-500 font-normal not-italic">Eficiencia</span></h2>
-            <p className="text-zinc-500 max-w-2xl mx-auto font-medium">No vendemos software. Vendemos la paz mental de saber que tu negocio está en orden.</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-8">
             {[
-              { icon: <Bot className="w-8 h-8 text-primary" />, title: 'Sabiduría IA', desc: 'Consultas en tiempo real con Ganesha AI para dudas contables complejas.', sub: 'Inteligencia' },
-              { icon: <Zap className="w-8 h-8 text-orange-500" />, title: 'Ceros Obstáculos', desc: 'Algoritmos que auto-concilian movimientos bancarios con pólizas.', sub: 'Fluidez' },
-              { icon: <TrendingUp className="w-8 h-8 text-emerald-500" />, title: 'Prosperidad', desc: 'Identificación automática de fugas de capital y oportunidades de ahorro.', sub: 'Buena Fortuna' },
-              { icon: <BookOpen className="w-8 h-8 text-sky-500" />, title: 'Registro Sagrado', desc: 'Pólizas contables generadas automáticamente desde tus facturas.', sub: 'Escritura' },
-              { icon: <MousePointer2 className="w-8 h-8 text-amber-500" />, title: 'Dominio del Caos', desc: 'Panel de control con KPIs financieros configurables por departamento.', sub: 'Mente Enfocada' },
-              { icon: <ShieldCheck className="w-8 h-8 text-purple-500" />, title: 'Soberanía Total', desc: 'Nube privada y back-ups diarios. Tu tesoro está seguro.', sub: 'Protección' },
-            ].map((pillar, i) => (
+              { icon: <Bot className="w-8 h-8" />, t: 'IA Nativa', d: 'No es un plugin, es el corazón del sistema. Análisis contable profundo en segundos.' },
+              { icon: <Zap className="w-8 h-8" />, t: 'Conciliación Zen', d: 'El sistema fluye con tus bancos. Las diferencias desaparecen automáticamente.' },
+              { icon: <ShieldCheck className="w-8 h-8" />, t: 'Bóveda Cuántica', d: 'Tus datos son sagrados. Seguridad extrema para la soberanía de tu información.' },
+              { icon: <Layers className="w-8 h-8" />, t: 'Multi-Tenant', d: 'Gestiona un imperio. Infinitas empresas bajo un control unificado y fluido.' },
+              { icon: <Globe className="w-8 h-8" />, t: 'Mente Global', d: 'Multimoneda real. No importa donde estés, Ganesha habla tu idioma financiero.' },
+              { icon: <Clock className="w-8 h-8" />, t: 'Tiempo Eterno', d: 'Automatizamos el 80% de tus tareas diarias para que recuperes tu vida.' },
+            ].map((f, i) => (
               <motion.div 
-                key={i} 
-                whileHover={{ y: -10, backgroundColor: 'rgba(255,255,255,0.03)' }}
-                className="p-10 rounded-[3rem] border border-white/5 bg-white/[0.01] transition-all group"
+                key={i}
+                whileHover={{ y: -10 }}
+                className="p-12 rounded-[4rem] border border-primary/5 bg-card hover:bg-muted/50 transition-all duration-500 group"
               >
-                <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
-                  {pillar.icon}
+                <div className="w-16 h-16 rounded-2xl bg-primary/5 flex items-center justify-center text-primary mb-10 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-500">
+                  {f.icon}
                 </div>
-                <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">{pillar.sub}</div>
-                <h3 className="text-xl font-bold mb-4">{pillar.title}</h3>
-                <p className="text-sm text-zinc-500 leading-relaxed">{pillar.desc}</p>
+                <h3 className="text-2xl font-bold mb-6 tracking-tight text-foreground">{f.t}</h3>
+                <p className="text-muted-foreground leading-relaxed text-sm">{f.d}</p>
+                <div className="mt-10 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0">
+                  Explorar Sabiduría <ArrowRight className="w-3 h-3" />
+                </div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Final */}
-      <section className="py-32 px-6 relative overflow-hidden">
-           <div className="absolute inset-0 bg-primary/5 -z-10" />
-           <div className="max-w-4xl mx-auto text-center">
-                <h2 className="text-5xl font-playfair font-bold mb-8">¿Listo para remover los obstáculos?</h2>
-                <p className="text-lg text-zinc-400 mb-12">Únete a cientos de empresas que ya transformaron su contabilidad en una ventaja estratégica.</p>
-                <div className="flex justify-center gap-6">
-                     <PastelButton onClick={() => navigate('register')} size="lg" className="h-20 px-16 bg-amber-500 text-black border-none font-black uppercase tracking-widest text-xs shadow-3xl shadow-amber-500/20">
-                          Crear Cuenta Gratis
-                     </PastelButton>
-                </div>
-           </div>
+      {/* IA Showcase: Ganesha AI */}
+      <section id="ia" className="py-40 bg-foreground/[0.03] relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[50%] h-full bg-primary/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-24 items-center">
+          <div className="relative group">
+            <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full animate-pulse scale-110" />
+            <div className="relative aspect-square rounded-[6rem] overflow-hidden border border-primary/10 bg-card/50 backdrop-blur-3xl flex items-center justify-center p-12">
+               <motion.img 
+                  animate={{ 
+                    scale: [1, 1.05, 1],
+                    rotate: [0, 2, -2, 0]
+                  }}
+                  transition={{ duration: 6, repeat: Infinity }}
+                  src="/personaje.png" 
+                  className="w-full h-full object-contain drop-shadow-[0_0_50px_rgba(var(--primary-rgb),0.5)]" 
+               />
+               <div className="absolute inset-0 border border-primary/20 rounded-[6rem] animate-pulse pointer-events-none" />
+            </div>
+          </div>
+
+          <div>
+             <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-[8px] font-black uppercase tracking-[0.4em] mb-10">
+                <Bot className="w-4 h-4" />
+                Soberanía Tecnológica
+             </div>
+             <h2 className="text-6xl md:text-8xl font-playfair font-bold mb-10 leading-tight tracking-tighter">
+                Tu Asesor de <br />
+                <span className="text-primary italic font-normal">Buen Augurio.</span>
+             </h2>
+             <p className="text-xl text-muted-foreground leading-relaxed font-medium mb-12">
+                Ganesha AI no solo responde preguntas, anticipa soluciones. Detecta ineficiencias antes de que se conviertan en obstáculos y te guía hacia decisiones prósperas basadas en datos puros.
+             </p>
+             <div className="grid grid-cols-2 gap-8">
+                {[
+                  { t: 'IA Generativa', d: 'Consultas en lenguaje natural.' },
+                  { t: 'Predictivo', d: 'Flujos de caja proyectados.' },
+                  { t: 'Auditoría', d: 'Detección automática de fraudes.' },
+                  { t: 'Soporte', d: 'Tu guía personal 24/7.' }
+                ].map((item, idx) => (
+                  <div key={idx} className="border-l border-primary/20 pl-6">
+                    <div className="text-foreground font-bold text-sm uppercase tracking-widest mb-1">{item.t}</div>
+                    <div className="text-muted-foreground text-xs">{item.d}</div>
+                  </div>
+                ))}
+             </div>
+          </div>
+        </div>
       </section>
 
-      {/* Footer místico */}
-      <footer className="py-24 border-t border-white/5 text-center px-6">
-        <div className="flex items-center justify-center gap-2 mb-8">
-           <div className="w-6 h-px bg-white/10" />
-           <span className="font-playfair italic text-zinc-400">GANESHA ENTERPRISE SYSTEM</span>
-           <div className="w-6 h-px bg-white/10" />
+      {/* CTA Final: El Despertar */}
+      <section id="prosperidad" className="py-80 flex flex-col items-center text-center px-6 relative overflow-hidden">
+        <div className="absolute inset-0 z-0 flex items-center justify-center">
+            <div className="w-[1000px] h-[1000px] bg-primary/10 rounded-full blur-[200px] animate-pulse" />
         </div>
-        <p className="text-[10px] text-zinc-600 uppercase tracking-[0.5em] mb-4">Que la prosperidad guíe tus números</p>
-        <p className="text-xs text-zinc-700">© 2026 Reservados todos los derechos. Hecho por mentes brillantes para el éxito global.</p>
+        
+        <div className="relative z-10 max-w-5xl">
+          <h2 className="text-7xl md:text-[10rem] font-playfair font-bold leading-none tracking-tighter mb-16">
+            Remueve los <br />
+            <span className="text-primary italic">Obstáculos.</span>
+          </h2>
+          <p className="text-2xl text-muted-foreground mb-20 max-w-2xl mx-auto leading-relaxed">
+            La abundancia financiera no es suerte, es arquitectura. Comienza a construir tu imperio hoy mismo con GANESHA.
+          </p>
+          <div className="flex flex-col md:flex-row gap-8 justify-center">
+            <PastelButton onClick={() => navigate('register')} className="h-24 px-20 bg-primary text-primary-foreground border-none font-black uppercase tracking-[0.4em] text-xs shadow-[0_20px_60px_rgba(var(--primary-rgb),0.3)] hover:scale-105 transition-all">
+              Reclamar mi Éxito
+            </PastelButton>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer Final */}
+      <footer className="py-32 border-t border-primary/5 text-center bg-background/50 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-6">
+           <div className="flex flex-col items-center gap-8">
+              <div className="flex flex-col items-center gap-2">
+                 <img src="/GaneshaLogo.png" className="w-12 h-12 grayscale brightness-200 opacity-20" />
+                 <span className="font-playfair text-xl font-bold tracking-[0.4em] text-muted-foreground opacity-30">GANESHA ENTERPRISE SYSTEM</span>
+              </div>
+              <div className="h-px w-20 bg-primary/20" />
+              <div className="text-[9px] font-black uppercase tracking-[0.6em] text-muted-foreground/60 leading-relaxed">
+                El Conocimiento es el inicio. La acción es el Camino. <br />
+                © 2026 Reservados todos los derechos.
+              </div>
+           </div>
+        </div>
       </footer>
     </div>
   );

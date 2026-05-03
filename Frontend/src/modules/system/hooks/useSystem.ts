@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
 import { SYSTEM } from '@/lib/api/endpoints';
+import { useAppStore } from '@/lib/stores/useAppStore';
 
 export interface SystemStats {
   entities: {
@@ -52,14 +53,17 @@ export interface SystemHealth {
 }
 
 export function useSystem() {
+  const { currentCompany } = useAppStore();
+  const companyId = currentCompany?.id;
+
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery<SystemStats>({
-    queryKey: ['system', 'stats'],
-    queryFn: () => apiClient.get<SystemStats>(SYSTEM.stats),
+    queryKey: ['system', 'stats', companyId],
+    queryFn: () => apiClient.get<SystemStats>(`${SYSTEM.stats}${companyId ? `?companyId=${companyId}` : ''}`),
   });
 
   const { data: health, isLoading: healthLoading, refetch: refetchHealth } = useQuery<SystemHealth>({
-    queryKey: ['system', 'health'],
-    queryFn: () => apiClient.get<SystemHealth>(SYSTEM.health),
+    queryKey: ['system', 'health', companyId],
+    queryFn: () => apiClient.get<SystemHealth>(`${SYSTEM.health}${companyId ? `?companyId=${companyId}` : ''}`),
     refetchInterval: 60000, // Every minute
   });
 

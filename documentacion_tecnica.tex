@@ -1,0 +1,98 @@
+\documentclass[12pt]{report}
+
+% --- Paquetes ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\geometry{a4paper, margin=2.5cm}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows, positioning}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins, breakable, listings}
+
+% --- Estilo ---
+\definecolor{DevBlue}{RGB}{2, 119, 189}
+\definecolor{CodeGray}{RGB}{244, 244, 244}
+
+\lstset{
+    backgroundcolor=\color{CodeGray},
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    language=bash
+}
+
+\title{
+    \Huge\bfseries\color{DevBlue} Ganesha ERP\\[0.5cm]
+    \Large Documentación Técnica de Arquitectura
+}
+\author{FlasheyEstudi | Lead Engineer}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\chapter{Arquitectura del Sistema}
+
+\section{Stack Tecnológico}
+Ganesha ERP está construido sobre un stack de JavaScript moderno enfocado en la seguridad de tipos y el rendimiento.
+\begin{itemize}
+    \item \textbf{Runtime:} Node.js / Bun.
+    \item \textbf{Framework:} Next.js 15 (App Router).
+    \item \textbf{Persistencia:} Prisma ORM con SQLite (opcionalmente escalable a PostgreSQL).
+    \item \textbf{Estilos:} Tailwind CSS y Shadcn/UI.
+    \item \textbf{Validación:} Zod (esquemas compartidos).
+    \item \textbf{Estado:} Zustand (en el Frontend).
+\end{itemize}
+
+\section{Estructura de Directorios}
+El proyecto se divide en dos grandes contenedores:
+\begin{description}
+    \item[Backend/:] Provee la API RESTful, manejo de base de datos y auditoría.
+    \item[Frontend/:] Interfaz de usuario SPA modularizada por carpetas de funciones.
+\end{description}
+
+\chapter{Modelo de Datos y API}
+
+\section{Esquema Prisma}
+El corazón del sistema es la multi-tenencia. Cada registro está aislado por un \texttt{companyId}.
+\begin{tcolorbox}[colback=white, colframe=DevBlue, title=Entidades Principales]
+    \begin{itemize}
+        \item \textbf{Company:} Entidad raíz.
+        \item \textbf{User / UserCompany:} Seguridad y permisos.
+        \item \textbf{JournalEntry:} Pólizas contables con integridad referencial.
+        \item \textbf{Invoice:} Documentación de ingresos y egresos.
+    \end{itemize}
+\end{tcolorbox}
+
+\section{Diseño de la API}
+La API sigue principios REST. Ejemplo de validación con Zod:
+\begin{lstlisting}[language=bash]
+// Ejemplo de esquema de Póliza
+export const journalEntrySchema = z.object({
+  companyId: z.string().cuid(),
+  periodId: z.string().cuid(),
+  description: z.string().min(5),
+  lines: z.array(journalLineSchema).min(2),
+});
+\end{lstlisting}
+
+\chapter{Despliegue y Mantenimiento}
+
+\section{Proxy Inverso (Caddy)}
+El sistema utiliza Caddy para el manejo de certificados SSL automáticos y balanceo de carga. La configuración redirige el tráfico al puerto \texttt{3000} (por defecto de Next.js).
+
+\section{Auditoría de Acciones}
+Cada petición que muta el estado del sistema pasa por un servicio de auditoría (\texttt{logAuditTx}) que guarda el estado previo y posterior del registro afectado, permitiendo un "Time Travel" de la información si es necesario.
+
+\chapter{Conclusión Técnica}
+Ganesha ERP está diseñado para ser ligero pero robusto, aprovechando las ventajas de SQLite para despliegues rápidos en entornos con recursos limitados, pero manteniendo una arquitectura desacoplada que permite el crecimiento horizontal.
+
+\end{document}

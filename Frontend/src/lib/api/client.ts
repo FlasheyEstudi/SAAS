@@ -56,8 +56,13 @@ class ApiClient {
     
     // Inject companyId for multi-tenant requests
     const companyId = this.getCompanyId();
+    const hasCompanyIdInUrl = url.includes('companyId=');
+    const hasCompanyIdInParams = params && params.companyId;
+
     if (
       companyId &&
+      !hasCompanyIdInUrl &&
+      !hasCompanyIdInParams &&
       !url.includes('companies') &&
       !url.includes('auth') &&
       !url.includes('login') &&

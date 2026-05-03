@@ -143,31 +143,31 @@ export function AuditView() {
 
       {/* Stats row */}
       <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <VintageCard hover={false} className="p-4 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-vintage-100 flex items-center justify-center">
+        <VintageCard variant="premium" className="p-4 flex items-center gap-4 border-none">
+          <div className="w-10 h-10 rounded-lg bg-vintage-100 dark:bg-zinc-800 flex items-center justify-center">
             <Clock className="w-5 h-5 text-vintage-500" />
           </div>
           <div>
             <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Eventos</p>
-            <p className="text-xl font-playfair text-vintage-800">{pagination.total}</p>
+            <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 font-bold">{pagination.total}</p>
           </div>
         </VintageCard>
-        <VintageCard hover={false} className="p-4 flex items-center gap-4">
+        <VintageCard variant="premium" className="p-4 flex items-center gap-4 border-none">
           <div className="w-10 h-10 rounded-lg bg-info/10 flex items-center justify-center">
             <Database className="w-5 h-5 text-info" />
           </div>
           <div>
-            <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Entidades Monitoreadas</p>
-            <p className="text-xl font-playfair text-vintage-800">12</p>
+            <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Entidades</p>
+            <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 font-bold">{isLoading ? '...' : '6'}</p>
           </div>
         </VintageCard>
-        <VintageCard hover={false} className="p-4 flex items-center gap-4">
+        <VintageCard variant="premium" className="p-4 flex items-center gap-4 border-none">
           <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
-            <UserIcon className="w-5 h-5 text-success" />
+            <Clock className="w-5 h-5 text-success" />
           </div>
           <div>
-            <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Días de Historial</p>
-            <p className="text-xl font-playfair text-vintage-800">90+</p>
+            <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Días Historial</p>
+            <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 font-bold">{isLoading ? '...' : logs.length > 0 ? Math.ceil((new Date().getTime() - new Date(logs[logs.length-1].createdAt).getTime()) / (1000 * 3600 * 24)) : 0}</p>
           </div>
         </VintageCard>
       </motion.div>

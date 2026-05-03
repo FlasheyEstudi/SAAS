@@ -5,7 +5,8 @@ import bcrypt from 'bcryptjs';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, company, phone, password } = body;
+    const { name, company, phone, password } = body;
+    const email = body.email.toLowerCase().trim();
 
     // 1. Validaciones básicas
     if (!name || !email || !company || !password) {
@@ -45,19 +46,30 @@ export async function POST(request: Request) {
         data: {
           email,
           name,
-          password: hashedPassword,
+          passwordHash: hashedPassword,
           companyId: companyRecord.id,
           role: 'ADMIN', // El que crea la empresa es ADMIN en el campo global (por ahora compatible)
           isActive: true
         },
       });
 
-      // Crear el vínculo de membresía explícito
+      // 4. Crear el vínculo de membresía explícito
       await tx.userCompany.create({
         data: {
           userId: newUser.id,
           companyId: companyRecord.id,
           role: 'OWNER',
+        }
+      });
+
+      // 5. Crear Período Contable Inicial por defecto (Mes actual)
+      const now = new Date();
+      await tx.accountingPeriod.create({
+        data: {
+          companyId: companyRecord.id,
+          year: now.getFullYear(),
+          month: now.getMonth() + 1,
+          status: 'OPEN',
         }
       });
 

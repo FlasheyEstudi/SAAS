@@ -63,14 +63,28 @@ export function Providers({ children }: { children: React.ReactNode }) {
   if (!mounted) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#050505] overflow-hidden">
-        <div className="relative">
+        <div className="relative flex flex-col items-center">
           {/* Spiritual-tech Golden Pulse */}
-          <div className="absolute inset-0 bg-amber-500/20 blur-3xl rounded-full animate-pulse scale-150" />
-          <div className="relative flex flex-col items-center">
-             <div className="w-16 h-16 border-4 border-amber-500/10 border-t-amber-500 rounded-full animate-spin mb-6" />
-             <h1 className="text-2xl font-black text-white tracking-[0.5em] animate-pulse">
-               GANESHA
-             </h1>
+          <div className="absolute inset-0 bg-amber-500/30 blur-[100px] rounded-full animate-pulse scale-150" />
+          
+          <div className="relative mb-8">
+            <div className="w-24 h-24 border-2 border-amber-500/10 border-t-amber-500 rounded-full animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center">
+               <img 
+                 src="/GaneshaLogo.png" 
+                 alt="Ganesha Logo"
+                 className="w-14 h-14 object-contain animate-pulse"
+               />
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center gap-2">
+            <h1 className="text-3xl font-black text-white tracking-[0.6em] animate-pulse">
+              GANESHA
+            </h1>
+            <span className="text-[10px] font-bold text-amber-500 uppercase tracking-[0.8em] opacity-60">
+              Intelligence System
+            </span>
           </div>
         </div>
       </div>

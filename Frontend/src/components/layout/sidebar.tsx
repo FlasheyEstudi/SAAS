@@ -88,13 +88,19 @@ export function Sidebar() {
       )}
     >
       {/* Branding Section (Logo only to avoid duplicate name) */}
-      <div className="h-16 flex items-center px-4 border-b border-white/5 mb-2 overflow-hidden">
-        <div className="flex items-center gap-3">
-          <div 
-            onClick={() => navigate('dashboard')}
-            className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center shrink-0 shadow-lg shadow-orange-500/20 cursor-pointer"
-          >
-             <img src="/images/logo_ganesha.png" alt="Ganesha Logo" className="w-full h-full object-cover" />
+      <div className="h-20 flex items-center px-4 border-b border-white/10 mb-4 overflow-hidden relative">
+        {/* Subtle background glow */}
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent pointer-events-none" />
+        
+        <div className="flex items-center gap-3 relative z-10">
+          <div className="relative group">
+            <div className="absolute inset-0 bg-amber-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <img 
+              src="/GaneshaLogo.png" 
+              alt="Ganesha Logo"
+              onClick={() => navigate('dashboard')}
+              className="w-12 h-12 object-contain cursor-pointer transition-all duration-500 hover:scale-110 drop-shadow-[0_0_15px_rgba(245,158,11,0.3)] relative z-10"
+            />
           </div>
           {!sidebarCollapsed && (
             <motion.div
@@ -102,7 +108,8 @@ export function Sidebar() {
               animate={{ opacity: 1, x: 0 }}
               className="flex flex-col"
             >
-               <span className="text-[10px] font-black text-amber-500/80 uppercase tracking-widest">Master Menu</span>
+               <h2 className="text-lg font-black text-white leading-none tracking-tighter">GANESHA</h2>
+               <span className="text-[9px] font-black text-amber-500 uppercase tracking-[0.3em] mt-1">Intelligence</span>
             </motion.div>
           )}
         </div>

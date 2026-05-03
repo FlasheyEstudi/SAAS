@@ -1,8 +1,14 @@
 import { db } from '@/lib/db';
 import { success, serverError } from '@/lib/api-helpers';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const companyId = searchParams.get('companyId');
+
+    const where = companyId ? { companyId } : {};
+    const whereUser = companyId ? { memberships: { some: { companyId } } } : {};
+
     const [
       companyCount,
       periodCount,
@@ -26,27 +32,27 @@ export async function GET() {
       activeUsers,
       unreadNotifications,
     ] = await Promise.all([
-      db.company.count(),
-      db.accountingPeriod.count(),
-      db.account.count(),
-      db.costCenter.count(),
-      db.journalEntry.count(),
-      db.invoice.count(),
-      db.bankAccount.count(),
-      db.bankMovement.count(),
-      db.thirdParty.count(),
-      db.user.count(),
-      db.auditLog.count(),
-      db.fixedAsset.count(),
-      db.budget.count(),
-      db.notification.count(),
-      db.fileAttachment.count(),
-      db.exchangeRate.count(),
-      db.journalEntry.count({ where: { status: 'DRAFT' } }),
-      db.journalEntry.count({ where: { status: 'POSTED' } }),
-      db.accountingPeriod.count({ where: { status: 'OPEN' } }),
-      db.user.count({ where: { isActive: true } }),
-      db.notification.count({ where: { isRead: false } }),
+      db.company.count({ where: companyId ? { id: companyId } : {} }),
+      db.accountingPeriod.count({ where }),
+      db.account.count({ where }),
+      db.costCenter.count({ where }),
+      db.journalEntry.count({ where }),
+      db.invoice.count({ where }),
+      db.bankAccount.count({ where }),
+      db.bankMovement.count({ where: companyId ? { bankAccount: { companyId } } : {} }),
+      db.thirdParty.count({ where }),
+      db.user.count({ where: whereUser }),
+      db.auditLog.count({ where }),
+      db.fixedAsset.count({ where }),
+      db.budget.count({ where }),
+      db.notification.count({ where }),
+      db.fileAttachment.count({ where }),
+      db.exchangeRate.count({ where: companyId ? { companyId } : {} }),
+      db.journalEntry.count({ where: { ...where, status: 'DRAFT' } }),
+      db.journalEntry.count({ where: { ...where, status: 'POSTED' } }),
+      db.accountingPeriod.count({ where: { ...where, status: 'OPEN' } }),
+      db.user.count({ where: { ...whereUser, isActive: true } }),
+      db.notification.count({ where: { ...where, isRead: false } }),
     ]);
 
     return success({

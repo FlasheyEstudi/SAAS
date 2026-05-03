@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { cn } from '@/lib/utils'
 import {
   Building2,
   Calendar,
@@ -47,6 +49,8 @@ import {
   Tags,
   GitBranch,
   Scale,
+  Link as LinkIcon,
+  Code as CodeIcon,
 } from 'lucide-react'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -626,9 +630,9 @@ export default function Home() {
     } catch (err) {
       const elapsed = Math.round(performance.now() - startTime)
       setResponse({
-        status: 0,
-        data: { error: err instanceof Error ? err.message : 'Network error' },
-        time: elapsed,
+         status: 0,
+         data: { error: err instanceof Error ? err.message : 'Network error' },
+         time: elapsed,
       })
     } finally {
       setLoading(false)
@@ -682,36 +686,47 @@ export default function Home() {
   const totalEndpoints = MODULES.reduce((sum, m) => sum + m.endpoints.length, 0)
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
+    <div className="min-h-screen flex flex-col bg-[#020202] text-slate-100 selection:bg-blue-500/30 overflow-hidden font-sans">
+      {/* ─── Grid Background ────────────────────────────────────────── */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.03]" 
+           style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
+      <div className="fixed inset-0 z-0 pointer-events-none bg-gradient-to-tr from-blue-500/5 via-transparent to-purple-500/5" />
+
       {/* ─── Header ─────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur-sm">
+      <header className="sticky top-0 z-40 border-b border-white/5 bg-black/40 backdrop-blur-2xl">
         <div className="flex items-center justify-between px-4 py-3 lg:px-6">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden"
+              className="lg:hidden text-slate-400 hover:text-white"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
               <ChevronRight className={`h-4 w-4 transition-transform ${sidebarOpen ? 'rotate-0' : 'rotate-180'}`} />
             </Button>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight text-slate-900">
-                📒 ERP Contable
-                <span className="ml-2 text-sm font-medium text-slate-500">API Explorer</span>
-              </h1>
+            <div className="flex items-center gap-3">
+              <div className="relative group">
+                <div className="absolute inset-0 bg-blue-500/20 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                <img src="/logoBackend.png" className="w-9 h-9 object-contain relative z-10 transition-transform group-hover:scale-110" alt="Logo" />
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-sm font-black tracking-tighter text-white leading-none">
+                  GANESHA SAAS
+                </h1>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">API Explorer</span>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="hidden sm:inline-flex text-xs font-mono">
+            <Badge variant="outline" className="hidden sm:inline-flex text-[10px] font-black border-white/10 text-slate-400 uppercase tracking-widest bg-white/5">
               {totalEndpoints} endpoints
             </Badge>
-            <Button variant="outline" size="sm" onClick={handleSeed} disabled={loading}>
-              {loading ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Database className="mr-2 h-3.5 w-3.5" />}
+            <Button variant="outline" size="sm" onClick={handleSeed} disabled={loading} className="border-emerald-500/20 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 text-[10px] font-black uppercase tracking-widest h-8">
+              {loading ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Database className="mr-2 h-3 w-3" />}
               Seed Database
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleClear} disabled={loading}>
-              <Trash2 className="mr-2 h-3.5 w-3.5" />
+            <Button variant="ghost" size="sm" onClick={handleClear} disabled={loading} className="text-slate-500 hover:text-red-400 hover:bg-red-500/5 text-[10px] font-black uppercase tracking-widest h-8">
+              <Trash2 className="mr-2 h-3 w-3" />
               <span className="hidden sm:inline">Clear</span>
             </Button>
           </div>
@@ -719,11 +734,17 @@ export default function Home() {
       </header>
 
       {/* ─── Info Banner ────────────────────────────────────────────── */}
-      <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800 flex items-center gap-2">
-        <AlertTriangle className="h-4 w-4 shrink-0" />
-        <span>
-          <strong>Primero:</strong> Haz clic en <em>&quot;Seed Database&quot;</em> para poblar con datos de prueba, luego copia los IDs generados para las consultas.
-        </span>
+      <div className="border-b border-blue-500/20 bg-blue-500/5 px-4 py-2 text-[10px] font-bold text-blue-400 uppercase tracking-widest flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-3 w-3 shrink-0" />
+          <span>
+            Paso 1: &quot;Seed Database&quot; para datos reales. Paso 2: Login en el Frontend.
+          </span>
+        </div>
+        <div className="flex items-center gap-4 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
+          <span className="text-white/50">User: <span className="text-blue-300">admin@alpha.com.ni</span></span>
+          <span className="text-white/50">Pass: <span className="text-blue-300">Admin123!</span></span>
+        </div>
       </div>
 
       {/* ─── Main Layout ────────────────────────────────────────────── */}
@@ -731,35 +752,45 @@ export default function Home() {
         {/* ─── Sidebar ──────────────────────────────────────────────── */}
         <aside
           className={`
-            fixed inset-y-0 left-0 z-30 w-64 border-r border-slate-200 bg-slate-900 text-slate-200
+            fixed inset-y-0 left-0 z-30 w-72 border-r border-white/5 bg-[#080808] text-slate-200
             pt-[105px] transition-transform duration-200 ease-in-out
             lg:relative lg:z-0 lg:translate-x-0 lg:pt-0
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           `}
         >
           <div className="max-h-screen overflow-y-auto">
-            <nav className="p-3 space-y-1">
+            <div className="p-6 border-b border-white/5 mb-4">
+              <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500/80">Documentación API</h2>
+              <p className="text-[9px] text-slate-500 mt-1 uppercase tracking-widest">Enterprise v2.5.0</p>
+            </div>
+            <nav className="px-3 pb-10 space-y-2">
               {MODULES.map((mod) => {
                 const Icon = mod.icon
                 const isExpanded = expandedModules.has(mod.id)
                 return (
-                  <div key={mod.id}>
+                   <div key={mod.id} className="space-y-1">
                     <button
                       onClick={() => toggleModule(mod.id)}
                       className={`
-                        flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium
-                        transition-colors hover:bg-slate-800
-                        ${isExpanded ? 'bg-slate-800 text-white' : 'text-slate-400'}
+                        flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-xs font-bold
+                        transition-all duration-300 group
+                        ${isExpanded ? 'bg-white/5 text-white shadow-xl shadow-black/20' : 'text-slate-400 hover:bg-white/5 hover:text-white'}
                       `}
                     >
-                      <Icon className="h-4 w-4 shrink-0" />
+                      <div className={cn(
+                        "w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
+                        isExpanded ? "bg-blue-500/20 text-blue-400" : "bg-white/5 text-slate-500 group-hover:bg-white/10"
+                      )}>
+                        <Icon className="h-4 w-4 shrink-0" />
+                      </div>
                       <span className="truncate">{mod.name}</span>
-                      <Badge variant="secondary" className="ml-auto h-5 min-w-[20px] justify-center rounded-full bg-slate-700 px-1.5 text-[10px] text-slate-400">
-                        {mod.endpoints.length}
-                      </Badge>
+                      <ChevronRight className={cn(
+                        "ml-auto h-3 w-3 transition-transform duration-300 text-slate-600",
+                        isExpanded && "rotate-90 text-blue-400"
+                      )} />
                     </button>
                     {isExpanded && (
-                      <div className="ml-4 mt-1 space-y-0.5 border-l border-slate-700 pl-3">
+                      <div className="ml-7 mt-2 space-y-1 border-l border-white/5 pl-4">
                         {mod.endpoints.map((ep) => {
                           const isActive = selectedEndpointId === ep.id
                           return (
@@ -767,19 +798,21 @@ export default function Home() {
                               key={ep.id}
                               onClick={() => handleSelectEndpoint(ep.id)}
                               className={`
-                                flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors
-                                ${isActive ? 'bg-slate-700 text-white' : 'text-slate-500 hover:bg-slate-800 hover:text-slate-300'}
+                                flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[11px] transition-all duration-200
+                                ${isActive 
+                                  ? 'bg-blue-500/10 text-blue-400 font-bold border-l-2 border-blue-500 pl-4' 
+                                  : 'text-slate-500 hover:text-slate-300 hover:pl-4'}
                               `}
                             >
                               <span
-                                className={`inline-flex h-5 min-w-[36px] items-center justify-center rounded px-1 font-mono text-[10px] font-bold ${
+                                className={`inline-flex h-4 min-w-[32px] items-center justify-center rounded text-[9px] font-black tracking-tighter ${
                                   ep.method === 'GET'
-                                    ? 'bg-emerald-900/50 text-emerald-400'
+                                    ? 'text-emerald-500'
                                     : ep.method === 'POST'
-                                      ? 'bg-blue-900/50 text-blue-400'
+                                      ? 'text-blue-500'
                                       : ep.method === 'PUT'
-                                        ? 'bg-amber-900/50 text-amber-400'
-                                        : 'bg-red-900/50 text-red-400'
+                                        ? 'text-amber-500'
+                                        : 'text-red-500'
                                 }`}
                               >
                                 {ep.method}
@@ -806,20 +839,25 @@ export default function Home() {
         )}
 
         {/* ─── Content Area ─────────────────────────────────────────── */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-5xl p-4 lg:p-6">
+        <main className="flex-1 overflow-y-auto relative z-10 custom-scrollbar">
+          <AnimatePresence mode="wait">
+            <div key={selectedEndpointId || 'welcome'} className="mx-auto max-w-5xl p-6 lg:p-10">
             {!selected ? (
               /* ─── Welcome Screen ──────────────────────────────────── */
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="mb-6 rounded-full bg-slate-100 p-6">
-                  <FileText className="h-12 w-12 text-slate-400" />
+              <div className="flex flex-col items-center justify-center py-24 text-center animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                <div className="mb-10 relative group">
+                  <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full group-hover:bg-blue-500/30 transition-colors" />
+                  <div className="w-24 h-24 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center relative z-10 backdrop-blur-xl animate-float">
+                    <Sparkles className="h-10 w-10 text-blue-400" />
+                  </div>
                 </div>
-                <h2 className="text-2xl font-bold text-slate-800">API Explorer</h2>
-                <p className="mt-2 max-w-md text-sm text-slate-500">
-                  Selecciona un endpoint del menú lateral para explorar la API del ERP Contable.
-                  Puedes enviar solicitudes, ver respuestas y probar todos los módulos del sistema.
+                <h2 className="text-4xl font-black text-white tracking-tighter mb-4">Ganesha SaaS <span className="text-blue-500">API Explorer</span></h2>
+                <p className="max-w-md text-sm text-slate-400 leading-relaxed">
+                  Entorno de desarrollo y pruebas para la arquitectura Ganesha.
+                  Control total sobre las entidades contables y financieras.
                 </p>
-                <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                
+                <div className="mt-16 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 w-full">
                   {MODULES.map((mod) => {
                     const Icon = mod.icon
                     return (
@@ -831,13 +869,12 @@ export default function Home() {
                             handleSelectEndpoint(mod.endpoints[0].id)
                           }
                         }}
-                        className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white p-4 text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm"
+                        className="group flex flex-col items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-6 text-slate-400 transition-all hover:bg-white/[0.05] hover:border-white/20 hover:-translate-y-1"
                       >
-                        <Icon className="h-6 w-6" />
-                        <span className="text-xs font-medium">{mod.name}</span>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {mod.endpoints.length}
-                        </Badge>
+                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:text-white transition-colors">
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest">{mod.name}</span>
                       </button>
                     )
                   })}
@@ -845,142 +882,154 @@ export default function Home() {
               </div>
             ) : (
               /* ─── Endpoint Interface ─────────────────────────────── */
-              <div className="space-y-4">
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
                 {/* Breadcrumb */}
-                <div className="flex items-center gap-2 text-sm text-slate-500">
-                  <span className="font-medium text-slate-700">{selected.module.name}</span>
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                  <span className="text-blue-400">{selected.module.name}</span>
                   <ChevronRight className="h-3 w-3" />
-                  <span className="truncate">{selected.endpoint.description}</span>
+                  <span className="text-white">{selected.endpoint.description}</span>
                 </div>
 
                 {/* Endpoint Header Card */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-3">
-                      <Badge className={`font-mono text-xs font-bold ${METHOD_COLORS[selected.endpoint.method]}`}>
+                <div className="relative group">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur opacity-10 group-hover:opacity-20 transition duration-1000"></div>
+                  <div className="relative rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
+                    <div className="flex items-center gap-4">
+                      <Badge className={`font-black text-[10px] px-3 py-1 uppercase tracking-widest ${METHOD_COLORS[selected.endpoint.method]}`}>
                         {selected.endpoint.method}
                       </Badge>
-                      <code className="flex-1 rounded-md bg-slate-100 px-3 py-1.5 font-mono text-sm text-slate-700">
+                      <code className="flex-1 rounded-xl bg-black/60 px-4 py-3 font-mono text-xs text-blue-300 border border-white/5">
                         {selected.endpoint.url}
                       </code>
                     </div>
-                    <CardDescription className="mt-1">
-                      {selected.endpoint.description}
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
+                  </div>
+                </div>
 
-                {/* Request Builder */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Request</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* URL */}
-                    <div>
-                      <label className="mb-1.5 block text-xs font-medium text-slate-500">
-                        URL
-                      </label>
-                      <Input
-                        value={requestUrl}
-                        onChange={(e) => setRequestUrl(e.target.value)}
-                        className="font-mono text-sm"
-                        placeholder="/api/..."
-                      />
+                <div className="grid grid-cols-1 gap-6">
+                  {/* Request Builder */}
+                  <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
+                    <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Petición (Request)</h3>
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 rounded-full bg-red-500/50" />
+                        <div className="w-2 h-2 rounded-full bg-amber-500/50" />
+                        <div className="w-2 h-2 rounded-full bg-emerald-500/50" />
+                      </div>
                     </div>
-
-                    {/* Query Params (GET) */}
-                    {selected.endpoint.method === 'GET' && (
-                      <div>
-                        <label className="mb-1.5 block text-xs font-medium text-slate-500">
-                          Query Parameters (JSON)
+                    <div className="p-6 space-y-6">
+                      {/* URL */}
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                          <LinkIcon className="w-3 h-3" /> Endpoint URL
                         </label>
-                        <Textarea
-                          value={queryParams}
-                          onChange={(e) => setQueryParams(e.target.value)}
-                          className="min-h-[100px] font-mono text-sm"
-                          placeholder='{"key": "value"}'
+                        <Input
+                          value={requestUrl}
+                          onChange={(e) => setRequestUrl(e.target.value)}
+                          className="bg-black border-white/10 text-white font-mono text-xs h-11 focus:ring-blue-500/20"
+                          placeholder="/api/..."
                         />
                       </div>
-                    )}
 
-                    {/* Request Body (POST/PUT) */}
-                    {selected.endpoint.method !== 'GET' && (
-                      <div>
-                        <label className="mb-1.5 block text-xs font-medium text-slate-500">
-                          Request Body (JSON)
-                        </label>
-                        <Textarea
-                          value={requestBody}
-                          onChange={(e) => setRequestBody(e.target.value)}
-                          className="min-h-[160px] font-mono text-sm"
-                          placeholder='{"key": "value"}'
-                        />
-                      </div>
-                    )}
-
-                    {/* Send Button */}
-                    <Button onClick={sendRequest} disabled={loading} className="w-full sm:w-auto">
-                      {loading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Sending...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="mr-2 h-4 w-4" />
-                          Send Request
-                        </>
+                      {/* Query Params (GET) */}
+                      {selected.endpoint.method === 'GET' && (
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                            <CodeIcon className="w-3 h-3" /> Query Parameters (JSON)
+                          </label>
+                          <Textarea
+                            value={queryParams}
+                            onChange={(e) => setQueryParams(e.target.value)}
+                            className="bg-black border-white/10 text-white font-mono text-xs min-h-[120px] p-4 resize-none focus:ring-blue-500/20"
+                            placeholder='{"key": "value"}'
+                          />
+                        </div>
                       )}
-                    </Button>
-                  </CardContent>
-                </Card>
 
-                {/* Response */}
-                {response && (
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <CardTitle className="text-base">Response</CardTitle>
+                      {/* Request Body (POST/PUT) */}
+                      {selected.endpoint.method !== 'GET' && (
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                            <CodeIcon className="w-3 h-3" /> Request Body (JSON)
+                          </label>
+                          <Textarea
+                            value={requestBody}
+                            onChange={(e) => setRequestBody(e.target.value)}
+                            className="bg-black border-white/10 text-white font-mono text-xs min-h-[200px] p-4 resize-none focus:ring-blue-500/20"
+                            placeholder='{"key": "value"}'
+                          />
+                        </div>
+                      )}
+
+                      <Button 
+                        onClick={sendRequest} 
+                        disabled={loading} 
+                        className="w-full h-11 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-black uppercase tracking-[0.2em] text-[10px] transition-all hover:scale-[1.01] active:scale-95 shadow-xl shadow-blue-500/20 border-none"
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Ejecutando...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="mr-2 h-4 w-4" />
+                            Ejecutar Petición
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Response */}
+                  {response && (
+                    <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden animate-in zoom-in-95 duration-300 shadow-2xl shadow-black">
+                      <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                        <div className="flex items-center gap-4">
+                          <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Respuesta (Response)</h3>
                           <Badge
                             variant="outline"
-                            className={`font-mono text-xs font-bold ${STATUS_COLORS(response.status)}`}
+                            className={`font-mono text-[10px] font-black border-white/10 uppercase tracking-widest ${
+                              response.status >= 200 && response.status < 300 ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'
+                            }`}
                           >
-                            {response.status === 0 ? 'ERR' : response.status}
+                            {response.status === 0 ? 'ERR' : `HTTP ${response.status}`}
                           </Badge>
-                          <Badge variant="outline" className="font-mono text-xs">
+                          <Badge variant="outline" className="font-mono text-[9px] border-white/5 text-slate-500">
                             {response.time}ms
                           </Badge>
                         </div>
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="h-8 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white"
                           onClick={() => copyToClipboard(JSON.stringify(response.data, null, 2))}
                         >
-                          {copied ? <Check className="mr-1.5 h-3.5 w-3.5" /> : <Copy className="mr-1.5 h-3.5 w-3.5" />}
-                          {copied ? 'Copied' : 'Copy'}
+                          {copied ? <Check className="mr-2 h-3.5 w-3.5 text-emerald-500" /> : <Copy className="mr-2 h-3.5 w-3.5" />}
+                          {copied ? 'Copiado' : 'Copiar'}
                         </Button>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <ScrollArea className="max-h-[500px]">
-                        <pre className="whitespace-pre-wrap break-words rounded-lg bg-slate-900 p-4 font-mono text-sm leading-relaxed text-slate-100">
-                          {JSON.stringify(response.data, null, 2)}
-                        </pre>
-                      </ScrollArea>
-                    </CardContent>
-                  </Card>
-                )}
+                      <div className="p-0">
+                        <ScrollArea className="max-h-[600px] bg-black">
+                          <pre className="p-6 font-mono text-[11px] leading-relaxed text-blue-200/90 whitespace-pre">
+                            {JSON.stringify(response.data, null, 2)}
+                          </pre>
+                        </ScrollArea>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
-          </div>
+            </div>
+          </AnimatePresence>
         </main>
       </div>
 
       {/* ─── Footer ──────────────────────────────────────────────────── */}
-      <footer className="mt-auto border-t border-slate-200 bg-white px-4 py-3 text-center text-xs text-slate-400">
-        ERP Contable API Explorer v1.0
+      <footer className="mt-auto border-t border-white/5 bg-black px-6 py-4 text-center">
+        <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-600">
+          Ganesha Enterprise <span className="text-slate-800 mx-2">|</span> Backend API Explorer v2.5.0
+        </p>
       </footer>
     </div>
   )

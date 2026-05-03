@@ -10,7 +10,7 @@ interface FloatingInputProps extends React.InputHTMLAttributes<HTMLInputElement>
 }
 
 export const FloatingInput = forwardRef<HTMLInputElement, FloatingInputProps>(
-  ({ className, label, error, icon, type, id, ...props }, ref) => {
+  ({ className, label, error, icon, type, id, value, ...props }, ref) => {
     const [isFocused, setIsFocused] = useState(false);
     const [hasValue, setHasValue] = useState(false);
     const inputId = id || `input-${label.replace(/\s+/g, '-').toLowerCase()}`;
@@ -27,6 +27,7 @@ export const FloatingInput = forwardRef<HTMLInputElement, FloatingInputProps>(
             ref={ref}
             id={inputId}
             type={type}
+            value={value ?? ''}
             className={cn(
               'peer w-full px-3 pt-5 pb-2 text-sm bg-card border rounded-xl transition-all duration-300',
               'focus:outline-none focus:ring-2 focus:ring-vintage-400 focus:border-vintage-400',

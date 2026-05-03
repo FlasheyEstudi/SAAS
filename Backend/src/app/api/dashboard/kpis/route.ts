@@ -58,7 +58,25 @@ export async function GET(request: Request) {
         orderBy: [{ year: 'desc' }, { month: 'desc' }],
       });
     }
-    if (!currentPeriod) return error('No se encontró un período contable');
+    if (!currentPeriod) {
+      return success({
+        totalRevenue: 0,
+        revenueChange: 0,
+        totalExpenses: 0,
+        expenseChange: 0,
+        netIncome: 0,
+        netIncomeVsLastMonth: 0,
+        accountsReceivable: 0,
+        accountsPayable: 0,
+        cashBalance: 0,
+        overdueInvoices: 0,
+        pendingJournalEntries: 0,
+        workingCapital: 0,
+        workingCapitalVsLastMonth: 0,
+        incomeVsExpenseChart: [],
+        expenseByCostCenter: [],
+      });
+    }
 
     // Get previous period for comparison
     let prevYear = currentPeriod.year;
@@ -90,14 +108,17 @@ export async function GET(request: Request) {
     let currentLiabilities = 0;
 
     for (const line of currentLines) {
+      const debit = Number(line.debit) || 0;
+      const credit = Number(line.credit) || 0;
+      
       if (line.account.accountType === 'INCOME') {
-        currentIncome += Number(line.credit) - Number(line.debit);
+        currentIncome += credit - debit;
       } else if (line.account.accountType === 'EXPENSE') {
-        currentExpenses += Number(line.debit) - Number(line.credit);
+        currentExpenses += debit - credit;
       } else if (line.account.accountType === 'ASSET') {
-        currentAssets += Number(line.debit) - Number(line.credit);
+        currentAssets += debit - credit;
       } else if (line.account.accountType === 'LIABILITY') {
-        currentLiabilities += Number(line.credit) - Number(line.debit);
+        currentLiabilities += credit - debit;
       }
     }
 
@@ -130,14 +151,17 @@ export async function GET(request: Request) {
       let prevLiabilities = 0;
 
       for (const line of prevLines) {
+        const debit = Number(line.debit) || 0;
+        const credit = Number(line.credit) || 0;
+
         if (line.account.accountType === 'INCOME') {
-          prevIncome += Number(line.credit) - Number(line.debit);
+          prevIncome += credit - debit;
         } else if (line.account.accountType === 'EXPENSE') {
-          prevExpenses += Number(line.debit) - Number(line.credit);
+          prevExpenses += debit - credit;
         } else if (line.account.accountType === 'ASSET') {
-          prevAssets += Number(line.debit) - Number(line.credit);
+          prevAssets += debit - credit;
         } else if (line.account.accountType === 'LIABILITY') {
-          prevLiabilities += Number(line.credit) - Number(line.debit);
+          prevLiabilities += credit - debit;
         }
       }
 
@@ -201,10 +225,13 @@ export async function GET(request: Request) {
       let pExpenses = 0;
 
       for (const line of pLines) {
+        const debit = Number(line.debit) || 0;
+        const credit = Number(line.credit) || 0;
+
         if (line.account.accountType === 'INCOME') {
-          pIncome += Number(line.credit) - Number(line.debit);
+          pIncome += credit - debit;
         } else if (line.account.accountType === 'EXPENSE') {
-          pExpenses += Number(line.debit) - Number(line.credit);
+          pExpenses += debit - credit;
         }
       }
 
@@ -224,7 +251,9 @@ export async function GET(request: Request) {
 
     for (const line of expenseLines) {
       const ccName = line.costCenter?.name || 'Sin centro de costo';
-      costCenterMap.set(ccName, (costCenterMap.get(ccName) || 0) + (Number(line.debit) - Number(line.credit)));
+      const debit = Number(line.debit) || 0;
+      const credit = Number(line.credit) || 0;
+      costCenterMap.set(ccName, (costCenterMap.get(ccName) || 0) + (debit - credit));
     }
 
     for (const [ccName, amount] of costCenterMap) {

@@ -1,0 +1,185 @@
+\documentclass[12pt, landscape, oneside]{book}
+
+% --- Paquetes Críticos ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\geometry{
+    a4paper,
+    landscape,
+    top=2cm,
+    bottom=2cm,
+    left=2cm,
+    right=2cm,
+    headheight=15pt
+}
+
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows, positioning, shadow, patterns, calc, trees}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins, breakable, listings}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{multicol}
+\usepackage{enumitem}
+
+% --- Configuración de Colores Corporativos ---
+\definecolor{CorporateBlue}{RGB}{21, 101, 192} 
+\definecolor{CorporateGold}{RGB}{255, 160, 0} 
+\definecolor{SoftGray}{RGB}{245, 245, 245}
+\definecolor{DeepDark}{RGB}{33, 33, 33}
+
+% --- Estilo de Títulos ---
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{CorporateBlue}}
+  {\chaptertitlename\ \thechapter}{10pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-20pt}{30pt}
+
+% --- Cajas de Usuario (Friendly) ---
+\newtcolorbox{pasos}[1]{
+  colback=white,
+  colframe=CorporateBlue,
+  fonttitle=\bfseries,
+  title=Pasos para: #1,
+  enhanced,
+  attach boxed title to top left={xshift=10pt, yshift=-10pt},
+  boxed title style={colback=CorporateBlue}
+}
+
+\newtcolorbox{escenario}[1]{
+  colback=CorporateGold!5,
+  colframe=CorporateGold,
+  fonttitle=\bfseries\color{black},
+  title=Caso Real: #1,
+  enhanced,
+  boxed title style={colback=CorporateGold}
+}
+
+% --- Documento ---
+\begin{document}
+
+% --- Portada ---
+\begin{titlepage}
+    \centering
+    \vspace*{3cm}
+    {\fontsize{50}{60}\selectfont\bfseries\color{CorporateBlue} GANESHA ERP}\\[1cm]
+    {\huge\bfseries\color{CorporateGold} Manual de Usuario: Guía de Referencia Total}\\[2cm]
+    
+    \begin{tikzpicture}
+        \draw[CorporateBlue, ultra thick, rounded corners] (0,0) rectangle (15,4);
+        \node at (7.5,3) {\Large\bfseries "Diseñado para ser entendido por humanos,"};
+        \node at (7.5,2) {\Large\bfseries "ejecutado por profesionales."};
+    \end{tikzpicture}
+    
+    \vfill
+    {\large FlasheyEstudi | 2026}
+\end{titlepage}
+
+\tableofcontents
+
+% ==========================================
+\chapter{Primeros 15 Minutos: Inicio Rápido}
+% ==========================================
+
+Si es tu primera vez en Ganesha, sigue este camino para tener el sistema listo en minutos:
+
+\begin{pasos}{Configuración Relámpago}
+    \begin{enumerate}
+        \item \textbf{Crea tu Empresa:} En el menú lateral, ve a \textbf{Empresas}. Pon tu RUC, Nombre y Moneda.
+        \item \textbf{Verifica tu Catálogo:} Ve a \textbf{Cuentas}. El sistema ya trae un catálogo base. Ajusta solo lo necesario.
+        \item \textbf{Abre el Mes:} En \textbf{Períodos}, asegúrate de que el mes actual esté en estado "ABIERTO".
+        \item \textbf{¡Listo!:} Ya puedes registrar tu primera factura o movimiento.
+    \end{enumerate}
+\end{pasos}
+
+% ==========================================
+\chapter{Diccionario: Del "Sistemas" al "Español"}
+% ==========================================
+
+Para que nos entendamos, aquí tienes qué significa cada cosa técnica que podrías ver:
+\begin{description}
+    \item[Dashboard:] Tu tablero de control con gráficas.
+    \item[Third Party (Tercero):] Cualquier persona de afuera (Cliente o Proveedor).
+    \item[Journal Entry (Póliza):] Un registro contable (quién le dio a quién).
+    \item[Audit Log:] El historial de quién tocó qué.
+    \item[Asset (Activo):] Algo que compraste y que dura mucho (una laptop, un carro).
+\end{description}
+
+% ==========================================
+\chapter{Explicación Detallada de los Módulos}
+% ==========================================
+
+\section{Módulo: Facturación (Ventas y Compras)}
+\textbf{¿Para qué sirve?}: Para anotar lo que vendes y lo que compras.
+\begin{itemize}
+    \item \textbf{Acción}: Creas una factura a un cliente.
+    \item \textbf{Repercusión Real}: El sistema le "avisa" al módulo de \textbf{Cuentas por Cobrar} que ese cliente te debe dinero. También le avisa al \textbf{Dashboard} para que suba tu gráfica de ingresos.
+\end{itemize}
+
+\section{Módulo: Bancos y Caja}
+\textbf{¿Para qué sirve?}: Para que tu saldo en el sistema coincida con tu estado de cuenta real.
+\begin{itemize}
+    \item \textbf{Acción}: Registras que el cliente te pagó la factura.
+    \item \textbf{Repercusión Real}: El dinero entra a tu cuenta de banco en el sistema y "limpia" la deuda del cliente en el módulo de Facturación.
+\end{itemize}
+
+\section{Módulo: Activos Fijos (Tus Bienes)}
+\textbf{¿Para qué sirve?}: Para que no pierdas de vista cuánto valen tus cosas con el tiempo.
+\begin{itemize}
+    \item \textbf{Acción}: Registras una nueva camioneta.
+    \item \textbf{Repercusión Real}: Cada mes, el sistema calculará cuánto valor perdió (depreciación) y lo enviará al módulo de \textbf{Gastos} automáticamente.
+\end{itemize}
+
+% ==========================================
+\chapter{Casos de la Vida Real (Survival Guide)}
+% ==========================================
+
+\begin{escenario}{"Compré una computadora para la oficina"}
+    \begin{enumerate}
+        \item Ve al módulo de \textbf{Facturación} y registra la compra al proveedor.
+        \item Al guardar, el sistema genera la deuda al proveedor.
+        \item Ve al módulo de \textbf{Activos Fijos} y registra la computadora para que empiece a depreciarse cada mes.
+        \item Cuando le pagues al proveedor, usa el módulo de \textbf{Bancos} para "matar" esa deuda.
+    \end{enumerate}
+\end{escenario}
+
+\begin{escenario}{"Quiero saber si estoy ganando dinero"}
+    \begin{enumerate}
+        \item Mira tu \textbf{Dashboard}. Ahí ves la gráfica de Ingresos vs Egresos.
+        \item Si quieres el detalle oficial, ve al módulo de \textbf{Reportes} y saca un "Estado de Resultados".
+        \item Si tienes dudas de un número, pregúntale a la \textbf{IA (Ganesha AI)}: "¿Por qué gasté tanto en papelería este mes?".
+    \end{enumerate}
+\end{escenario}
+
+% ==========================================
+\chapter{Matriz de Interacción: El Camino del Dato}
+% ==========================================
+
+Para los que quieren entender el "cableado" interno:
+
+\begin{center}
+\begin{tikzpicture}[node distance=1.5cm]
+    \node (entry) [draw, fill=blue!10, rounded corners] {\textbf{Tú ingresas un dato (Factura/Banco)}};
+    \node (logic) [draw, fill=orange!10, below=of entry] {\textbf{El Sistema aplica reglas (Impuestos/IVA)}};
+    \node (cont) [draw, fill=green!10, below=of logic] {\textbf{Se crea una Póliza Automática (Contabilidad)}};
+    \node (rep) [draw, fill=purple!10, below=of cont] {\textbf{Tus Reportes y Gráficas se actualizan}};
+    
+    \draw[->, thick] (entry) -- (logic);
+    \draw[->, thick] (logic) -- (cont);
+    \draw[->, thick] (cont) -- (rep);
+\end{tikzpicture}
+\end{center}
+
+\vfill
+\begin{center}
+    \color{gray} \textit{Este manual fue diseñado para que tú te enfoques en tu negocio, mientras Ganesha se encarga de los números.}
+\end{center}
+
+\end{document}

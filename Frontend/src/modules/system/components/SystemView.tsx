@@ -53,10 +53,10 @@ export function SystemView() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {currentStats.map((stat, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-            <VintageCard className="text-center p-4">
+            <VintageCard variant="premium" className="text-center p-4 border-none">
               <div className="flex justify-center mb-2">{stat.icon}</div>
               <p className="text-2xl font-bold text-vintage-800 dark:text-zinc-100">{stat.value.toLocaleString()}</p>
-              <p className="text-xs text-vintage-500 dark:text-zinc-500">{stat.label}</p>
+              <p className="text-xs text-vintage-500 dark:text-zinc-500 uppercase tracking-widest font-black text-[9px] mt-1">{stat.label}</p>
             </VintageCard>
           </motion.div>
         ))}

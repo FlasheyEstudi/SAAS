@@ -87,8 +87,8 @@ export function InvoiceListView() {
   const [payingId, setPayingId] = useState<string | null>(null);
 
   const handleExport = async (format: 'excel' | 'pdf') => {
+    const toastId = toast.loading('Generando reporte de facturas...');
     try {
-      toast.loading('Generando reporte de facturas...');
       const currentCompany = useAppStore.getState().currentCompany;
       const companyName = currentCompany?.name || 'GANESHA Compañía';
       
@@ -107,10 +107,10 @@ export function InvoiceListView() {
       } else {
         await exportInvoicesPDF(exportData, companyName);
       }
-      toast.dismiss();
+      toast.dismiss(toastId);
       toast.success(`Facturas exportadas en ${format.toUpperCase()}`);
     } catch {
-      toast.dismiss();
+      toast.dismiss(toastId);
       toast.error('Error al exportar facturas');
     }
   };

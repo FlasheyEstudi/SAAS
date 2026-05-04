@@ -44,8 +44,7 @@ export function useAuth() {
           try {
             const companyResponse = await apiClient.get<{ data: Company }>(COMPANIES.get(responseData.user.companyId));
             company = companyResponse.data;
-          } catch (companyErr) {
-            console.warn('Could not fetch company data:', companyErr);
+          } catch {
           }
         }
         

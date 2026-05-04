@@ -11,21 +11,21 @@ import {
   FileBox, 
   FileSpreadsheet, 
   FileText, 
-  Home, 
   LayoutDashboard, 
   Users, 
   Settings, 
-  LogOut, 
   ShieldCheck,
   Zap,
   Globe,
   Calculator,
   GanttChartSquare,
-  Network
+  Network,
+  X
 } from 'lucide-react';
 import { useAppStore, type AppView } from '@/lib/stores/useAppStore';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect } from 'react';
 
 interface MenuItem {
   title: string;
@@ -70,26 +70,28 @@ export function Sidebar() {
     navigate, 
     sidebarCollapsed, 
     setSidebarCollapsed,
-    isDarkMode,
-    theme 
+    sidebarOpen,
+    setSidebarOpen,
   } = useAppStore();
 
   const toggleSidebar = () => setSidebarCollapsed(!sidebarCollapsed);
 
+  // Close mobile sidebar on escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSidebarOpen(false);
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [setSidebarOpen]);
+
   // Group items by category
   const categories = Array.from(new Set(menuItems.map(item => item.category)));
 
-  return (
-    <aside
-      className={cn(
-        'fixed left-0 top-0 h-screen z-50 transition-all duration-300 border-r border-white/5',
-        sidebarCollapsed ? 'w-[70px]' : 'w-[260px]',
-        'bg-sidebar'
-      )}
-    >
-      {/* Branding Section (Logo only to avoid duplicate name) */}
-      <div className="h-20 flex items-center px-4 border-b border-white/10 mb-4 overflow-hidden relative">
-        {/* Subtle background glow */}
+  const sidebarContent = (
+    <>
+      {/* Branding Section */}
+      <div className="h-20 flex items-center justify-between px-4 border-b border-white/10 mb-4 overflow-hidden relative">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent pointer-events-none" />
         
         <div className="flex items-center gap-3 relative z-10">
@@ -102,7 +104,7 @@ export function Sidebar() {
               className="w-12 h-12 object-contain cursor-pointer transition-all duration-500 hover:scale-110 drop-shadow-[0_0_15px_rgba(245,158,11,0.3)] relative z-10"
             />
           </div>
-          {!sidebarCollapsed && (
+          {(!sidebarCollapsed || sidebarOpen) && (
             <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -113,13 +115,21 @@ export function Sidebar() {
             </motion.div>
           )}
         </div>
+
+        {/* Close button for mobile */}
+        <button
+          onClick={() => setSidebarOpen(false)}
+          className="lg:hidden p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition-all relative z-10"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Navegación */}
       <div className="h-[calc(100vh-140px)] overflow-y-auto px-3 py-2 custom-scrollbar">
-        {categories.map((cat, catIdx) => (
+        {categories.map((cat) => (
           <div key={cat} className="mb-4 last:mb-0">
-            {!sidebarCollapsed && (
+            {(!sidebarCollapsed || sidebarOpen) && (
               <p className="px-3 mb-2 text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em]">
                 {cat}
               </p>
@@ -134,7 +144,7 @@ export function Sidebar() {
                       key={item.view}
                       onClick={() => navigate(item.view)}
                       className={cn(
-                        'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative',
+                        'w-full flex items-center gap-3 px-3 py-3 lg:py-2.5 rounded-xl transition-all duration-200 group relative text-left',
                         isActive 
                           ? 'bg-amber-500/10 text-amber-500 ring-1 ring-amber-500/20 shadow-lg shadow-amber-500/5' 
                           : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5'
@@ -147,8 +157,8 @@ export function Sidebar() {
                         {item.icon}
                       </span>
                       
-                      {!sidebarCollapsed && (
-                        <span className="text-[11px] font-bold tracking-wide transition-all truncate">
+                      {(!sidebarCollapsed || sidebarOpen) && (
+                        <span className="text-[12px] lg:text-[11px] font-bold tracking-wide transition-all truncate">
                           {item.title}
                         </span>
                       )}
@@ -167,34 +177,72 @@ export function Sidebar() {
         ))}
       </div>
 
-      {/* IA Assistant / Shortcuts (Enhanced visibility) */}
+      {/* IA Assistant */}
       <div className="absolute bottom-4 left-0 w-full px-4">
         <button 
           onClick={() => navigate('ai-chat')}
           className={cn(
             "w-full flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 border border-amber-400/50 hover:scale-[1.02] active:scale-95 transition-all group overflow-hidden relative shadow-lg shadow-amber-500/20",
-            sidebarCollapsed && "justify-center"
+            sidebarCollapsed && !sidebarOpen && "justify-center"
           )}
         >
           <Zap className="w-5 h-5 text-black animate-pulse" />
-          {!sidebarCollapsed && (
+          {(!sidebarCollapsed || sidebarOpen) && (
             <div className="flex flex-col items-start leading-none">
                <span className="text-[11px] font-black text-black uppercase tracking-wider">IA Ganesha</span>
                <span className="text-[8px] text-black/60 font-black uppercase tracking-widest mt-1">Asesor Activo</span>
             </div>
           )}
-          {/* Internal shine effect */}
           <div className="absolute top-[-100%] left-[-100%] w-[300%] h-[300%] bg-white/20 rotate-45 translate-x-[-50%] group-hover:translate-x-[50%] transition-transform duration-1000 pointer-events-none" />
         </button>
       </div>
+    </>
+  );
 
-      {/* Collapse Toggle */}
-      <button
-        onClick={toggleSidebar}
-        className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-500 hover:text-white hover:border-amber-500/50 transition-all shadow-xl z-50"
+  return (
+    <>
+      {/* MOBILE OVERLAY BACKDROP */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[55] lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* MOBILE SIDEBAR (drawer) */}
+      <aside
+        className={cn(
+          'fixed left-0 top-0 h-screen z-[60] transition-transform duration-300 border-r border-white/5 w-[280px] bg-sidebar lg:hidden',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
       >
-        {sidebarCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
-      </button>
-    </aside>
+        {sidebarContent}
+      </aside>
+
+      {/* DESKTOP SIDEBAR (persistent) */}
+      <aside
+        className={cn(
+          'fixed left-0 top-0 h-screen z-50 transition-all duration-300 border-r border-white/5 hidden lg:block',
+          sidebarCollapsed ? 'w-[70px]' : 'w-[260px]',
+          'bg-sidebar'
+        )}
+      >
+        {sidebarContent}
+
+        {/* Collapse Toggle (desktop only) */}
+        <button
+          onClick={toggleSidebar}
+          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-500 hover:text-white hover:border-amber-500/50 transition-all shadow-xl z-50"
+        >
+          {sidebarCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+        </button>
+      </aside>
+    </>
   );
 }

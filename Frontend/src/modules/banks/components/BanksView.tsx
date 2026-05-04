@@ -103,7 +103,7 @@ export function BanksView() {
 
   const handleExport = async (format: 'excel' | 'pdf') => {
     try {
-      toast.loading('Generando estado de cuenta...');
+      toast.loading('Generando estado de cuenta...', { id: 'export-loading', duration: 8000 });
       const currentCompany = useAppStore.getState().currentCompany;
       const companyName = currentCompany?.name || 'GANESHA Compañía';
       
@@ -115,10 +115,10 @@ export function BanksView() {
       } else {
         await exportBanksPDF(movements, companyName, accNameStr);
       }
-      toast.dismiss();
+      toast.dismiss(toastId);
       toast.success(`Movimientos exportados en ${format.toUpperCase()}`);
     } catch {
-      toast.dismiss();
+      toast.dismiss(toastId);
       toast.error('Error al exportar movimientos');
     }
   };

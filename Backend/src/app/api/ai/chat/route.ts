@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     const authError = requireAuth(user);
     if (authError) return authError;
 
-    console.log('[AI-Chat] Iniciando solicitud para usuario:', user!.email);
+
     const body = await request.json();
     const { message, companyId, history, stream = false } = body;
 
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
     const companyError = requireCompanyAccess(user!, companyId);
     if (companyError) {
-      console.log('[AI-Chat] Error de acceso a empresa:', companyId);
+
       return companyError;
     }
 
@@ -29,9 +29,7 @@ export async function POST(request: Request) {
 
     let financialSnapshot = 'Sin datos disponibles en este momento.';
     try {
-      console.log('[AI-Chat] Obteniendo snapshot financiero...');
       financialSnapshot = await getFinancialSnapshot(companyId);
-      console.log('[AI-Chat] Snapshot obtenido con éxito.');
     } catch (snapshotErr) {
       console.error('[AI-Chat] Error getting financial snapshot:', snapshotErr);
     }
@@ -54,9 +52,7 @@ export async function POST(request: Request) {
     }
 
     if (stream) {
-      console.log('[AI-Chat] Iniciando flujo streaming con Ollama...');
       const ollamaStream = await chatWithOllamaStream(message, chatHistory, aiContext);
-      console.log('[AI-Chat] Flujo de streaming iniciado correctamente.');
       return new Response(ollamaStream, {
         headers: {
           'Content-Type': 'text/event-stream',
@@ -66,7 +62,7 @@ export async function POST(request: Request) {
       });
     }
 
-    console.log('[AI-Chat] Iniciando chat síncrono...');
+
     const result = await chatWithOllama(message, chatHistory, aiContext);
     return success({
       response: result.response,

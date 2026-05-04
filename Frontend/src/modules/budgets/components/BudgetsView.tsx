@@ -30,9 +30,9 @@ export function BudgetsView() {
 
   const handleExport = async () => {
     if (!budget) return;
-    toast.loading('Generando reporte...');
+    toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
     await exportBudgetsExcel(budget, currentCompany?.name || 'GANESHA');
-    toast.dismiss();
+    toast.dismiss(toastId);
     toast.success('Presupuesto exportado a Excel');
   };
 

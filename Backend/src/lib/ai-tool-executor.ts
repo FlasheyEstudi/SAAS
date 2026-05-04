@@ -15,8 +15,6 @@ import {
  * @param companyId - The context company ID
  */
 export async function executeAiTool(toolName: string, args: any, companyId: string) {
-  console.log(`[AI Executor] Executing tool: ${toolName}`, args);
-
   try {
     switch (toolName) {
       case 'get_ledger_data':

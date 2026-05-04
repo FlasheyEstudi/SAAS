@@ -31,9 +31,9 @@ export function PeriodsView() {
 
   const handleExport = async () => {
     if (!periods.length) return;
-    toast.loading('Generando reporte...');
+    toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
     await exportPeriodsExcel(periods, currentCompany?.name || 'GANESHA');
-    toast.dismiss();
+    toast.dismiss(toastId);
     toast.success('Historial de períodos exportado');
   };
 

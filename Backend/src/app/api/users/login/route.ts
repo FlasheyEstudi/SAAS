@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       }
     });
 
-    console.log('[DEBUG LOGIN] User found:', user ? user.email : 'NOT FOUND', 'Email searched:', email);
+
 
     if (!user) return error('Credenciales inválidas');
 
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     }
 
     if (!passwordMatches) {
-      console.log('[DEBUG LOGIN] Password mismatch for:', email);
+
       return error('Credenciales inválidas');
     }
 
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       data: { lastLoginAt: new Date() },
     });
 
-    // TODO: Generar JWT real. Por ahora un token más robusto.
+
     const token = Buffer.from(`${user.id}:${Date.now()}:${process.env.NEXTAUTH_SECRET}`).toString('base64');
 
     // 5. Send cookie (100/100 Hardening)

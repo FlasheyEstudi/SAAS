@@ -19,9 +19,9 @@ export function ClosingEntriesView() {
 
   const handleExport = async () => {
     if (!entries.length) return;
-    toast.loading('Generando reporte...');
+    toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
     await exportClosingEntriesExcel(entries, currentCompany?.name || 'GANESHA');
-    toast.dismiss();
+    toast.dismiss(toastId);
     toast.success('Historial de cierres exportado');
   };
   const { periods } = usePeriods();

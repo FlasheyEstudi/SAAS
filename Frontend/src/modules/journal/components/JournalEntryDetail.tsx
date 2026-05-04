@@ -55,9 +55,9 @@ export function JournalEntryDetail() {
 
   const handlePrint = async () => {
     if (!entry) return;
-    toast.loading('Generando documento...');
+    toast.loading('Generando documento...', { id: 'export-loading', duration: 8000 });
     await exportJournalEntryPDF(entry, currentCompany?.name || 'GANESHA');
-    toast.dismiss();
+    toast.dismiss(toastId);
     toast.success('Póliza exportada a PDF');
   };
 

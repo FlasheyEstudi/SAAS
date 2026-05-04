@@ -20,21 +20,21 @@ export default function LandingPage() {
   return (
     <div ref={containerRef} className="min-h-screen bg-background mandala-bg text-foreground selection:bg-primary/30 overflow-x-hidden font-sans scroll-smooth">
       {/* Navbar Minimalista Premium */}
-      <nav className="fixed top-0 w-full z-[100] px-8 py-6 backdrop-blur-2xl bg-background/40 border-b border-primary/5">
+      <nav className="fixed top-0 w-full z-[100] px-4 sm:px-8 py-4 sm:py-6 backdrop-blur-2xl bg-background/40 border-b border-primary/5">
         <div className="max-w-[1800px] mx-auto flex justify-between items-center">
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-4 cursor-pointer group"
+            className="flex items-center gap-3 cursor-pointer group"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
-            <div className="relative w-12 h-12 flex items-center justify-center">
+            <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center">
               <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full group-hover:scale-125 transition-transform duration-500" />
-              <img src="/GaneshaLogo.png" alt="Logo" className="w-10 h-10 object-contain relative z-10" />
+              <img src="/GaneshaLogo.png" alt="Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain relative z-10" />
             </div>
             <div className="flex flex-col">
-              <span className="font-playfair text-2xl font-bold tracking-tighter leading-none">GANESHA</span>
-              <span className="text-[8px] uppercase tracking-[0.6em] text-primary font-black">Removedor de Obstáculos</span>
+              <span className="font-playfair text-xl sm:text-2xl font-bold tracking-tighter leading-none">GANESHA</span>
+              <span className="text-[7px] sm:text-[8px] uppercase tracking-[0.4em] sm:tracking-[0.6em] text-primary font-black">Removedor de Obstáculos</span>
             </div>
           </motion.div>
 
@@ -44,11 +44,11 @@ export default function LandingPage() {
              <a href="#prosperidad" className="hover:text-primary transition-colors">Prosperidad</a>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 sm:gap-6">
             <button onClick={() => navigate('login')} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">Entrar</button>
             <PastelButton 
               onClick={() => navigate('register')} 
-              className="bg-primary text-primary-foreground border-none px-8 py-6 text-[10px] font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(var(--primary-rgb),0.2)] hover:scale-105 active:scale-95 transition-all"
+              className="bg-primary text-primary-foreground border-none px-4 sm:px-8 py-3 sm:py-6 text-[10px] font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(var(--primary-rgb),0.2)] hover:scale-105 active:scale-95 transition-all"
             >
               Comenzar
             </PastelButton>
@@ -57,7 +57,7 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section: El Despertar de la Riqueza */}
-      <section className="relative min-h-screen flex items-center pt-40 overflow-hidden px-8 lg:px-24">
+      <section className="relative min-h-screen flex items-center pt-24 sm:pt-40 overflow-hidden px-4 sm:px-8 lg:px-24">
         <div className="max-w-[1800px] mx-auto grid lg:grid-cols-2 gap-16 items-center z-10 w-full">
           
           <motion.div 
@@ -80,7 +80,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="text-7xl md:text-[9rem] font-playfair font-bold leading-[0.85] tracking-tighter mb-10 text-foreground"
+              className="text-4xl sm:text-7xl md:text-[9rem] font-playfair font-bold leading-[0.85] tracking-tighter mb-6 sm:mb-10 text-foreground"
             >
               Remueve <br />
               los <span className="italic font-normal text-primary">Obstáculos.</span>
@@ -90,7 +90,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="text-xl md:text-2xl text-muted-foreground max-w-xl leading-relaxed font-medium mb-16 drop-shadow-sm"
+              className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-xl leading-relaxed font-medium mb-8 sm:mb-16 drop-shadow-sm"
             >
               No permitas que la complejidad detenga tu crecimiento. GANESHA fusiona IA con sabiduría para que tu camino sea siempre claro y próspero.
             </motion.p>
@@ -101,7 +101,7 @@ export default function LandingPage() {
                transition={{ delay: 0.8 }}
                className="flex flex-col sm:flex-row gap-8"
             >
-              <PastelButton onClick={() => navigate('register')} className="h-24 px-16 bg-primary text-primary-foreground border-none font-black uppercase tracking-[0.4em] text-xs shadow-[0_20px_60px_rgba(var(--primary-rgb),0.35)] hover:translate-y-[-5px] transition-all">
+              <PastelButton onClick={() => navigate('register')} className="h-16 sm:h-24 px-8 sm:px-16 bg-primary text-primary-foreground border-none font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-[10px] sm:text-xs shadow-[0_20px_60px_rgba(var(--primary-rgb),0.35)] hover:translate-y-[-5px] transition-all">
                 Reclamar mi Éxito
               </PastelButton>
               <button className="flex items-center gap-4 text-[11px] font-black uppercase tracking-[0.5em] text-muted-foreground hover:text-primary transition-all group">
@@ -130,7 +130,7 @@ export default function LandingPage() {
       </section>
 
       {/* Experiencia de Datos (Métricas) */}
-      <section className="relative z-20 py-32 border-y border-primary/5 bg-background/80 backdrop-blur-xl">
+      <section className="relative z-20 py-16 sm:py-32 border-y border-primary/5 bg-background/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-12">
           {[
             { n: '100%', l: 'Arquitectura Cloud' },
@@ -139,7 +139,7 @@ export default function LandingPage() {
             { n: '99.9%', l: 'Paz Mental' },
           ].map((m, i) => (
             <div key={i} className="flex flex-col items-center">
-              <span className="text-4xl md:text-6xl font-playfair font-bold text-primary mb-2 tracking-tighter">{m.n}</span>
+              <span className="text-2xl sm:text-4xl md:text-6xl font-playfair font-bold text-primary mb-2 tracking-tighter">{m.n}</span>
               <span className="text-[9px] font-black uppercase tracking-[0.4em] text-muted-foreground">{m.l}</span>
             </div>
           ))}
@@ -147,13 +147,13 @@ export default function LandingPage() {
       </section>
 
       {/* Pilares de Sabiduria (Features) */}
-      <section id="sabiduria" className="py-60 px-6">
+      <section id="sabiduria" className="py-20 sm:py-60 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <div className="mb-32 text-center">
              <div className="inline-block p-4 rounded-3xl bg-primary/5 mb-8">
                 <Coins className="w-10 h-10 text-primary" />
              </div>
-             <h2 className="text-6xl md:text-8xl font-playfair font-bold mb-8 tracking-tighter">La Sabiduría Integrada</h2>
+             <h2 className="text-3xl sm:text-6xl md:text-8xl font-playfair font-bold mb-8 tracking-tighter">La Sabiduría Integrada</h2>
              <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-medium">Cada función ha sido forjada para eliminar la fricción de tu crecimiento.</p>
           </div>
 
@@ -169,7 +169,7 @@ export default function LandingPage() {
               <motion.div 
                 key={i}
                 whileHover={{ y: -10 }}
-                className="p-12 rounded-[4rem] border border-primary/5 bg-card hover:bg-muted/50 transition-all duration-500 group"
+                className="p-6 sm:p-12 rounded-[2rem] sm:rounded-[4rem] border border-primary/5 bg-card hover:bg-muted/50 transition-all duration-500 group"
               >
                 <div className="w-16 h-16 rounded-2xl bg-primary/5 flex items-center justify-center text-primary mb-10 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-500">
                   {f.icon}
@@ -186,12 +186,12 @@ export default function LandingPage() {
       </section>
 
       {/* IA Showcase: Ganesha AI */}
-      <section id="ia" className="py-40 bg-foreground/[0.03] relative overflow-hidden">
+      <section id="ia" className="py-20 sm:py-40 bg-foreground/[0.03] relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[50%] h-full bg-primary/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-24 items-center">
           <div className="relative group">
             <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full animate-pulse scale-110" />
-            <div className="relative aspect-square rounded-[6rem] overflow-hidden border border-primary/10 bg-card/50 backdrop-blur-3xl flex items-center justify-center p-12">
+            <div className="relative aspect-square rounded-[3rem] sm:rounded-[6rem] overflow-hidden border border-primary/10 bg-card/50 backdrop-blur-3xl flex items-center justify-center p-6 sm:p-12">
                <motion.img 
                   animate={{ 
                     scale: [1, 1.05, 1],
@@ -210,7 +210,7 @@ export default function LandingPage() {
                 <Bot className="w-4 h-4" />
                 Soberanía Tecnológica
              </div>
-             <h2 className="text-6xl md:text-8xl font-playfair font-bold mb-10 leading-tight tracking-tighter">
+             <h2 className="text-3xl sm:text-6xl md:text-8xl font-playfair font-bold mb-6 sm:mb-10 leading-tight tracking-tighter">
                 Tu Asesor de <br />
                 <span className="text-primary italic font-normal">Buen Augurio.</span>
              </h2>
@@ -235,21 +235,21 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Final: El Despertar */}
-      <section id="prosperidad" className="py-80 flex flex-col items-center text-center px-6 relative overflow-hidden">
+      <section id="prosperidad" className="py-32 sm:py-80 flex flex-col items-center text-center px-4 sm:px-6 relative overflow-hidden">
         <div className="absolute inset-0 z-0 flex items-center justify-center">
             <div className="w-[1000px] h-[1000px] bg-primary/10 rounded-full blur-[200px] animate-pulse" />
         </div>
         
         <div className="relative z-10 max-w-5xl">
-          <h2 className="text-7xl md:text-[10rem] font-playfair font-bold leading-none tracking-tighter mb-16">
+          <h2 className="text-4xl sm:text-7xl md:text-[10rem] font-playfair font-bold leading-none tracking-tighter mb-8 sm:mb-16">
             Remueve los <br />
             <span className="text-primary italic">Obstáculos.</span>
           </h2>
-          <p className="text-2xl text-muted-foreground mb-20 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-base sm:text-2xl text-muted-foreground mb-10 sm:mb-20 max-w-2xl mx-auto leading-relaxed">
             La abundancia financiera no es suerte, es arquitectura. Comienza a construir tu imperio hoy mismo con GANESHA.
           </p>
           <div className="flex flex-col md:flex-row gap-8 justify-center">
-            <PastelButton onClick={() => navigate('register')} className="h-24 px-20 bg-primary text-primary-foreground border-none font-black uppercase tracking-[0.4em] text-xs shadow-[0_20px_60px_rgba(var(--primary-rgb),0.3)] hover:scale-105 transition-all">
+            <PastelButton onClick={() => navigate('register')} className="h-16 sm:h-24 px-10 sm:px-20 bg-primary text-primary-foreground border-none font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-[10px] sm:text-xs shadow-[0_20px_60px_rgba(var(--primary-rgb),0.3)] hover:scale-105 transition-all">
               Reclamar mi Éxito
             </PastelButton>
           </div>

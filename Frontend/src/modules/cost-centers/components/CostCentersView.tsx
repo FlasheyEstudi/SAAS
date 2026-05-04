@@ -28,9 +28,9 @@ export function CostCentersView() {
 
   const handleExport = async () => {
     if (!centers.length) return;
-    toast.loading('Generando reporte...');
+    toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
     await exportCostCentersExcel(centers, currentCompany?.name || 'GANESHA');
-    toast.dismiss();
+    toast.dismiss(toastId);
     toast.success('Catálogo de centros de costo exportado');
   };
 

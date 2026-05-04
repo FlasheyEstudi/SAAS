@@ -48,7 +48,8 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
       <Header />
       <main className={cn(
         'transition-all duration-300 pt-[65px]',
-        sidebarCollapsed ? 'lg:ml-[70px]' : 'lg:ml-[260px]'
+        'lg:ml-[260px]',
+        sidebarCollapsed && 'lg:ml-[70px]'
       )}>
         {children}
       </main>
@@ -147,7 +148,7 @@ function ViewRouter() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.25 }}
-          className="px-4 sm:px-6 lg:px-8 py-6"
+          className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6"
         >
           {renderView()}
         </motion.div>

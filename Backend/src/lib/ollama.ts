@@ -125,7 +125,7 @@ export async function listModels(): Promise<string[]> {
 
 async function callOllamaStreaming(systemPrompt: string, chatHistory: OllamaMessage[]): Promise<ReadableStream> {
   try {
-    console.log('[Ollama] Iniciando fetch de streaming...');
+
     // El historial debe terminar en un mensaje de usuario para que Ollama responda
     const messages: any[] = [
       { role: 'system', content: systemPrompt },
@@ -152,7 +152,7 @@ async function callOllamaStreaming(systemPrompt: string, chatHistory: OllamaMess
       throw new Error(`Ollama error: ${res.status} ${errorText}`);
     }
 
-    console.log('[Ollama] Stream recibido correctamente, enviando al cliente.');
+
     return res.body!;
   } catch (err: any) {
     console.error('[Ollama] Error FATAL en callOllamaStreaming:', err);
@@ -199,7 +199,7 @@ export async function chatWithOllamaStream(
     { role: 'user', content: userMessage },
   ];
 
-  console.log('[AI-Stream] Iniciando stream directo (Herramientas desactivadas para estabilidad total).');
+
   return callOllamaStreaming(dynamicPrompt, [...chatHistory, { role: 'user', content: userMessage }]);
 }
 

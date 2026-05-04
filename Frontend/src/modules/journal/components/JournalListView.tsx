@@ -73,7 +73,7 @@ export function JournalListView() {
 
   const handleExport = async (format: 'excel' | 'pdf') => {
     try {
-      toast.loading('Generando exportación...');
+      toast.loading('Generando exportación...', { id: 'export-loading', duration: 8000 });
       const currentCompany = useAppStore.getState().currentCompany;
       const companyName = currentCompany?.name || 'GANESHA Compañía';
       if (format === 'excel') {
@@ -81,10 +81,10 @@ export function JournalListView() {
       } else {
         await exportJournalEntriesPDF(entries, companyName);
       }
-      toast.dismiss();
+      toast.dismiss(toastId);
       toast.success(`Pólizas exportadas en ${format.toUpperCase()}`);
     } catch {
-      toast.dismiss();
+      toast.dismiss(toastId);
       toast.error('Error al exportar pólizas');
     }
   };

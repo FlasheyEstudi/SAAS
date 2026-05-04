@@ -129,7 +129,6 @@ export function InvoiceForm() {
         toast.error('No se pudo crear la factura');
       }
     } catch (err: any) {
-      console.error('Invoice Creation Error:', err);
       toast.error(err.error || 'Error al crear la factura');
     } finally {
       setSaving(false);

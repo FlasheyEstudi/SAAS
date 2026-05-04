@@ -55,7 +55,6 @@ export function RegisterPage() {
       toast.success('Cuenta creada exitosamente. Bienvenido.');
       navigate('login');
     } catch (err: any) {
-      console.error('Register Error:', err);
       toast.error(err.error || 'Error al conectar con el servidor.');
     } finally {
       setLoading(false);
@@ -63,7 +62,7 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="h-screen w-full bg-background flex overflow-hidden font-sans selection:bg-primary/30">
+    <div className="min-h-screen w-full bg-background flex flex-col lg:flex-row overflow-auto font-sans selection:bg-primary/30">
       {/* Lado Izquierdo: Arte Minimalista */}
       <div className="hidden lg:flex lg:w-[45%] relative bg-foreground/[0.02] items-center justify-center overflow-hidden border-r border-primary/5">
         <div className="absolute inset-0 mandala-bg opacity-20 scale-110 rotate-180" />
@@ -95,7 +94,7 @@ export function RegisterPage() {
       {/* Lado Derecho: Formulario Compacto Premium */}
       <div className="w-full lg:w-[55%] flex flex-col relative bg-background h-full">
         {/* Header del Formulario */}
-        <div className="p-6 flex justify-between items-center">
+        <div className="p-4 sm:p-6 flex justify-between items-center">
            <button
             onClick={() => navigate('landing')}
             className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-all group"
@@ -109,13 +108,13 @@ export function RegisterPage() {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col justify-center px-12 xl:px-24 w-full max-w-4xl mx-auto">
+        <div className="flex-1 flex flex-col justify-center px-4 sm:px-12 xl:px-24 w-full max-w-4xl mx-auto pb-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-8"
           >
-            <h1 className="text-4xl font-playfair font-bold text-foreground mb-1 tracking-tighter uppercase leading-none">Iniciación</h1>
+            <h1 className="text-3xl sm:text-4xl font-playfair font-bold text-foreground mb-1 tracking-tighter uppercase leading-none">Iniciación</h1>
             <p className="text-[10px] text-muted-foreground uppercase tracking-[0.4em] font-black">Comienza tu viaje hacia la abundancia</p>
           </motion.div>
 

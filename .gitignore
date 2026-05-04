@@ -1,4 +1,3 @@
-```
 # Dependencies
 node_modules/
 .pnpm-store/
@@ -44,9 +43,15 @@ Thumbs.db
 # Coverage
 coverage/
 .nyc_output/
-```
+
 # Prisma DBs
 *.db
 *.db-journal
 /Backend/prisma/db/
 /Frontend/prisma/db/
+
+# Lock files (using npm)
+bun.lock
+
+# Generated
+next-env.d.ts

@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  ganesha-backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:./dev.db
+      - JWT_SECRET=${JWT_SECRET:-ganesha_master_key_2026}
+    volumes:
+      - ganesha-db:/app/prisma
+    restart: always
+
+  ganesha-frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://ganesha-backend:3001
+    restart: always
+
+volumes:
+  ganesha-db:

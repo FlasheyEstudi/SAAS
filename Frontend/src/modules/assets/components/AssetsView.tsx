@@ -20,11 +20,11 @@ export function AssetsView() {
 
   const handleExport = async (format: 'excel' | 'pdf') => {
     if (!assets.length) return;
-    toast.loading(`Generando reporte ${format}...`);
+    toast.loading(`Generando reporte ${format}...`, { id: 'export-loading', duration: 8000 });
     const name = currentCompany?.name || 'GANESHA';
     if (format === 'excel') await exportAssetsExcel(assets, name);
     else await exportAssetsPDF(assets, name);
-    toast.dismiss();
+    toast.dismiss(toastId);
     toast.success('Inventario de activos exportado');
   };
 

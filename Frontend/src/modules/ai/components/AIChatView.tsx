@@ -150,8 +150,7 @@ export function AIChatView() {
           const imgData = canvas.toDataURL('image/png');
           doc.addImage(imgData, 'PNG', 20, y, 170, 85, undefined, 'FAST');
           y += 95;
-        } catch (err) {
-          console.error('Final Capture Error:', err);
+        } catch {
           doc.setFontSize(10);
           doc.setTextColor(249, 115, 22);
           doc.text("[ Gráfica disponible en versión digital ]", 20, y);
@@ -208,7 +207,6 @@ export function AIChatView() {
       doc.save(`Reporte_Ganesha_${companyName}.pdf`);
       toast.success('Reporte con gráficas descargado');
     } catch (error) {
-      console.error('PDF Error:', error);
       toast.error('Error al generar reporte pro');
     }
   };
@@ -280,9 +278,7 @@ export function AIChatView() {
       try {
         chartData = JSON.parse(chartMatch[1]);
         cleanContent = content.replace(chartMatch[0], '');
-      } catch (e) {
-        console.error('Error parsing chart JSON:', e);
-      }
+      } catch {}
     } 
     else if (content.includes('|') && content.includes('---')) {
       const lines = content.split('\n');
@@ -333,11 +329,11 @@ export function AIChatView() {
   const allMessages = [...messages, ...localMessages];
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-145px)] w-full max-w-7xl mx-auto px-2">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 h-[calc(100vh-130px)] sm:h-[calc(100vh-145px)] w-full max-w-7xl mx-auto">
       <div className="flex flex-col flex-1 min-w-0">
         <VintageCard variant="glass" className="mb-4 flex-shrink-0 border-orange-500/10 shadow-lg shadow-orange-500/5" hover={false}>
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
               <Bot className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1 text-left">
@@ -450,7 +446,7 @@ export function AIChatView() {
         </form>
       </div>
 
-      <div className="lg:w-80 space-y-6 text-left">
+      <div className="hidden lg:block lg:w-80 space-y-6 text-left">
         <VintageCard variant="glass" hover={false}>
           <div className="flex items-center gap-2 mb-4">
             <History className="w-5 h-5 text-orange-500" />

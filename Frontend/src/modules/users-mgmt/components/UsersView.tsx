@@ -59,9 +59,9 @@ export function UsersView() {
 
   const handleExport = async () => {
     if (!users.length) return;
-    toast.loading('Generando reporte...');
+    toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
     await exportUsersExcel(users, currentCompany?.name || 'GANESHA');
-    toast.dismiss();
+    toast.dismiss(toastId);
     toast.success('Lista de usuarios exportada');
   };
 

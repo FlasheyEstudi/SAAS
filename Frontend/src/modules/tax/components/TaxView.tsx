@@ -57,9 +57,9 @@ export function TaxView() {
 
   const handleExport = async () => {
     if (!entries.length) return;
-    toast.loading('Generando reporte...');
+    toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
     await exportTaxesExcel(entries, currentCompany?.name || 'GANESHA', 'Actual');
-    toast.dismiss();
+    toast.dismiss(toastId);
     toast.success('Libro de impuestos exportado');
   };
 

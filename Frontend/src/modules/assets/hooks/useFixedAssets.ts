@@ -45,7 +45,7 @@ export function useFixedAssets() {
       const data = response?.data || response || [];
       setAssets(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Error fetching fixed assets:', error);
+
     } finally {
       setLoading(false);
     }
@@ -58,7 +58,7 @@ export function useFixedAssets() {
       const data = response?.data || response || {};
       setSummary(data);
     } catch (error) {
-      console.error('Error fetching asset summary:', error);
+
       setSummary({
         totalAssets: 0,
         totalPurchaseAmount: 0,
@@ -84,7 +84,7 @@ export function useFixedAssets() {
       fetchAssets();
       fetchSummary();
     } catch (error: any) {
-      console.error('Error depreciating asset:', error);
+
       toast.error(error?.error || 'No se pudo calcular la depreciación');
     }
   }, [fetchAssets, fetchSummary]);
@@ -97,7 +97,7 @@ export function useFixedAssets() {
       fetchAssets();
       fetchSummary();
     } catch (error) {
-      console.error('Error in bulk depreciation:', error);
+
       toast.error('No se pudo aplicar la depreciación masiva');
     } finally {
       setDepreciating(false);
@@ -109,7 +109,7 @@ export function useFixedAssets() {
       const response = await apiClient.get(ASSETS.history(assetId));
       return response.data;
     } catch (error) {
-      console.error('Error fetching asset history:', error);
+
       toast.error('No se pudo cargar el historial del activo');
       return null;
     }
@@ -124,7 +124,7 @@ export function useFixedAssets() {
       fetchSummary();
       return true;
     } catch (error: any) {
-      console.error('Error creating asset:', error);
+
       toast.error(error.error || 'No se pudo crear el activo');
       return false;
     }
@@ -139,7 +139,7 @@ export function useFixedAssets() {
       fetchSummary();
       return true;
     } catch (error: any) {
-      console.error('Error updating asset:', error);
+
       toast.error(error.error || 'No se pudo actualizar el activo');
       return false;
     }
@@ -153,7 +153,7 @@ export function useFixedAssets() {
       fetchSummary();
       return true;
     } catch (error: any) {
-      console.error('Error deleting asset:', error);
+
       toast.error(error.error || 'No se pudo eliminar el activo');
       return false;
     }

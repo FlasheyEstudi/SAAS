@@ -150,7 +150,6 @@ export function useAI() {
       
       return aiMessage;
     } catch (error) {
-      console.error('Error sending message to AI:', error);
       toast.error('No se pudo obtener respuesta en tiempo real');
       return null;
     } finally {
@@ -163,7 +162,7 @@ export function useAI() {
       const response = await apiClient.get<AIModel[]>(AI.models);
       setModels(response || []);
     } catch (error) {
-      console.error('Error fetching AI models:', error);
+
     }
   }, []);
 
@@ -172,7 +171,7 @@ export function useAI() {
       const response = await apiClient.get<AITools>(AI.tools);
       setTools(response);
     } catch (error) {
-      console.error('Error fetching AI tools:', error);
+
     }
   }, []);
 

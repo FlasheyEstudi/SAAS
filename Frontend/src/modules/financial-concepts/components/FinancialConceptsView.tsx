@@ -22,9 +22,9 @@ export function FinancialConceptsView() {
 
   const handleExport = async () => {
     if (!concepts.length) return;
-    toast.loading('Generando reporte...');
+    toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
     await exportConceptsExcel(concepts, currentCompany?.name || 'GANESHA');
-    toast.dismiss();
+    toast.dismiss(toastId);
     toast.success('Catálogo de conceptos exportado');
   };
   const { accounts } = useAccounts();

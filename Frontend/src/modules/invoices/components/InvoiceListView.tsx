@@ -107,11 +107,9 @@ export function InvoiceListView() {
       } else {
         await exportInvoicesPDF(exportData, companyName);
       }
-      toast.dismiss(toastId);
-      toast.success(`Facturas exportadas en ${format.toUpperCase()}`);
+      toast.success(`Facturas exportadas en ${format.toUpperCase()}`, { id: 'export-loading' });
     } catch {
-      toast.dismiss(toastId);
-      toast.error('Error al exportar facturas');
+      toast.error('Error al exportar facturas', { id: 'export-loading' });
     }
   };
 

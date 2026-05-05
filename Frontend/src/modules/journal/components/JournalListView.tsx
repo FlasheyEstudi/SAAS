@@ -12,6 +12,7 @@ import {
   FileSpreadsheet,
   Download,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { exportJournalEntriesExcel, exportJournalEntriesPDF } from '@/lib/utils/export';
 import { useJournalEntries } from '../hooks/useJournalEntries';
 import { useAppStore } from '@/lib/stores/useAppStore';
@@ -21,7 +22,6 @@ import { StatusBadge } from '@/components/ui/vintage-ui';
 import { AnimatedTable, Pagination, FilterBar } from '@/components/tables/animated-table';
 import { formatCurrency, formatDate, getStatusLabel, getEntryTypeColor } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -81,11 +81,9 @@ export function JournalListView() {
       } else {
         await exportJournalEntriesPDF(entries, companyName);
       }
-      toast.dismiss(toastId);
-      toast.success(`Pólizas exportadas en ${format.toUpperCase()}`);
+      toast.success(`Pólizas exportadas en ${format.toUpperCase()}`, { id: 'export-loading' });
     } catch {
-      toast.dismiss(toastId);
-      toast.error('Error al exportar pólizas');
+      toast.error('Error al exportar pólizas', { id: 'export-loading' });
     }
   };
 

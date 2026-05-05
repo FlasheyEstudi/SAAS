@@ -57,10 +57,14 @@ export function TaxView() {
 
   const handleExport = async () => {
     if (!entries.length) return;
-    toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
-    await exportTaxesExcel(entries, currentCompany?.name || 'GANESHA', 'Actual');
-    toast.dismiss(toastId);
-    toast.success('Libro de impuestos exportado');
+    try {
+      const companyName = currentCompany?.name || 'GANESHA';
+      toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
+      await exportTaxesExcel(entries, companyName);
+      toast.success('Reporte de impuestos exportado', { id: 'export-loading' });
+    } catch (error) {
+      toast.error('Error al exportar impuestos', { id: 'export-loading' });
+    }
   };
 
   const [activeTab, setActiveTab] = useState('rates');

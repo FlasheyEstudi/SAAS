@@ -72,10 +72,13 @@ export function AuditView() {
 
   const handleExport = async () => {
     if (!logs.length) return;
-    toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
-    await exportAuditExcel(logs, currentCompany?.name || 'GANESHA');
-    toast.dismiss(toastId);
-    toast.success('Bitácora exportada a Excel');
+    try {
+      toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
+      await exportAuditExcel(logs, currentCompany?.name || 'GANESHA');
+      toast.success('Bitácora exportada a Excel');
+    } catch {
+      toast.error('Error al exportar bitácora', { id: 'export-loading' });
+    }
   };
 
   const tableHeaders = [

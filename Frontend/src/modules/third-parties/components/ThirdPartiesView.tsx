@@ -38,11 +38,9 @@ export function ThirdPartiesView() {
       } else {
         await exportThirdPartiesPDF(parties, companyName);
       }
-      toast.dismiss(toastId);
-      toast.success(`Catálogo exportado en ${format.toUpperCase()}`);
+      toast.success(`Catálogo exportado en ${format.toUpperCase()}`, { id: 'export-loading' });
     } catch {
-      toast.dismiss(toastId);
-      toast.error('Error al exportar catálogo');
+      toast.error('Error al exportar catálogo', { id: 'export-loading' });
     }
   };
 

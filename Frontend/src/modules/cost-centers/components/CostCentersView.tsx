@@ -28,10 +28,13 @@ export function CostCentersView() {
 
   const handleExport = async () => {
     if (!centers.length) return;
-    toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
-    await exportCostCentersExcel(centers, currentCompany?.name || 'GANESHA');
-    toast.dismiss(toastId);
-    toast.success('Catálogo de centros de costo exportado');
+    try {
+      toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
+      await exportCostCentersExcel(centers, currentCompany?.name || 'GANESHA');
+      toast.success('Catálogo de centros de costo exportado', { id: 'export-loading' });
+    } catch {
+      toast.error('Error al exportar centros de costo', { id: 'export-loading' });
+    }
   };
 
   const [showForm, setShowForm] = useState(false);

@@ -31,10 +31,13 @@ export function PeriodsView() {
 
   const handleExport = async () => {
     if (!periods.length) return;
-    toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
-    await exportPeriodsExcel(periods, currentCompany?.name || 'GANESHA');
-    toast.dismiss(toastId);
-    toast.success('Historial de períodos exportado');
+    try {
+      toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
+      await exportPeriodsExcel(periods, currentCompany?.name || 'GANESHA');
+      toast.success('Historial de períodos exportado', { id: 'export-loading' });
+    } catch {
+      toast.error('Error al exportar períodos', { id: 'export-loading' });
+    }
   };
 
   const [confirmAction, setConfirmAction] = useState<{ id: string; action: 'close' | 'reopen' } | null>(null);

@@ -22,10 +22,13 @@ export function FinancialConceptsView() {
 
   const handleExport = async () => {
     if (!concepts.length) return;
-    toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
-    await exportConceptsExcel(concepts, currentCompany?.name || 'GANESHA');
-    toast.dismiss(toastId);
-    toast.success('Catálogo de conceptos exportado');
+    try {
+      toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
+      await exportConceptsExcel(concepts, currentCompany?.name || 'GANESHA');
+      toast.success('Catálogo de conceptos exportado', { id: 'export-loading' });
+    } catch {
+      toast.error('Error al exportar conceptos', { id: 'export-loading' });
+    }
   };
   const { accounts } = useAccounts();
   const { costCenters } = useCostCenters();

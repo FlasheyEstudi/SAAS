@@ -77,7 +77,7 @@ export function DataMgmtView() {
 
   const handleExport = async (title: string, format: 'Excel' | 'PDF') => { 
     if (!companyId) { toast.error('Selecciona una empresa'); return; }
-    const toastId = toast.loading('Generando exportación...');
+    toast.loading('Generando exportación...', { id: 'export-loading' });
     try {
       const companyName = currentCompany?.name || 'GANESHA Compañía';
       
@@ -97,11 +97,9 @@ export function DataMgmtView() {
         if (format === 'Excel') await exportThirdPartiesExcel(parties, companyName);
         else await exportThirdPartiesPDF(parties, companyName);
       }
-      toast.dismiss(toastId);
-      toast.success('Exportación completada');
+      toast.success('Exportación completada', { id: 'export-loading' });
     } catch {
-      toast.dismiss(toastId);
-      toast.error('Error al exportar');
+      toast.error('Error al exportar', { id: 'export-loading' });
     }
   };
   

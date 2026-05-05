@@ -186,7 +186,7 @@ export function ReportsView() {
   };
 
   const handleExport = async (format: string) => {
-    const toastId = toast.loading('Generando reporte...');
+    toast.loading('Generando reporte...', { id: 'export-loading' });
     try {
       const companyName = currentCompany?.name || 'GANESHA Compañía';
       
@@ -217,8 +217,7 @@ export function ReportsView() {
       } else if (activeTab === 'general-ledger') {
         const selectedAcc = trialBalance.find((a: any) => a.accountId === selectedAccountId);
         if (!selectedAcc || !generalLedgerData) {
-          toast.dismiss(toastId);
-          toast.error('Selecciona una cuenta con movimientos');
+          toast.error('Selecciona una cuenta con movimientos', { id: 'export-loading' });
           return;
         }
         if (format === 'excel') {
@@ -228,11 +227,9 @@ export function ReportsView() {
         }
       }
       
-      toast.dismiss(toastId);
-      toast.success(`Reporte ${format.toUpperCase()} exportado correctamente`);
+      toast.success(`Reporte ${format.toUpperCase()} exportado correctamente`, { id: 'export-loading' });
     } catch (e) {
-      toast.dismiss(toastId);
-      toast.error('Error al exportar el reporte');
+      toast.error('Error al exportar el reporte', { id: 'export-loading' });
     }
   };
 

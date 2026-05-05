@@ -20,12 +20,18 @@ export function AssetsView() {
 
   const handleExport = async (format: 'excel' | 'pdf') => {
     if (!assets.length) return;
-    toast.loading(`Generando reporte ${format}...`, { id: 'export-loading', duration: 8000 });
-    const name = currentCompany?.name || 'GANESHA';
-    if (format === 'excel') await exportAssetsExcel(assets, name);
-    else await exportAssetsPDF(assets, name);
-    toast.dismiss(toastId);
-    toast.success('Inventario de activos exportado');
+    try {
+      toast.loading(`Generando reporte ${format}...`, { id: 'export-loading', duration: 8000 });
+      const name = currentCompany?.name || 'GANESHA';
+      if (format === 'excel') {
+        await exportAssetsExcel(assets, name);
+      } else {
+        await exportAssetsPDF(assets, name);
+      }
+      toast.success('Inventario de activos exportado', { id: 'export-loading' });
+    } catch (error) {
+      toast.error('Error al exportar activos', { id: 'export-loading' });
+    }
   };
 
   // Compute summary from real data — prefer hook summary, fallback to computing from assets array

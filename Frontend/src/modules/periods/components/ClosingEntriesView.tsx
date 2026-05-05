@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, Unlock, Play, History, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
 import { StatusBadge, ConfirmDialog } from '@/components/ui/vintage-ui';
@@ -19,10 +20,14 @@ export function ClosingEntriesView() {
 
   const handleExport = async () => {
     if (!entries.length) return;
-    toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
-    await exportClosingEntriesExcel(entries, currentCompany?.name || 'GANESHA');
-    toast.dismiss(toastId);
-    toast.success('Historial de cierres exportado');
+    try {
+      const companyName = currentCompany?.name || 'GANESHA';
+      toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
+      await exportClosingEntriesExcel(entries, companyName);
+      toast.success('Historial de cierres exportado', { id: 'export-loading' });
+    } catch (error) {
+      toast.error('Error al exportar cierres', { id: 'export-loading' });
+    }
   };
   const { periods } = usePeriods();
   const [selectedPeriod, setSelectedPeriod] = useState('');

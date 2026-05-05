@@ -115,11 +115,9 @@ export function BanksView() {
       } else {
         await exportBanksPDF(movements, companyName, accNameStr);
       }
-      toast.dismiss(toastId);
-      toast.success(`Movimientos exportados en ${format.toUpperCase()}`);
+      toast.success(`Movimientos exportados en ${format.toUpperCase()}`, { id: 'export-loading' });
     } catch {
-      toast.dismiss(toastId);
-      toast.error('Error al exportar movimientos');
+      toast.error('Error al exportar movimientos', { id: 'export-loading' });
     }
   };
 

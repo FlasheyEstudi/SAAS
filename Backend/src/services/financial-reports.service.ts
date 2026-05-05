@@ -529,7 +529,9 @@ export async function getFinancialSnapshot(companyId: string) {
     const period = await resolvePeriod(companyId);
     if (!period) return 'No hay períodos contables configurados.';
 
-    // Obtener tendencia de los últimos 3 meses de forma ultra-rápida
+    const company = await db.company.findUnique({ where: { id: companyId }, select: { name: true, currency: true } });
+
+    // 1. Tendencia de ingresos/gastos
     const last3Periods = await db.accountingPeriod.findMany({
       where: { companyId },
       orderBy: [{ year: 'desc' }, { month: 'desc' }],
@@ -539,7 +541,7 @@ export async function getFinancialSnapshot(companyId: string) {
     const trendData = await Promise.all(last3Periods.reverse().map(async (p) => {
       try {
         const journalEntries = await db.journalEntry.findMany({
-          where: { periodId: p.id, status: { in: ['POSTED', 'DRAFT'] } },
+          where: { periodId: p.id, status: 'POSTED' },
           select: { id: true }
         });
         
@@ -556,31 +558,39 @@ export async function getFinancialSnapshot(companyId: string) {
 
         let ingresos = 0;
         let gastos = 0;
-
         for (const line of lines) {
           if (line.account.accountType === 'INCOME') ingresos += Number(line.credit || 0) - Number(line.debit || 0);
           else gastos += Number(line.debit || 0) - Number(line.credit || 0);
         }
-        
-        return { 
-          label: `${p.month}/${p.year}`, 
-          ingresos: roundTwo(ingresos), 
-          gastos: roundTwo(gastos) 
-        };
-      } catch (err) {
-        return { label: `${p.month}/${p.year}`, ingresos: 0, gastos: 0 };
-      }
+        return { label: `${p.month}/${p.year}`, ingresos: roundTwo(ingresos), gastos: roundTwo(gastos) };
+      } catch { return { label: `${p.month}/${p.year}`, ingresos: 0, gastos: 0 }; }
     }));
 
-    const trendTable = trendData.map(d => `| ${d.label} | ${d.ingresos} | ${d.gastos} |`).join('\n');
+    // 2. Resumen de Cuentas por Cobrar/Pagar (Aging)
+    const arAging = await getAgingReport(companyId, 'SALE');
+    const apAging = await getAgingReport(companyId, 'PURCHASE');
 
+    // 3. Construcción del Snapshot
+    const trendTable = trendData.map(d => `| ${d.label} | ${d.ingresos} | ${d.gastos} |`).join('\n');
+    
     return `
-DATOS REALES CARGADOS:
+=== ESTADO FINANCIERO ACTUAL: ${company?.name} ===
+Moneda: ${company?.currency}
+Período Activo: ${period.month}/${period.year} (${period.status})
+
+TENDENCIA RECIENTE:
 | Mes | Ingresos | Gastos |
 | --- | --- | --- |
 ${trendTable}
+
+CUENTAS PENDIENTES (CARTERA):
+- Por Cobrar (Clientes): ${arAging.totalOutstanding} (Vencido >90d: ${arAging.buckets.overdue_90_plus.total})
+- Por Pagar (Proveedores): ${apAging.totalOutstanding} (Vencido >90d: ${apAging.buckets.overdue_90_plus.total})
+
+CAPACIDADES DE CONSULTA:
+Tienes acceso a Balanzas de Comprobación, Balances Generales, Estados de Resultados, Flujos de Caja y Libros Auxiliares detallados de cualquier período.
 `.trim();
   } catch (err) {
-    return 'Error al obtener el snapshot financiero.';
+    return 'Error al obtener el snapshot financiero detallado.';
   }
 }

@@ -1,36 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, useMotionValue, useSpring } from 'framer-motion';
+import { useState } from 'react';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { Input } from '@/components/ui/input';
 import { PastelButton } from '@/components/ui/pastel-button';
-import { Sparkles, ArrowLeft, ShieldCheck, Zap, Globe, ArrowRight, Lock, Mail } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Lock, Mail } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import { AUTH } from '@/lib/api/endpoints';
 import { toast } from 'sonner';
+import { motion } from 'framer-motion';
 
 export function LoginPage() {
   const navigate = useAppStore((s) => s.navigate);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
-
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const springX = useSpring(mouseX, { stiffness: 50, damping: 20 });
-  const springY = useSpring(mouseY, { stiffness: 50, damping: 20 });
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const { clientX, clientY } = e;
-      const moveX = (clientX - window.innerWidth / 2) / 30;
-      const moveY = (clientY - window.innerHeight / 2) / 30;
-      mouseX.set(moveX);
-      mouseY.set(moveY);
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [mouseX, mouseY]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,61 +42,95 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-background flex flex-col lg:flex-row overflow-auto font-sans selection:bg-primary/30">
+    <div className="min-h-screen w-full bg-background flex flex-col lg:flex-row overflow-hidden font-sans selection:bg-primary/30">
       {/* Lado Izquierdo: Arte Minimalista */}
-      <div className="hidden lg:flex lg:w-[55%] relative bg-foreground/[0.02] items-center justify-center overflow-hidden border-r border-primary/5">
+      <motion.div 
+        initial={{ opacity: 0, x: -100 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="hidden lg:flex lg:w-[55%] relative bg-foreground/[0.02] items-center justify-center overflow-hidden border-r border-primary/5"
+      >
         <div className="absolute inset-0 mandala-bg opacity-30 scale-110" />
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
         
-        <motion.div 
-          style={{ x: springX, y: springY }}
-          className="relative z-10 flex flex-col items-center text-center p-12"
-        >
-          <div className="relative mb-8">
+        <div className="relative z-10 flex flex-col items-center text-center p-12">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3, duration: 1 }}
+            className="relative mb-8"
+          >
             <div className="absolute inset-[-40px] bg-primary/10 blur-[80px] rounded-full animate-aura" />
-            <img 
+            <motion.img 
+              animate={{ y: [0, -20, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
               src="/personaje.png" 
-              className="w-[450px] h-auto object-contain relative z-10 drop-shadow-[0_0_80px_rgba(var(--primary-rgb),0.3)] animate-float"
+              className="w-[450px] h-auto object-contain relative z-10 drop-shadow-[0_0_80px_rgba(var(--primary-rgb),0.3)]"
               alt="Ganesha Master"
             />
-          </div>
+          </motion.div>
           
-          <div className="max-w-md space-y-4">
-            <h2 className="text-5xl font-playfair font-bold text-foreground leading-none tracking-tighter">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="max-w-md space-y-4"
+          >
+            <h2 className="text-5xl font-playfair font-bold text-foreground leading-none tracking-tighter uppercase">
               Claridad <span className="text-primary italic font-normal">Infinita.</span>
             </h2>
             <p className="text-base text-muted-foreground font-medium leading-relaxed">
               "El conocimiento es el removedor de todos los obstáculos."
             </p>
-          </div>
-        </motion.div>
-      </div>
+          </motion.div>
+        </div>
+      </motion.div>
 
       {/* Lado Derecho: Formulario Compacto Premium */}
-      <div className="w-full lg:w-[45%] flex flex-col relative bg-background h-full">
+      <motion.div 
+        initial={{ opacity: 0, x: 100 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="w-full lg:w-[45%] flex flex-col relative bg-background h-full overflow-y-auto"
+      >
         {/* Header del Formulario */}
         <div className="p-4 sm:p-8 flex justify-between items-center">
-           <button
+           <motion.button
+            whileHover={{ x: -5 }}
             onClick={() => navigate('landing')}
             className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-all group"
           >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <ArrowLeft className="w-4 h-4" />
             <span className="text-[9px] font-black uppercase tracking-[0.3em]">Inicio</span>
-          </button>
-          <img src="/GaneshaLogo.png" className="w-10 h-10 object-contain drop-shadow-lg" alt="Logo" />
+          </motion.button>
+          <motion.img 
+            initial={{ rotate: -180, opacity: 0 }}
+            animate={{ rotate: 0, opacity: 1 }}
+            transition={{ duration: 1 }}
+            src="/GaneshaLogo.png" 
+            className="w-10 h-10 object-contain drop-shadow-lg" 
+            alt="Logo" 
+          />
         </div>
 
         <div className="flex-1 flex flex-col justify-center px-6 sm:px-12 xl:px-24 max-w-2xl mx-auto w-full pb-8">
-          <motion.div
+          <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
             className="mb-10"
           >
             <h1 className="text-3xl sm:text-4xl font-playfair font-bold text-foreground mb-2 tracking-tighter uppercase">Bienvenido</h1>
             <p className="text-[10px] text-muted-foreground uppercase tracking-[0.4em] font-black">Acceso a tu sistema de prosperidad</p>
           </motion.div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <motion.form 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            onSubmit={handleSubmit} 
+            className="space-y-6"
+          >
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
                 <label className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground">Portal de Email</label>
@@ -166,9 +183,14 @@ export function LoginPage() {
                 </div>
               )}
             </PastelButton>
-          </form>
+          </motion.form>
 
-          <div className="mt-10 text-center">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+            className="mt-10 text-center"
+          >
             <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em]">
               ¿Nuevo aquí?{' '}
               <button
@@ -178,14 +200,14 @@ export function LoginPage() {
                 Crea tu cuenta
               </button>
             </p>
-          </div>
+          </motion.div>
         </div>
 
         {/* Footer del Formulario */}
         <div className="p-8 mt-auto text-center border-t border-primary/5">
            <span className="text-[8px] text-muted-foreground/40 uppercase tracking-[0.5em] font-black">Ganesha Enterprise System © 2026</span>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

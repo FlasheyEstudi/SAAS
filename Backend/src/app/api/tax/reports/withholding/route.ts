@@ -94,18 +94,18 @@ export async function GET(request: Request) {
     const retIvaVentas = retencionesIva.filter(e => e.invoice.invoiceType === 'SALE');
 
     // Calcular totales
-    const totalRetIsr = retencionesIsr.reduce((sum, e) => sum + e.withholdingAmount, 0);
-    const totalRetIva = retencionesIva.reduce((sum, e) => sum + e.withholdingAmount, 0);
-    const totalCedular = retencionesCedular.reduce((sum, e) => sum + e.withholdingAmount, 0);
+    const totalRetIsr = retencionesIsr.reduce((sum, e) => sum + Number(e.withholdingAmount), 0);
+    const totalRetIva = retencionesIva.reduce((sum, e) => sum + Number(e.withholdingAmount), 0);
+    const totalCedular = retencionesCedular.reduce((sum, e) => sum + Number(e.withholdingAmount), 0);
     const totalRetenciones = totalRetIsr + totalRetIva + totalCedular;
 
     // Retenciones sufridas (de compras = nos retuvieron = crédito fiscal)
     const retencionesSufridas = taxEntries.filter(e => e.invoice.invoiceType === 'PURCHASE');
-    const totalRetencionesSufridas = retencionesSufridas.reduce((sum, e) => sum + e.withholdingAmount, 0);
+    const totalRetencionesSufridas = retencionesSufridas.reduce((sum, e) => sum + Number(e.withholdingAmount), 0);
 
     // Retenciones efectuadas (de ventas = retuvimos = obligación de enterar)
     const retencionesEfectuadas = taxEntries.filter(e => e.invoice.invoiceType === 'SALE');
-    const totalRetencionesEfectuadas = retencionesEfectuadas.reduce((sum, e) => sum + e.withholdingAmount, 0);
+    const totalRetencionesEfectuadas = retencionesEfectuadas.reduce((sum, e) => sum + Number(e.withholdingAmount), 0);
 
     const result = {
       reporte: 'Reporte de Retenciones',
@@ -120,12 +120,12 @@ export async function GET(request: Request) {
         totalRetenciones: Math.round(totalRetenciones * 100) / 100,
         // Retenciones sufridas (de compras - crédito fiscal)
         retencionesSufridas: Math.round(totalRetencionesSufridas * 100) / 100,
-        retIsrSufrida: Math.round(retIsrCompras.reduce((s, e) => s + e.withholdingAmount, 0) * 100) / 100,
-        retIvaSufrida: Math.round(retIvaCompras.reduce((s, e) => s + e.withholdingAmount, 0) * 100) / 100,
+        retIsrSufrida: Math.round(retIsrCompras.reduce((s, e) => s + Number(e.withholdingAmount), 0) * 100) / 100,
+        retIvaSufrida: Math.round(retIvaCompras.reduce((s, e) => s + Number(e.withholdingAmount), 0) * 100) / 100,
         // Retenciones efectuadas (de ventas - obligación de enterar)
         retencionesEfectuadas: Math.round(totalRetencionesEfectuadas * 100) / 100,
-        retIsrEfectuada: Math.round(retIsrVentas.reduce((s, e) => s + e.withholdingAmount, 0) * 100) / 100,
-        retIvaEfectuada: Math.round(retIvaVentas.reduce((s, e) => s + e.withholdingAmount, 0) * 100) / 100,
+        retIsrEfectuada: Math.round(retIsrVentas.reduce((s, e) => s + Number(e.withholdingAmount), 0) * 100) / 100,
+        retIvaEfectuada: Math.round(retIvaVentas.reduce((s, e) => s + Number(e.withholdingAmount), 0) * 100) / 100,
       },
       detalle: {
         retencionesIsr: retencionesIsr.map(e => ({
@@ -135,9 +135,9 @@ export async function GET(request: Request) {
           fecha: e.invoice.issueDate.toISOString().split('T')[0],
           tercero: e.invoice.thirdParty?.name || 'N/A',
           rfc: e.invoice.thirdParty?.taxId || 'N/A',
-          baseGravable: Math.round(e.taxableBase * 100) / 100,
-          tasa: e.taxRate.rate,
-          montoRetenido: Math.round(e.withholdingAmount * 100) / 100,
+          baseGravable: Math.round(Number(e.taxableBase) * 100) / 100,
+          tasa: Number(e.taxRate.rate),
+          montoRetenido: Math.round(Number(e.withholdingAmount) * 100) / 100,
           operacion: e.invoice.invoiceType === 'PURCHASE' ? 'Sufrida' : 'Efectuada',
         })),
         retencionesIva: retencionesIva.map(e => ({
@@ -147,9 +147,9 @@ export async function GET(request: Request) {
           fecha: e.invoice.issueDate.toISOString().split('T')[0],
           tercero: e.invoice.thirdParty?.name || 'N/A',
           rfc: e.invoice.thirdParty?.taxId || 'N/A',
-          baseGravable: Math.round(e.taxableBase * 100) / 100,
-          tasa: e.taxRate.rate,
-          montoRetenido: Math.round(e.withholdingAmount * 100) / 100,
+          baseGravable: Math.round(Number(e.taxableBase) * 100) / 100,
+          tasa: Number(e.taxRate.rate),
+          montoRetenido: Math.round(Number(e.withholdingAmount) * 100) / 100,
           operacion: e.invoice.invoiceType === 'PURCHASE' ? 'Sufrida' : 'Efectuada',
         })),
         retencionesCedular: retencionesCedular.map(e => ({
@@ -159,9 +159,9 @@ export async function GET(request: Request) {
           fecha: e.invoice.issueDate.toISOString().split('T')[0],
           tercero: e.invoice.thirdParty?.name || 'N/A',
           rfc: e.invoice.thirdParty?.taxId || 'N/A',
-          baseGravable: Math.round(e.taxableBase * 100) / 100,
-          tasa: e.taxRate.rate,
-          montoRetenido: Math.round(e.withholdingAmount * 100) / 100,
+          baseGravable: Math.round(Number(e.taxableBase) * 100) / 100,
+          tasa: Number(e.taxRate.rate),
+          montoRetenido: Math.round(Number(e.withholdingAmount) * 100) / 100,
           operacion: e.invoice.invoiceType === 'PURCHASE' ? 'Sufrida' : 'Efectuada',
         })),
       },

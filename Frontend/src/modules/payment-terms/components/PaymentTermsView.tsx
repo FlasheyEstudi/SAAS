@@ -20,10 +20,13 @@ export function PaymentTermsView() {
 
   const handleExport = async () => {
     if (!terms.length) return;
-    toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
-    await exportPaymentTermsExcel(terms, currentCompany?.name || 'GANESHA');
-    toast.dismiss(toastId);
-    toast.success('Términos de pago exportados');
+    try {
+      toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
+      await exportPaymentTermsExcel(terms, currentCompany?.name || 'GANESHA');
+      toast.success('Términos de pago exportados', { id: 'export-loading' });
+    } catch {
+      toast.error('Error al exportar términos', { id: 'export-loading' });
+    }
   };
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<PaymentTerm | null>(null);

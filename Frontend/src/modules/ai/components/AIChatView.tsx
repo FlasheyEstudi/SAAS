@@ -77,7 +77,7 @@ export function AIChatView() {
   };
 
   const handleDownloadResponse = async (content: string, index: number) => {
-    toast.info('Generando reporte ejecutivo premium...');
+    toast.loading('Generando reporte ejecutivo premium con gráficas...', { id: 'export-loading' });
     try {
       const companyName = currentCompany?.name || 'Empresa';
       const { jsPDF } = await import('jspdf');
@@ -251,10 +251,10 @@ export function AIChatView() {
 
       addFooter(doc, doc.getNumberOfPages());
       doc.save(`Reporte_IA_Ganesha_${companyName}_${new Date().getTime()}.pdf`);
-      toast.success('Reporte ejecutivo generado con éxito');
+      toast.success('Reporte ejecutivo generado con éxito', { id: 'export-loading' });
     } catch (error) {
       console.error('Error PDF Pro:', error);
-      toast.error('Error al generar reporte premium');
+      toast.error('Error al generar reporte premium', { id: 'export-loading' });
     }
   };
 
@@ -268,6 +268,7 @@ export function AIChatView() {
     setInteraction({ type: 'none' });
     
     setLocalMessages(prev => [...prev, { role: 'assistant', content: `Generando **${reportConfig.label}** en ${format.toUpperCase()}... Un momento por favor.` }]);
+    toast.loading(`Generando ${reportConfig.label}...`, { id: 'export-loading' });
 
     try {
       let endpoint = '';
@@ -297,6 +298,8 @@ export function AIChatView() {
         else await exportTrialBalancePDF(data.accounts, companyName, periodLabel, data.totals);
       }
 
+      toast.success(`¡Listo! ${reportConfig.label} descargado`, { id: 'export-loading' });
+
       setLocalMessages(prev => [...prev, {
         role: 'assistant',
         content: `✅ ¡Listo! El **${reportConfig.label}** se ha descargado correctamente.`,
@@ -310,10 +313,38 @@ export function AIChatView() {
   };
 
   const handleCopy = (text: string, index: number) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(index);
-    toast.success('Copiado al portapapeles');
-    setTimeout(() => setCopiedId(null), 2000);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopiedId(index);
+        toast.success('Copiado al portapapeles');
+        setTimeout(() => setCopiedId(null), 2000);
+      }).catch(() => {
+        toast.error('Error al copiar');
+      });
+    } else {
+      // Fallback para contextos no seguros (HTTP)
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        textArea.style.top = "0";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        if (successful) {
+          setCopiedId(index);
+          toast.success('Copiado al portapapeles');
+          setTimeout(() => setCopiedId(null), 2000);
+        } else {
+          toast.error('No se pudo copiar el texto');
+        }
+      } catch (err) {
+        toast.error('Error en el sistema de copiado');
+      }
+    }
   };
 
   const renderMessageContent = (content: string, index: number) => {
@@ -521,7 +552,7 @@ export function AIChatView() {
                   msg.role === 'user' ? 'bg-zinc-800 text-zinc-100 rounded-br-md' : 'bg-white dark:bg-zinc-900 border border-vintage-200 dark:border-white/5 text-vintage-800 dark:text-zinc-200 rounded-bl-md'
                 )}>
                   {msg.role === 'assistant' && (
-                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute top-2 right-2 flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                       <button 
                         onClick={() => handleDownloadResponse(msg.content, i)} 
                         title="Descargar como PDF"

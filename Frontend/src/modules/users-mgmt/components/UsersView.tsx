@@ -22,22 +22,25 @@ export function UsersView() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
-  const [form, setForm] = useState<{ name: string; email: string; role: 'ADMIN' | 'ACCOUNTANT' | 'MANAGER' | 'VIEWER' }>({ 
+  const [form, setForm] = useState<{ name: string; email: string; password?: string; role: 'ADMIN' | 'ACCOUNTANT' | 'MANAGER' | 'VIEWER' }>({ 
     name: '', 
     email: '', 
+    password: '',
     role: 'VIEWER' 
   });
   
-  const openCreate = () => { setEditing(null); setForm({ name: '', email: '', role: 'VIEWER' }); setShowForm(true); };
-  const openEdit = (u: any) => { setEditing(u); setForm({ name: u.name, email: u.email, role: u.role }); setShowForm(true); };
+  const openCreate = () => { setEditing(null); setForm({ name: '', email: '', password: '', role: 'VIEWER' }); setShowForm(true); };
+  const openEdit = (u: any) => { setEditing(u); setForm({ name: u.name, email: u.email, password: '', role: u.role }); setShowForm(true); };
   
   const handleSave = async () => {
     if (!form.name || !form.email) { toast.error('Nombre y email requeridos'); return; }
     
     try {
       if (editing) {
-        await updateUser({ id: editing.id, data: form });
+        const { password, ...updateData } = form;
+        await updateUser({ id: editing.id, data: updateData });
       } else {
+        if (!form.password) { toast.error('Contraseña inicial requerida'); return; }
         await createUser(form);
       }
       setShowForm(false);
@@ -59,24 +62,37 @@ export function UsersView() {
 
   const handleExport = async () => {
     if (!users.length) return;
-    toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
-    await exportUsersExcel(users, currentCompany?.name || 'GANESHA');
-    toast.dismiss(toastId);
-    toast.success('Lista de usuarios exportada');
+    try {
+      toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
+      await exportUsersExcel(users, currentCompany?.name || 'GANESHA');
+      toast.success('Lista de usuarios exportada', { id: 'export-loading' });
+    } catch {
+      toast.error('Error al exportar usuarios', { id: 'export-loading' });
+    }
   };
 
+  const { user: currentUser } = useAppStore();
+  const isAdmin = currentUser?.role === 'ADMIN';
+  
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div><h2 className="text-2xl font-playfair font-bold text-vintage-900">Usuarios</h2><p className="text-sm text-vintage-600 mt-1">Gestión de acceso y roles de usuario</p></div>
+        <div>
+          <h2 className="text-2xl font-playfair font-bold text-vintage-900">Usuarios</h2>
+          <p className="text-sm text-vintage-600 mt-1">Gestión de acceso y roles de usuario</p>
+        </div>
         <div className="flex gap-2">
           <PastelButton variant="outline" onClick={handleExport} className="gap-2">
             <Users className="w-4 h-4" />
             Exportar Excel
           </PastelButton>
-          <PastelButton onClick={() => { setEditing(null); setShowForm(true); }}><Plus className="w-4 h-4 mr-2" />Nuevo Usuario</PastelButton>
+          {isAdmin && (
+            <PastelButton onClick={openCreate}>
+              <Plus className="w-4 h-4 mr-2" />Nuevo Usuario
+            </PastelButton>
+          )}
         </div>
       </div>
 
@@ -84,7 +100,7 @@ export function UsersView() {
         {(['ADMIN', 'ACCOUNTANT', 'MANAGER', 'VIEWER'] as const).map(role => (
           <VintageCard key={role}>
             <StatusBadge status={roleColors[role] as any} label={roleLabels[role]} />
-            <p className="text-2xl font-bold text-vintage-800 mt-2">{users.filter(u => u.role === role).length}</p>
+            <p className="text-2xl font-bold text-vintage-800 mt-2">{users.filter((u: any) => u.role === role).length}</p>
           </VintageCard>
         ))}
       </div>
@@ -102,7 +118,7 @@ export function UsersView() {
             </tr>
           </thead>
           <tbody className="divide-y divide-vintage-100">
-            {users.map((u, i) => {
+            {users.map((u: any, i: number) => {
               if (!u) return null;
               return (
                 <motion.tr key={u.id} className="hover:bg-vintage-50 transition-colors" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }}>
@@ -118,8 +134,13 @@ export function UsersView() {
                   <td className="px-4 py-3 text-center"><StatusBadge status={u.isActive ? 'success' : 'neutral'} label={u.isActive ? 'Activo' : 'Inactivo'} /></td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-1">
-                      <button onClick={() => openEdit(u)} className="p-1.5 rounded-lg hover:bg-vintage-100 text-vintage-500"><Edit2 className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => setDeleteId(u.id)} className="p-1.5 rounded-lg hover:bg-error/10 text-vintage-500 hover:text-error"><Trash2 className="w-3.5 h-3.5" /></button>
+                      {isAdmin && (
+                        <>
+                          <button onClick={() => openEdit(u)} className="p-1.5 rounded-lg hover:bg-vintage-100 text-vintage-500"><Edit2 className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => setDeleteId(u.id)} className="p-1.5 rounded-lg hover:bg-error/10 text-vintage-500 hover:text-error" disabled={u.id === currentUser?.id}><Trash2 className="w-3.5 h-3.5" /></button>
+                        </>
+                      )}
+                      {!isAdmin && <span className="text-xs text-vintage-400">Solo lectura</span>}
                     </div>
                   </td>
                 </motion.tr>
@@ -129,7 +150,7 @@ export function UsersView() {
         </table>
       </VintageCard>
 
-      {showForm && (
+      {showForm && isAdmin && (
         <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowForm(false)} />
           <motion.div className="relative bg-card rounded-2xl p-6 max-w-md w-full shadow-xl border border-vintage-200" initial={{ scale: 0.95 }} animate={{ scale: 1 }}>
@@ -139,6 +160,10 @@ export function UsersView() {
                 <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400" /></div>
               <div className="space-y-1"><label className="text-xs text-vintage-600 font-medium ml-1">Email</label>
                 <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full px-3 py-2 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400" /></div>
+              {!editing && (
+                <div className="space-y-1"><label className="text-xs text-vintage-600 font-medium ml-1">Contraseña Inicial</label>
+                  <input type="password" placeholder="Asigna una contraseña" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-3 py-2 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400" /></div>
+              )}
               <div className="space-y-1"><label className="text-xs text-vintage-600 font-medium ml-1">Rol</label>
                 <select 
                   value={form.role} 

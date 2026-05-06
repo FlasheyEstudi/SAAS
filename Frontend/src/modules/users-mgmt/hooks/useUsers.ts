@@ -9,9 +9,9 @@ import { toast } from 'sonner';
 export function useUsers() {
   const queryClient = useQueryClient();
 
-  const { data, isLoading, error, refetch } = useQuery<{ users: User[] }>({
+  const { data, isLoading, error, refetch } = useQuery<any>({
     queryKey: ['users', 'list'],
-    queryFn: () => apiClient.get<{ users: User[] }>(AUTH.users),
+    queryFn: () => apiClient.get<any>(AUTH.users),
     retry: false,
   });
 
@@ -44,7 +44,7 @@ export function useUsers() {
   });
 
   return {
-    users: Array.isArray(data) ? data : data?.users || [],
+    users: Array.isArray(data) ? data : (data?.users || data?.data || []),
     isLoading,
     error: error ? (error as any).error || 'Error fetching users' : null,
     refetch,

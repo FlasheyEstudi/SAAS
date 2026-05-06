@@ -59,6 +59,7 @@ const menuItems: MenuItem[] = [
   { title: 'Impuestos', icon: <Briefcase className="w-5 h-5" />, view: 'taxes', category: 'Reportes' },
   
   // Sistema
+  { title: 'Usuarios', icon: <Users className="w-5 h-5" />, view: 'users', category: 'Sistema' },
   { title: 'Auditoría', icon: <ShieldCheck className="w-5 h-5" />, view: 'audit', category: 'Sistema' },
   { title: 'Gestión de Datos', icon: <Database className="w-5 h-5" />, view: 'data-management', category: 'Sistema' },
   { title: 'Configuración', icon: <Settings className="w-5 h-5" />, view: 'system', category: 'Sistema' },
@@ -72,9 +73,19 @@ export function Sidebar() {
     setSidebarCollapsed,
     sidebarOpen,
     setSidebarOpen,
+    user: currentUser
   } = useAppStore();
 
   const toggleSidebar = () => setSidebarCollapsed(!sidebarCollapsed);
+
+  const isAdmin = currentUser?.role === 'ADMIN';
+
+  // Group items by category and filter by role
+  const filteredMenuItems = menuItems.filter(item => {
+    if (item.view === 'users' && !isAdmin) return false;
+    if (item.view === 'audit' && !isAdmin) return false;
+    return true;
+  });
 
   // Close mobile sidebar on escape key
   useEffect(() => {
@@ -86,7 +97,7 @@ export function Sidebar() {
   }, [setSidebarOpen]);
 
   // Group items by category
-  const categories = Array.from(new Set(menuItems.map(item => item.category)));
+  const categories = Array.from(new Set(filteredMenuItems.map(item => item.category)));
 
   const sidebarContent = (
     <>
@@ -135,7 +146,7 @@ export function Sidebar() {
               </p>
             )}
             <div className="space-y-1">
-              {menuItems
+              {filteredMenuItems
                 .filter(item => item.category === cat)
                 .map((item) => {
                   const isActive = currentView === item.view || (item.view === 'data-management' && currentView === 'data-mgmt');

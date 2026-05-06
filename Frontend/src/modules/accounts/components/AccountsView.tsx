@@ -91,11 +91,9 @@ export function AccountsView() {
       } else {
         await exportAccountsPDF(flatList, companyName);
       }
-      toast.dismiss(toastId);
-      toast.success(`Plan de cuentas exportado en ${format.toUpperCase()}`);
+      toast.success(`Plan de cuentas exportado en ${format.toUpperCase()}`, { id: 'export-loading' });
     } catch {
-      toast.dismiss(toastId);
-      toast.error('Error al exportar plan de cuentas');
+      toast.error('Error al exportar plan de cuentas', { id: 'export-loading' });
     }
   };
 

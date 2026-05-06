@@ -13,7 +13,10 @@ import {
   Tag,
   Layers,
   CheckCircle2,
+  Printer,
+  Receipt,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useJournalEntries, useJournalEntry } from '../hooks/useJournalEntries';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { VintageCard } from '@/components/ui/vintage-card';
@@ -27,7 +30,6 @@ import {
   getEntryTypeColor,
 } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -55,10 +57,13 @@ export function JournalEntryDetail() {
 
   const handlePrint = async () => {
     if (!entry) return;
-    toast.loading('Generando documento...', { id: 'export-loading', duration: 8000 });
-    await exportJournalEntryPDF(entry, currentCompany?.name || 'GANESHA');
-    toast.dismiss(toastId);
-    toast.success('Póliza exportada a PDF');
+    try {
+      toast.loading('Generando documento...', { id: 'export-loading', duration: 8000 });
+      await exportJournalEntryPDF(entry, currentCompany?.name || 'GANESHA');
+      toast.success('Póliza exportada a PDF', { id: 'export-loading' });
+    } catch {
+      toast.error('Error al exportar póliza', { id: 'export-loading' });
+    }
   };
 
   useEffect(() => {

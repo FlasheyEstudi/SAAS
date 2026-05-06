@@ -1,10 +1,10 @@
 'use client';
 
-import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
-import { Bot, Sparkles, Zap, ChevronRight, ShieldCheck, PieChart, Layers, Clock, Globe, ArrowRight, Coins } from 'lucide-react';
+import { Bot, Sparkles, Zap, ChevronRight, ShieldCheck, PieChart, Layers, Clock, Globe, ArrowRight, Coins, CheckCircle } from 'lucide-react';
 import { PastelButton } from '@/components/ui/pastel-button';
 import { useAppStore } from '@/lib/stores/useAppStore';
+import { motion, useScroll, useTransform } from 'framer-motion';
 
 export default function LandingPage() {
   const navigate = useAppStore((s) => s.navigate);
@@ -15,7 +15,7 @@ export default function LandingPage() {
   });
 
   const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
-  const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.9]);
+  const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
 
   return (
     <div ref={containerRef} className="min-h-screen bg-background mandala-bg text-foreground selection:bg-primary/30 overflow-x-hidden font-sans scroll-smooth">
@@ -39,12 +39,23 @@ export default function LandingPage() {
           </motion.div>
 
           <div className="hidden md:flex items-center gap-12 text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">
-             <a href="#sabiduria" className="hover:text-primary transition-colors">Sabiduría</a>
-             <a href="#ia" className="hover:text-primary transition-colors">Ganesha AI</a>
-             <a href="#prosperidad" className="hover:text-primary transition-colors">Prosperidad</a>
+             {['sabiduria', 'ia', 'prosperidad'].map((item) => (
+               <motion.a 
+                 key={item}
+                 href={`#${item}`} 
+                 whileHover={{ color: 'var(--primary)', scale: 1.1 }}
+                 className="hover:text-primary transition-colors"
+               >
+                 {item.charAt(0).toUpperCase() + item.slice(1)}
+               </motion.a>
+             ))}
           </div>
 
-          <div className="flex items-center gap-3 sm:gap-6">
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-3 sm:gap-6"
+          >
             <button onClick={() => navigate('login')} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">Entrar</button>
             <PastelButton 
               onClick={() => navigate('register')} 
@@ -52,7 +63,7 @@ export default function LandingPage() {
             >
               Comenzar
             </PastelButton>
-          </div>
+          </motion.div>
         </div>
       </nav>
 
@@ -61,65 +72,59 @@ export default function LandingPage() {
         <div className="max-w-[1800px] mx-auto grid lg:grid-cols-2 gap-16 items-center z-10 w-full">
           
           <motion.div 
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
             transition={{ duration: 1, ease: "easeOut" }}
             className="flex flex-col items-start text-left"
           >
             <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5 }}
               className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.5em] mb-10 backdrop-blur-xl"
             >
               <Sparkles className="w-4 h-4 animate-pulse" />
               Soberanía Financiera Absoluta
             </motion.div>
 
-            <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="text-4xl sm:text-7xl md:text-[9rem] font-playfair font-bold leading-[0.85] tracking-tighter mb-6 sm:mb-10 text-foreground"
-            >
+            <h1 className="text-4xl sm:text-7xl md:text-[8rem] font-playfair font-bold leading-[0.85] tracking-tighter mb-6 sm:mb-10 text-foreground">
               Remueve <br />
-              los <span className="italic font-normal text-primary">Obstáculos.</span>
-            </motion.h1>
+              los <motion.span 
+                initial={{ opacity: 0, filter: 'blur(10px)' }}
+                whileInView={{ opacity: 1, filter: 'blur(0px)' }}
+                transition={{ delay: 0.8, duration: 1 }}
+                className="italic font-normal text-primary"
+              >Obstáculos.</motion.span>
+            </h1>
 
-            <motion.p 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-xl leading-relaxed font-medium mb-8 sm:mb-16 drop-shadow-sm"
-            >
+            <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-xl leading-relaxed font-medium mb-8 sm:mb-16 drop-shadow-sm">
               No permitas que la complejidad detenga tu crecimiento. GANESHA fusiona IA con sabiduría para que tu camino sea siempre claro y próspero.
-            </motion.p>
+            </p>
 
-            <motion.div 
-               initial={{ opacity: 0, scale: 0.9 }}
-               animate={{ opacity: 1, scale: 1 }}
-               transition={{ delay: 0.8 }}
-               className="flex flex-col sm:flex-row gap-8"
-            >
+            <div className="flex flex-col sm:flex-row gap-8">
               <PastelButton onClick={() => navigate('register')} className="h-16 sm:h-24 px-8 sm:px-16 bg-primary text-primary-foreground border-none font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-[10px] sm:text-xs shadow-[0_20px_60px_rgba(var(--primary-rgb),0.35)] hover:translate-y-[-5px] transition-all">
                 Reclamar mi Éxito
               </PastelButton>
               <button className="flex items-center gap-4 text-[11px] font-black uppercase tracking-[0.5em] text-muted-foreground hover:text-primary transition-all group">
                 Ver Filosofía <ArrowRight className="w-4 h-4 group-hover:translate-x-2 transition-transform" />
               </button>
-            </motion.div>
+            </div>
           </motion.div>
 
           <motion.div 
-            initial={{ opacity: 0, scale: 0.8, x: 100 }}
-            animate={{ opacity: 1, scale: 1, x: 0 }}
-            transition={{ duration: 1.5, ease: "easeOut" }}
+            initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
+            whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
             className="relative flex items-center justify-center"
           >
             <div className="absolute inset-0 bg-primary/20 blur-[150px] rounded-full animate-aura scale-110" />
-            <img 
+            <motion.img 
+              animate={{ y: [0, -20, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
               src="/personaje.png" 
-              className="w-full max-w-[800px] h-auto object-contain animate-float drop-shadow-[0_0_120px_rgba(var(--primary-rgb),0.4)] relative z-10"
+              className="w-full max-w-[800px] h-auto object-contain drop-shadow-[0_0_120px_rgba(var(--primary-rgb),0.4)] relative z-10"
               alt="Ganesha Master"
             />
           </motion.div>
@@ -138,10 +143,17 @@ export default function LandingPage() {
             { n: '∞', l: 'Escalabilidad' },
             { n: '99.9%', l: 'Paz Mental' },
           ].map((m, i) => (
-            <div key={i} className="flex flex-col items-center">
+            <motion.div 
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="flex flex-col items-center"
+            >
               <span className="text-2xl sm:text-4xl md:text-6xl font-playfair font-bold text-primary mb-2 tracking-tighter">{m.n}</span>
               <span className="text-[9px] font-black uppercase tracking-[0.4em] text-muted-foreground">{m.l}</span>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
@@ -149,13 +161,18 @@ export default function LandingPage() {
       {/* Pilares de Sabiduria (Features) */}
       <section id="sabiduria" className="py-20 sm:py-60 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-32 text-center">
+          <motion.div 
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-32 text-center"
+          >
              <div className="inline-block p-4 rounded-3xl bg-primary/5 mb-8">
                 <Coins className="w-10 h-10 text-primary" />
              </div>
              <h2 className="text-3xl sm:text-6xl md:text-8xl font-playfair font-bold mb-8 tracking-tighter">La Sabiduría Integrada</h2>
              <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-medium">Cada función ha sido forjada para eliminar la fricción de tu crecimiento.</p>
-          </div>
+          </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {[
@@ -168,8 +185,12 @@ export default function LandingPage() {
             ].map((f, i) => (
               <motion.div 
                 key={i}
-                whileHover={{ y: -10 }}
-                className="p-6 sm:p-12 rounded-[2rem] sm:rounded-[4rem] border border-primary/5 bg-card hover:bg-muted/50 transition-all duration-500 group"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                whileHover={{ y: -10, backgroundColor: 'rgba(var(--primary-rgb), 0.03)' }}
+                className="p-6 sm:p-12 rounded-[2rem] sm:rounded-[4rem] border border-primary/5 bg-card transition-all duration-500 group cursor-default"
               >
                 <div className="w-16 h-16 rounded-2xl bg-primary/5 flex items-center justify-center text-primary mb-10 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-500">
                   {f.icon}
@@ -188,29 +209,37 @@ export default function LandingPage() {
       {/* IA Showcase: Ganesha AI */}
       <section id="ia" className="py-20 sm:py-40 bg-foreground/[0.03] relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[50%] h-full bg-primary/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
-        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-24 items-center">
-          <div className="relative group">
+        <div className="max-w-[1800px] mx-auto px-6 grid lg:grid-cols-2 gap-24 items-center">
+          <motion.div 
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1 }}
+            className="relative group"
+          >
             <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full animate-pulse scale-110" />
             <div className="relative aspect-square rounded-[3rem] sm:rounded-[6rem] overflow-hidden border border-primary/10 bg-card/50 backdrop-blur-3xl flex items-center justify-center p-6 sm:p-12">
                <motion.img 
-                  animate={{ 
-                    scale: [1, 1.05, 1],
-                    rotate: [0, 2, -2, 0]
-                  }}
-                  transition={{ duration: 6, repeat: Infinity }}
+                  animate={{ rotateY: [0, 10, 0] }}
+                  transition={{ duration: 10, repeat: Infinity }}
                   src="/personaje.png" 
                   className="w-full h-full object-contain drop-shadow-[0_0_50px_rgba(var(--primary-rgb),0.5)]" 
                />
                <div className="absolute inset-0 border border-primary/20 rounded-[6rem] animate-pulse pointer-events-none" />
             </div>
-          </div>
+          </motion.div>
 
-          <div>
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1 }}
+          >
              <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-[8px] font-black uppercase tracking-[0.4em] mb-10">
                 <Bot className="w-4 h-4" />
                 Soberanía Tecnológica
              </div>
-             <h2 className="text-3xl sm:text-6xl md:text-8xl font-playfair font-bold mb-6 sm:mb-10 leading-tight tracking-tighter">
+             <h2 className="text-3xl sm:text-6xl md:text-[7rem] font-playfair font-bold mb-6 sm:mb-10 leading-[0.9] tracking-tighter">
                 Tu Asesor de <br />
                 <span className="text-primary italic font-normal">Buen Augurio.</span>
              </h2>
@@ -224,23 +253,42 @@ export default function LandingPage() {
                   { t: 'Auditoría', d: 'Detección automática de fraudes.' },
                   { t: 'Soporte', d: 'Tu guía personal 24/7.' }
                 ].map((item, idx) => (
-                  <div key={idx} className="border-l border-primary/20 pl-6">
+                  <motion.div 
+                    key={idx} 
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="border-l border-primary/20 pl-6"
+                  >
                     <div className="text-foreground font-bold text-sm uppercase tracking-widest mb-1">{item.t}</div>
                     <div className="text-muted-foreground text-xs">{item.d}</div>
-                  </div>
+                  </motion.div>
                 ))}
              </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
+      {/* Sección de precios eliminada */}
+
+
+
       {/* CTA Final: El Despertar */}
       <section id="prosperidad" className="py-32 sm:py-80 flex flex-col items-center text-center px-4 sm:px-6 relative overflow-hidden">
-        <div className="absolute inset-0 z-0 flex items-center justify-center">
+        <motion.div 
+          style={{ opacity: scrollYProgress }}
+          className="absolute inset-0 z-0 flex items-center justify-center"
+        >
             <div className="w-[1000px] h-[1000px] bg-primary/10 rounded-full blur-[200px] animate-pulse" />
-        </div>
+        </motion.div>
         
-        <div className="relative z-10 max-w-5xl">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          className="relative z-10 max-w-5xl"
+        >
           <h2 className="text-4xl sm:text-7xl md:text-[10rem] font-playfair font-bold leading-none tracking-tighter mb-8 sm:mb-16">
             Remueve los <br />
             <span className="text-primary italic">Obstáculos.</span>
@@ -253,17 +301,21 @@ export default function LandingPage() {
               Reclamar mi Éxito
             </PastelButton>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Footer Final */}
       <footer className="py-32 border-t border-primary/5 text-center bg-background/50 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6">
            <div className="flex flex-col items-center gap-8">
-              <div className="flex flex-col items-center gap-2">
+              <motion.div 
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 1 }}
+                className="flex flex-col items-center gap-2"
+              >
                  <img src="/GaneshaLogo.png" className="w-12 h-12 grayscale brightness-200 opacity-20" />
                  <span className="font-playfair text-xl font-bold tracking-[0.4em] text-muted-foreground opacity-30">GANESHA ENTERPRISE SYSTEM</span>
-              </div>
+              </motion.div>
               <div className="h-px w-20 bg-primary/20" />
               <div className="text-[9px] font-black uppercase tracking-[0.6em] text-muted-foreground/60 leading-relaxed">
                 El Conocimiento es el inicio. La acción es el Camino. <br />

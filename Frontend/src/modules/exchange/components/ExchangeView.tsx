@@ -19,10 +19,13 @@ export function ExchangeView() {
 
   const handleExport = async () => {
     if (!rates.length) return;
-    toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
-    await exportExchangeExcel(rates, currentCompany?.name || 'GANESHA');
-    toast.dismiss(toastId);
-    toast.success('Historial de divisas exportado');
+    try {
+      toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
+      await exportExchangeExcel(rates, currentCompany?.name || 'GANESHA');
+      toast.success('Historial de divisas exportado', { id: 'export-loading' });
+    } catch {
+      toast.error('Error al exportar divisas', { id: 'export-loading' });
+    }
   };
   const [amount, setAmount] = useState('1000');
   const [fromCurrency, setFromCurrency] = useState('USD');

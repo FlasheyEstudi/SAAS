@@ -68,7 +68,7 @@ export function SystemView() {
           <div className="space-y-2">
             <div className="flex justify-between py-1 border-b border-vintage-100 dark:border-zinc-800"><span className="text-vintage-500 dark:text-zinc-500">Versión</span><span className="text-vintage-800 dark:text-zinc-100 font-medium">2.5.0-Enterprise</span></div>
             <div className="flex justify-between py-1 border-b border-vintage-100 dark:border-zinc-800"><span className="text-vintage-500 dark:text-zinc-500">Framework</span><span className="text-vintage-800 dark:text-zinc-100 font-medium">Next.js 15 (App Router)</span></div>
-            <div className="flex justify-between py-1 border-b border-vintage-100 dark:border-zinc-800"><span className="text-vintage-500 dark:text-zinc-500">Base de Datos</span><span className="text-vintage-800 dark:text-zinc-100 font-medium">PostgreSQL / Prisma</span></div>
+            <div className="flex justify-between py-1 border-b border-vintage-100 dark:border-zinc-800"><span className="text-vintage-500 dark:text-zinc-500">Base de Datos</span><span className="text-vintage-800 dark:text-zinc-100 font-medium">SQLite / Prisma</span></div>
           </div>
           <div className="space-y-2">
             <div className="flex justify-between py-1 border-b border-vintage-100 dark:border-zinc-800"><span className="text-vintage-500 dark:text-zinc-500">Estado</span><span className="text-vintage-800 dark:text-zinc-100 font-medium">{health?.status || 'UNKNOWN'}</span></div>

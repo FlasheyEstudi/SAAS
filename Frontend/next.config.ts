@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200],
   },
-  // Cabeceras de seguridad optimizadas
+  /*
   async headers() {
     return [
       {
@@ -28,6 +28,7 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  */
   async rewrites() {
     return [
       {
@@ -36,6 +37,8 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // @ts-ignore - Propiedad requerida por Next.js para acceso desde red local
+  allowedDevOrigins: ['172.16.27.202', 'localhost:3000'],
 };
 
 export default nextConfig;

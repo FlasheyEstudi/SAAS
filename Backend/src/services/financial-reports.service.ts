@@ -529,7 +529,9 @@ export async function getFinancialSnapshot(companyId: string) {
     const period = await resolvePeriod(companyId);
     if (!period) return 'No hay períodos contables configurados.';
 
-    // Obtener los últimos 3 meses
+    const company = await db.company.findUnique({ where: { id: companyId }, select: { name: true, currency: true } });
+
+    // 1. Tendencia de ingresos/gastos (Últimos 3 meses)
     const last3Periods = await db.accountingPeriod.findMany({
       where: { companyId },
       orderBy: [{ year: 'desc' }, { month: 'desc' }],
@@ -558,8 +560,7 @@ export async function getFinancialSnapshot(companyId: string) {
       trendMap[p.id] = { ingresos: 0, gastos: 0 };
     });
 
-    // Nota: Para máxima velocidad en SQLite, procesamos el resultado del groupBy
-    // En una implementación real más compleja usaríamos joins, pero esto es mucho más rápido que antes.
+    // Nota: Para máxima velocidad, procesamos el resultado del groupBy
     const entries = await db.journalEntry.findMany({
       where: { id: { in: aggregates.map(a => a.journalEntryId) } },
       select: { id: true, periodId: true }
@@ -592,14 +593,31 @@ export async function getFinancialSnapshot(companyId: string) {
       return `| ${p.month}/${p.year} | ${roundTwo(data.ingresos)} | ${roundTwo(data.gastos)} |`;
     }).join('\n');
 
+    // 2. Resumen de Cuentas por Cobrar/Pagar (Aging)
+    const arAging = await getAgingReport(companyId, 'SALE');
+    const apAging = await getAgingReport(companyId, 'PURCHASE');
+
+    // 3. Construcción del Snapshot
+    
     return `
-ESTADO FINANCIERO ACTUAL:
+=== ESTADO FINANCIERO ACTUAL: ${company?.name} ===
+Moneda: ${company?.currency}
+Período Activo: ${period.month}/${period.year} (${period.status})
+
+TENDENCIA RECIENTE:
 | Mes | Ingresos | Gastos |
 | --- | --- | --- |
 ${trendTable}
+
+CUENTAS PENDIENTES (CARTERA):
+- Por Cobrar (Clientes): ${arAging.totalOutstanding} (Vencido >90d: ${arAging.buckets.overdue_90_plus.total})
+- Por Pagar (Proveedores): ${apAging.totalOutstanding} (Vencido >90d: ${apAging.buckets.overdue_90_plus.total})
+
+CAPACIDADES DE CONSULTA:
+Tienes acceso a Balanzas de Comprobación, Balances Generales, Estados de Resultados, Flujos de Caja y Libros Auxiliares detallados de cualquier período.
 `.trim();
   } catch (err) {
     console.error('Error en Snapshot:', err);
-    return 'Error al obtener resumen financiero.';
+    return 'Error al obtener el snapshot financiero detallado.';
   }
 }

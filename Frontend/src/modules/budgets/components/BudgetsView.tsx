@@ -30,10 +30,14 @@ export function BudgetsView() {
 
   const handleExport = async () => {
     if (!budget) return;
-    toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
-    await exportBudgetsExcel(budget, currentCompany?.name || 'GANESHA');
-    toast.dismiss(toastId);
-    toast.success('Presupuesto exportado a Excel');
+    try {
+      const companyName = currentCompany?.name || 'GANESHA';
+      toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
+      await exportBudgetsExcel(budget, companyName);
+      toast.success('Presupuesto exportado a Excel', { id: 'export-loading' });
+    } catch (error) {
+      toast.error('Error al exportar presupuesto', { id: 'export-loading' });
+    }
   };
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Landmark,
@@ -28,6 +28,7 @@ import { AnimatedCounter, ConfirmDialog } from '@/components/ui/vintage-ui';
 import { formatCurrency, formatDate, getStatusLabel } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -74,6 +75,15 @@ export function BanksView() {
     isCreatingAccount, isUpdatingAccount, isDeletingAccount,
   } = useBanks() as any;
 
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isLoading) {
+      const timer = setTimeout(() => setLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
+
   // Compute summary from real data — prefer hook values, fallback to computing from arrays
   const totalBalance = Number(hookBalance || accounts.reduce((s: number, a: any) => s + (Number(a.currentBalance || a.initialBalance) || 0), 0));
   const totalDeposits = Number(hookDeposits || movements.filter((m: any) => m.movementType === 'DEPOSIT' || m.movementType === 'CREDIT').reduce((s: number, m: any) => s + Math.abs(Number(m.amount) || 0), 0));
@@ -100,6 +110,7 @@ export function BanksView() {
   const [formDate, setFormDate] = useState(new Date().toISOString().split('T')[0]);
   const [formReference, setFormReference] = useState('');
   const [saving, setSaving] = useState(false);
+
 
   const handleExport = async (format: 'excel' | 'pdf') => {
     try {
@@ -229,6 +240,8 @@ export function BanksView() {
     value: a.id,
     label: `${a.bankName} (${a.accountNumber.slice(-4)})`,
   })), [accounts]);
+
+  if (loading) return <GaneshaLoader variant="compact" message="Sincronizando Bancos..." />;
 
   const tableHeaders = [
     { key: 'date', label: 'Fecha', align: 'left' as const, className: 'w-[110px]' },
@@ -455,7 +468,7 @@ export function BanksView() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowForm(false)} />
+            <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px]" onClick={() => setShowForm(false)} />
             <motion.div
               className="relative bg-card rounded-2xl p-6 max-w-lg w-full mx-4 shadow-xl border border-vintage-200 max-h-[90vh] overflow-y-auto"
               initial={{ scale: 0.95, opacity: 0 }}
@@ -567,7 +580,7 @@ export function BanksView() {
       {/* Bank Account Modal */}
       <AnimatePresence>
         {showAccountForm && (
-          <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-[1px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <motion.div className="bg-card w-full max-w-md rounded-2xl shadow-xl border border-vintage-200 overflow-hidden" initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}>
               <div className="p-6 border-b border-vintage-100 flex items-center justify-between">
                 <h3 className="text-lg font-playfair font-bold text-vintage-800">{editingAccount ? 'Editar Cuenta' : 'Nueva Cuenta Bancaria'}</h3>

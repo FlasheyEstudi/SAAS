@@ -46,7 +46,11 @@ export type AppView =
   | 'closing-entries'
   | 'financial-concepts'
   | 'payment-terms'
-  | 'company-settings';
+  | 'company-settings'
+  | 'documentation'
+  | 'api-reference'
+  | 'user-manual'
+  | 'support';
 
 interface AppState {
   // Auth

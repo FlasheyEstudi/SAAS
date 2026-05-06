@@ -123,6 +123,8 @@ function IncomeSection({ title, color, total, items }: any) {
   );
 }
 
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
+
 export function ReportsView() {
   const { periods: dynamicPeriods = [] } = usePeriods();
   const currentCompany = useAppStore(s => s.currentCompany);
@@ -233,7 +235,16 @@ export function ReportsView() {
     }
   };
 
-  if (isLoading) return <PageLoader text="Cargando reportes..." />;
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isLoading) {
+      const timer = setTimeout(() => setLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
+
+  if (loading) return <GaneshaLoader variant="compact" message="Preparando Estados Financieros..." />;
 
   const tabs = [
     { id: 'trial-balance', label: 'Balanza de Comprobación', icon: <Scale className="w-4 h-4" /> },

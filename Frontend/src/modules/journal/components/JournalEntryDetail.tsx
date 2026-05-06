@@ -83,9 +83,8 @@ export function JournalEntryDetail() {
   }, [navigate]);
 
   const handleEdit = useCallback(() => {
-    // Navigate to create form (in a real app, this would be journal-edit)
-    navigate('journal-create');
-  }, [navigate]);
+    navigate('journal-create', { id: entryId });
+  }, [navigate, entryId]);
 
   const handlePost = useCallback(async () => {
     if (!entryId) return;
@@ -98,8 +97,8 @@ export function JournalEntryDetail() {
       } else {
         toast.error('No se pudo publicar la póliza');
       }
-    } catch {
-      toast.error('Error al publicar la póliza');
+    } catch (err: any) {
+      toast.error(err.message || 'Error al publicar la póliza');
     } finally {
       setPosting(false);
     }

@@ -81,13 +81,13 @@ export function Header() {
   const displayNotifications = notifications;
 
   return (
-    <header className="h-16 border-b border-border bg-background/80 backdrop-blur-3xl px-3 sm:px-6 flex items-center justify-between sticky top-0 z-40 transition-colors duration-500 gap-2">
+    <header className="h-16 border-b border-white/5 bg-black/40 backdrop-blur-3xl px-3 sm:px-6 flex items-center justify-between sticky top-0 z-40 transition-colors duration-500 gap-2">
       {/* LEFT: Hamburger + Logo */}
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
         {/* Hamburger - mobile only */}
         <button
           onClick={() => setSidebarOpen(true)}
-          className="lg:hidden p-2 -ml-1 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
+          className="lg:hidden p-2 -ml-1 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
           aria-label="Abrir menú"
         >
           <Menu className="w-6 h-6" />
@@ -98,19 +98,19 @@ export function Header() {
           className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0"
         >
           <div className="relative">
-            <div className="absolute inset-0 bg-primary/20 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 bg-[#EA580C]/20 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
             <img 
               src="/GaneshaLogo.png" 
               alt="Ganesha Logo"
-              className="w-8 h-8 sm:w-10 sm:h-10 object-contain transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 drop-shadow-xl relative z-10"
+              className="w-8 h-8 sm:w-10 sm:h-10 object-contain transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 drop-shadow-[0_0_15px_rgba(234,88,12,0.3)] relative z-10"
             />
           </div>
           <div className="flex flex-col hidden sm:flex">
-            <h1 className="text-lg sm:text-xl font-black uppercase tracking-tighter text-foreground dark:text-zinc-100 leading-none">
+            <h1 className="text-xl font-black uppercase tracking-tighter text-white leading-none">
               GANESHA
             </h1>
-            <span className="text-[8px] sm:text-[9px] font-bold text-primary uppercase tracking-[0.4em] mt-1 opacity-80">
-              Soberanía Financiera
+            <span className="text-[9px] font-black text-[#EA580C] uppercase tracking-[0.4em] mt-1 opacity-90">
+              Intelligence System
             </span>
           </div>
         </div>
@@ -180,10 +180,11 @@ export function Header() {
         {/* IA button */}
         <button 
           onClick={() => navigate('ai-chat')}
-          className="p-2 sm:px-4 sm:py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-600/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:border-amber-500/40 transition-all flex items-center gap-2 group shadow-sm shadow-amber-500/5"
+          className="relative overflow-hidden p-2 sm:px-5 sm:py-2.5 rounded-2xl bg-gradient-to-br from-[#EA580C] to-[#C2410C] text-white shadow-[0_5px_15px_rgba(234,88,12,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 group border-none"
         >
-          <Bot className="w-4 h-4" />
-          <span className="text-[10px] font-black uppercase tracking-widest hidden md:block">IA Ganesha</span>
+          <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 skew-x-12" />
+          <Bot className="w-4 h-4 animate-pulse" />
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] hidden md:block">IA Ganesha</span>
         </button>
 
         {/* Notifications */}

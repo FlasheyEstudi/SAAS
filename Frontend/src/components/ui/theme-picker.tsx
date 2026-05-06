@@ -41,7 +41,7 @@ export function ThemePicker({ isOpen, onClose }: { isOpen: boolean; onClose: () 
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/20 backdrop-blur-sm pointer-events-auto"
+          className="absolute inset-0 bg-black/10 backdrop-blur-[1px] pointer-events-auto"
           onClick={onClose}
         />
         <motion.div

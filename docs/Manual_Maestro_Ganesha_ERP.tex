@@ -1,0 +1,140 @@
+\documentclass[12pt, a4paper, oneside]{book}
+
+% --- Paquetes Requeridos ---
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{tcolorbox}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{amsmath}
+
+% --- Configuración de Página ---
+\geometry{top=2.5cm, bottom=2.5cm, left=3cm, right=2.5cm}
+
+% --- Colores Ganesha (Premium Dark Theme) ---
+\definecolor{brandorange}{HTML}{EA580C}
+\definecolor{brandblack}{HTML}{09090B}
+\definecolor{brandgray}{HTML}{27272A}
+\definecolor{brandwhite}{HTML}{FAFAFA}
+
+% --- Estilos de Títulos ---
+\titleformat{\chapter}[display]{\normalfont\huge\bfseries\color{brandorange}}{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titleformat{\section}{\color{brandwhite}\normalfont\Large\bfseries}{\thesection}{1em}{}
+
+% --- Configuración de Código ---
+\lstset{
+    backgroundcolor=\color{brandgray},
+    basicstyle=\ttfamily\small\color{brandwhite},
+    keywordstyle=\color{brandorange},
+    stringstyle=\color{green},
+    breaklines=true,
+    frame=single,
+    rulecolor=\color{brandorange}
+}
+
+\begin{document}
+
+\pagecolor{brandblack}
+\color{brandwhite}
+
+% ==========================================
+% PORTADA
+% ==========================================
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    {\fontsize{50}{60}\selectfont\bfseries\color{brandorange} GANESHA}\\[0.5cm]
+    {\Huge\bfseries ENTERPRISE ERP}\\[2cm]
+    
+    \begin{tcolorbox}[colback=brandgray, colframe=brandorange, arc=10pt]
+        \centering
+        \Large\textbf{Manual Maestro de Operaciones y Arquitectura Técnica}
+    \end{tcolorbox}
+    
+    \vfill
+    {\Large \textbf{Versión Final de Auditoría (Hardened v2.5)}}\\[0.5cm]
+    {\large \today}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ==========================================
+\chapter{Introducción y Visión}
+% ==========================================
+Ganesha ERP es una plataforma de gestión de recursos empresariales diseñada para la era de la Inteligencia Artificial. A diferencia de los sistemas tradicionales, Ganesha integra un motor de auditoría forense en tiempo real que previene el fraude y garantiza la integridad contable absoluta.
+
+\section{Filosofía de Diseño}
+El sistema se rige por tres pilares:
+\begin{itemize}
+    \item \textbf{Inmutabilidad}: Una vez cerrado un período, los datos son inalterables.
+    \item \textbf{Trazabilidad}: Cada clic es auditado con el actor y el cambio realizado.
+    \item \textbf{Inteligencia}: Análisis predictivo de flujo de caja y tendencias de gasto.
+\end{itemize}
+
+% ==========================================
+\chapter{Arquitectura de Seguridad}
+% ==========================================
+En esta versión 2.5, se ha implementado un esquema de seguridad de grado bancario para proteger la información multi-empresa.
+
+\section{Firma de Tokens HMAC SHA256}
+Toda comunicación entre el cliente y el servidor está firmada. Esto garantiza que el token de sesión no pueda ser falsificado ni reutilizado en otros dominios.
+
+\section{Protección de Períodos Contables}
+El sistema implementa el helper \texttt{ensurePeriodOpen}. Este mecanismo bloquea físicamente las operaciones de \texttt{POST, PUT y DELETE} si la fecha de la transacción pertenece a un mes fiscal cerrado.
+
+% ==========================================
+\chapter{Módulos Centrales}
+% ==========================================
+
+\section{Contabilidad y Partida Doble}
+El motor contable valida matemáticamente que:
+\begin{equation}
+    \sum \text{Débitos} = \sum \text{Créditos}
+\end{equation}
+Antes de permitir que un asiento pase del estado \texttt{DRAFT} a \texttt{POSTED}.
+
+\section{Gestión de Activos y Depreciación}
+Ganesha automatiza el ciclo de vida del patrimonio. Al registrar un activo fijo (computadoras, vehículos), el sistema calcula la depreciación mensual lineal y genera el asiento contable de gasto de forma autónoma cada cierre de mes.
+
+\section{Bancos y Tesorería}
+El módulo de conciliación permite cruzar los movimientos bancarios reales con las pólizas de pago generadas desde las facturas, permitiendo una visión de liquidez en tiempo real.
+
+% ==========================================
+\chapter{Ganesha AI: Auditoría Forense}
+% ==========================================
+La Inteligencia Artificial integrada (Llama 3.2) no es solo un chatbot; es una analista financiera.
+\begin{itemize}
+    \item \textbf{Detección de Fugas}: Puede identificar gastos inusualmente altos en categorías específicas.
+    \item \textbf{Análisis de Riesgo}: Evalúa la cartera vencida y predice problemas de liquidez a 30 días.
+\end{itemize}
+
+% ==========================================
+\chapter{Guía del Desarrollador}
+% ==========================================
+El backend utiliza Next.js con Prisma ORM y SQLite como motor de persistencia optimizado.
+
+\section{Esquema de Base de Datos}
+El esquema cuenta con 22 modelos relacionales que garantizan la multi-tenencia mediante el campo \texttt{companyId} en todas las entidades críticas.
+
+\begin{lstlisting}[language=SQL]
+-- Ejemplo de integridad en Auditoria
+CREATE TABLE AuditLog (
+  id String PRIMARY KEY,
+  userId String,
+  action String, -- CREATE, UPDATE, DELETE
+  oldValues JSON,
+  newValues JSON
+);
+\end{lstlisting}
+
+\vfill
+\centering
+\textbf{Fin del Manual Maestro}
+\end{document}

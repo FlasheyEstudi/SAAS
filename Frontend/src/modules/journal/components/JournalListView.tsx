@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   FileText,
@@ -22,6 +22,7 @@ import { StatusBadge } from '@/components/ui/vintage-ui';
 import { AnimatedTable, Pagination, FilterBar } from '@/components/tables/animated-table';
 import { formatCurrency, formatDate, getStatusLabel, getEntryTypeColor } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -56,20 +57,31 @@ export function JournalListView() {
     entries = [], isLoading, total: rawTotal = 0, totalPages = 1, page = 1, limit = 20,
     search = '', typeFilter = '', statusFilter = '',
     setSearch, setTypeFilter, setStatusFilter, setPage, clearFilters,
-    deleteEntry, postEntry,
+    deleteEntry, postEntry, stats: globalStats
   } = useJournalEntries() as any;
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isLoading) {
+      const timer = setTimeout(() => setLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
+
 
   const total = rawTotal || entries.length;
 
   const stats = useMemo(() => ({
-    posted: entries.filter((e: any) => e.status === 'POSTED').length,
-    drafts: entries.filter((e: any) => e.status === 'DRAFT').length,
-    totalDebit: entries.reduce((s: number, e: any) => s + (Number(e.totalDebit) || 0), 0)
-  }), [entries]);
+    posted: globalStats?.POSTED || 0,
+    drafts: globalStats?.DRAFT || 0,
+    totalDebit: globalStats?.totalDebit || 0
+  }), [globalStats]);
 
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [postingId, setPostingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
 
   const handleExport = async (format: 'excel' | 'pdf') => {
     try {
@@ -138,6 +150,8 @@ export function JournalListView() {
       setConfirmDelete(null);
     }
   }, [deleteEntry]);
+
+  if (loading) return <GaneshaLoader variant="compact" message="Sincronizando Partidas..." />;
 
   const getStatusBadge = (status: string) => {
     const map: Record<string, 'success' | 'warning'> = {
@@ -335,7 +349,7 @@ export function JournalListView() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setConfirmDelete(null)} />
+          <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px]" onClick={() => setConfirmDelete(null)} />
           <motion.div
             className="relative bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl border border-vintage-200 dark:border-zinc-800"
             initial={{ scale: 0.95, opacity: 0 }}

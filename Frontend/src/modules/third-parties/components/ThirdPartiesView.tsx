@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Plus, Edit2, Trash2, Search, FileSpreadsheet, Download } from 'lucide-react';
 import { exportThirdPartiesExcel, exportThirdPartiesPDF } from '@/lib/utils/export';
@@ -13,6 +13,7 @@ import { formatCurrency } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 import { useThirdParties } from '../hooks/useThirdParties';
 import { useAppStore } from '@/lib/stores/useAppStore';
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
 
 interface ThirdParty { id: string; name: string; taxId: string; type: 'CUSTOMER' | 'SUPPLIER' | 'BOTH'; email: string; phone: string; balance: number; isActive: boolean; }
 
@@ -20,13 +21,24 @@ const typeLabels: Record<string, string> = { CUSTOMER: 'Cliente', SUPPLIER: 'Pro
 const typeColors: Record<string, string> = { CUSTOMER: 'success', SUPPLIER: 'info', BOTH: 'warning' };
 
 export function ThirdPartiesView() {
-  const { parties = [], isLoading: loading, createParty, updateParty, deleteParty, isCreating, isUpdating, isDeleting } = useThirdParties() as any;
+  const { parties = [], isLoading, createParty, updateParty, deleteParty, isCreating, isUpdating, isDeleting } = useThirdParties() as any;
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isLoading) {
+      const timer = setTimeout(() => setLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
+
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ThirdParty | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', taxId: '', type: 'CUSTOMER' as ThirdParty['type'], email: '', phone: '' });
+
+  if (loading) return <GaneshaLoader variant="compact" message="Sincronizando Terceros..." />;
 
   const handleExport = async (format: 'excel' | 'pdf') => {
     try {

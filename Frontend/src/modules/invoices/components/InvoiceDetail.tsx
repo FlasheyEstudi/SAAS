@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, CreditCard, FileText, Building2, Calendar, Tag, Percent, Receipt } from 'lucide-react';
+import { ArrowLeft, CreditCard, FileText, Building2, Calendar, Tag, Percent, Receipt, Edit2, Trash2 } from 'lucide-react';
 import { useInvoices, useInvoice } from '../hooks/useInvoices';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { VintageCard } from '@/components/ui/vintage-card';
@@ -33,7 +33,7 @@ function getInvoiceStatus(status: string): 'success' | 'warning' | 'error' | 'in
 export function InvoiceDetail() {
   const viewParams = useAppStore((s) => s.viewParams);
   const navigate = useAppStore((s) => s.navigate);
-  const { getInvoice, payInvoice } = useInvoices();
+  const { getInvoice, payInvoice, deleteInvoice } = useInvoices();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
@@ -112,12 +112,44 @@ export function InvoiceDetail() {
             </p>
           </div>
         </div>
-        {canPay && (
-          <PastelButton variant="success" onClick={handlePay} loading={paying} className="gap-2">
-            <CreditCard className="w-4 h-4" />
-            Registrar Pago
+        <div className="flex items-center gap-2">
+          <PastelButton 
+            variant="outline" 
+            onClick={() => navigate('invoice-create', { id: invoice.id })} 
+            className="gap-2"
+          >
+            <Edit2 className="w-4 h-4" />
+            Editar
           </PastelButton>
-        )}
+
+          {invoice.status === 'PENDING' && (
+            <PastelButton 
+              variant="outline" 
+              onClick={async () => {
+                if (confirm('¿Estás seguro de eliminar esta factura?')) {
+                  try {
+                    await deleteInvoice(invoice.id);
+                    toast.success('Factura eliminada');
+                    navigate('invoices');
+                  } catch (err: any) {
+                    toast.error(err.error || 'Error al eliminar');
+                  }
+                }
+              }} 
+              className="gap-2 text-error hover:bg-error/10"
+            >
+              <Trash2 className="w-4 h-4" />
+              Eliminar
+            </PastelButton>
+          )}
+
+          {canPay && (
+            <PastelButton variant="success" onClick={handlePay} loading={paying} className="gap-2">
+              <CreditCard className="w-4 h-4" />
+              Registrar Pago
+            </PastelButton>
+          )}
+        </div>
       </motion.div>
 
       {/* Info cards */}
@@ -189,7 +221,7 @@ export function InvoiceDetail() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-vintage-100">
-                {(invoice.lines || []).map((line, idx) => (
+                {(Array.isArray(invoice.lines) ? invoice.lines : []).map((line, idx) => (
                   <motion.tr
                     key={line.id || idx}
                     initial={{ opacity: 0 }}
@@ -216,7 +248,7 @@ export function InvoiceDetail() {
                   <td colSpan={4} className="px-4 py-3 text-sm font-semibold text-vintage-700 text-right">Subtotal</td>
                   <td colSpan={2} className="px-4 py-3 text-sm font-mono text-vintage-700 text-right">{formatCurrency(invoice.subtotal, 'NIO')}</td>
                 </tr>
-                {(invoice.taxEntries || []).map((tax) => (
+                {(Array.isArray(invoice.taxEntries) ? invoice.taxEntries : []).map((tax) => (
                   <tr key={tax.id} className="border-t border-vintage-100">
                     <td colSpan={4} className="px-4 py-2 text-sm text-vintage-600 text-right flex items-center justify-end gap-1">
                       <Percent className="w-3 h-3" />
@@ -236,7 +268,7 @@ export function InvoiceDetail() {
       </motion.div>
 
       {/* Payment schedule */}
-      {invoice.paymentSchedule && invoice.paymentSchedule.length > 0 && (
+      {Array.isArray(invoice.paymentSchedule) && invoice.paymentSchedule.length > 0 && (
         <motion.div variants={itemVariants}>
           <VintageCard hover={false} className="overflow-hidden">
             <div className="p-4 border-b border-vintage-100">
@@ -255,7 +287,7 @@ export function InvoiceDetail() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-vintage-100">
-                  {(invoice.paymentSchedule || []).map((ps, idx) => {
+                  {(Array.isArray(invoice.paymentSchedule) ? invoice.paymentSchedule : []).map((ps, idx) => {
                     const balance = ps.amount - ps.paidAmount;
                     return (
                       <motion.tr

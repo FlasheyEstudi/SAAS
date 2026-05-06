@@ -13,30 +13,27 @@ import { cn } from '@/lib/utils';
 
 import { exportPaymentTermsExcel } from '@/lib/utils/export';
 import { useAppStore } from '@/lib/stores/useAppStore';
+import { useEffect } from 'react';
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
+
 
 export function PaymentTermsView() {
   const currentCompany = useAppStore(s => s.currentCompany);
   const { terms, isLoading, createTerm, updateTerm, isCreating } = usePaymentTerms();
-
-  const handleExport = async () => {
-    if (!terms.length) return;
-    try {
-      toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
-      await exportPaymentTermsExcel(terms, currentCompany?.name || 'GANESHA');
-      toast.success('Términos de pago exportados', { id: 'export-loading' });
-    } catch {
-      toast.error('Error al exportar términos', { id: 'export-loading' });
-    }
-  };
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<PaymentTerm | null>(null);
-  
-  const [form, setForm] = useState({
-    name: '',
-    days: 0,
-    isDefault: false,
-    isActive: true
-  });
+  const [form, setForm] = useState({ name: '', days: 0, isDefault: false, isActive: true });
+
+  useEffect(() => {
+    if (!isLoading) {
+      const timer = setTimeout(() => setLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
+
+  if (loading) return <GaneshaLoader variant="compact" message="Sincronizando Términos de Pago..." />;
+
 
   const openCreate = () => {
     setEditing(null);
@@ -63,8 +60,16 @@ export function PaymentTermsView() {
     }
     setShowForm(false);
   };
-
-  if (isLoading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
+  const handleExport = async () => {
+    if (!terms.length) return;
+    try {
+      toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
+      await exportPaymentTermsExcel(terms, currentCompany?.name || 'GANESHA');
+      toast.success('Términos de pago exportados', { id: 'export-loading' });
+    } catch {
+      toast.error('Error al exportar términos', { id: 'export-loading' });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -117,7 +122,7 @@ export function PaymentTermsView() {
 
       {showForm && (
         <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowForm(false)} />
+          <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px]" onClick={() => setShowForm(false)} />
           <motion.div className="relative bg-card rounded-2xl p-6 max-w-md w-full shadow-xl border border-vintage-200" initial={{ scale: 0.95 }} animate={{ scale: 1 }}>
             <h3 className="text-lg font-playfair font-bold text-vintage-800 mb-4">{editing ? 'Editar' : 'Nuevo'} Término de Pago</h3>
             <div className="space-y-4">

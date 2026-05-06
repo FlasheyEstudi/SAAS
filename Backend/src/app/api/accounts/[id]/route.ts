@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
-import { success, notFound, error, serverError } from '@/lib/api-helpers';
+import { success, notFound, error, serverError, validateAuth } from '@/lib/api-helpers';
+import { logAudit } from '@/lib/audit-service';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -55,6 +56,7 @@ export async function GET(_request: Request, context: RouteContext) {
 // ============================================================
 export async function PUT(request: Request, context: RouteContext) {
   try {
+    const user = await validateAuth(request);
     const { id } = await context.params;
     const body = await request.json();
     const { name, isActive, description } = body;
@@ -148,6 +150,18 @@ export async function PUT(request: Request, context: RouteContext) {
       },
     });
 
+    // Audit Log
+    await logAudit({
+      companyId: account.companyId,
+      userId: user?.id || null,
+      action: 'UPDATE',
+      entityType: 'ACCOUNT',
+      entityId: account.id,
+      entityLabel: `${account.code} - ${account.name}`,
+      oldValues: existing,
+      newValues: account,
+    });
+
     return success(account);
   } catch (err) {
     console.error('Error updating account:', err);
@@ -161,6 +175,7 @@ export async function PUT(request: Request, context: RouteContext) {
 // ============================================================
 export async function DELETE(_request: Request, context: RouteContext) {
   try {
+    const user = await validateAuth(_request);
     const { id } = await context.params;
 
     const account = await db.account.findUnique({
@@ -186,6 +201,17 @@ export async function DELETE(_request: Request, context: RouteContext) {
     if (account._count.journalLines > 0) {
       return error(`No se puede eliminar la cuenta porque tiene ${account._count.journalLines} partida(s) contable(s) asociada(s).`);
     }
+
+    // Audit Log
+    await logAudit({
+      companyId: account.companyId,
+      userId: user?.id || null,
+      action: 'DELETE',
+      entityType: 'ACCOUNT',
+      entityId: account.id,
+      entityLabel: `${account.code} - ${account.name}`,
+      oldValues: account,
+    });
 
     await db.account.delete({ where: { id } });
 

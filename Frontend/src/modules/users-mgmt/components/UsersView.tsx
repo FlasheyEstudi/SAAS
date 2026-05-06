@@ -12,13 +12,23 @@ import { formatDate, getInitials } from '@/lib/utils/format';
 import { useUsers } from '../hooks/useUsers';
 import { exportUsersExcel } from '@/lib/utils/export';
 import { useAppStore } from '@/lib/stores/useAppStore';
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
 
 const roleLabels: Record<string, string> = { ADMIN: 'Administrador', ACCOUNTANT: 'Contador', MANAGER: 'Gerente', VIEWER: 'Visor' };
 const roleColors: Record<string, string> = { ADMIN: 'error', ACCOUNTANT: 'success', MANAGER: 'warning', VIEWER: 'neutral' };
 
 export function UsersView() {
   const currentCompany = useAppStore(s => s.currentCompany);
-  const { users, isLoading: loading, createUser, updateUser, deleteUser, isCreating, isUpdating, isDeleting } = useUsers() as any;
+  const { users, isLoading: hookLoading, createUser, updateUser, deleteUser, isCreating, isUpdating, isDeleting } = useUsers() as any;
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!hookLoading) {
+      const timer = setTimeout(() => setLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [hookLoading]);
+
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
@@ -28,7 +38,10 @@ export function UsersView() {
     password: '',
     role: 'VIEWER' 
   });
-  
+
+  const { user: currentUser } = useAppStore();
+  const isAdmin = currentUser?.role === 'ADMIN';
+
   const openCreate = () => { setEditing(null); setForm({ name: '', email: '', password: '', role: 'VIEWER' }); setShowForm(true); };
   const openEdit = (u: any) => { setEditing(u); setForm({ name: u.name, email: u.email, password: '', role: u.role }); setShowForm(true); };
   
@@ -71,10 +84,7 @@ export function UsersView() {
     }
   };
 
-  const { user: currentUser } = useAppStore();
-  const isAdmin = currentUser?.role === 'ADMIN';
-  
-  if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
+  if (loading) return <GaneshaLoader variant="compact" message="Sincronizando Usuarios..." />;
 
   return (
     <div className="space-y-6">
@@ -152,7 +162,7 @@ export function UsersView() {
 
       {showForm && isAdmin && (
         <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowForm(false)} />
+          <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px]" onClick={() => setShowForm(false)} />
           <motion.div className="relative bg-card rounded-2xl p-6 max-w-md w-full shadow-xl border border-vintage-200" initial={{ scale: 0.95 }} animate={{ scale: 1 }}>
             <h3 className="text-lg font-playfair font-bold text-vintage-800 mb-4">{editing ? 'Editar' : 'Nuevo'} Usuario</h3>
             <div className="space-y-4">

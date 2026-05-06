@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { success, notFound, error, serverError } from '@/lib/api-helpers';
+import { success, error, serverError, validateAuth, ensurePeriodOpen } from '@/lib/api-helpers';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -19,7 +19,7 @@ export async function POST(request: Request, context: RouteContext) {
     });
 
     if (!invoice) {
-      return notFound('Factura no encontrada');
+      return error('Factura no encontrada', 404);
     }
 
     // Default amount to balanceDue if not provided
@@ -66,31 +66,121 @@ export async function POST(request: Request, context: RouteContext) {
       newStatus = 'PARTIAL';
     }
 
-    // Update invoice
-    const updatedInvoice = await db.invoice.update({
-      where: { id },
-      data: {
-        balanceDue: Math.max(0, newBalanceDue),
-        status: newStatus,
-        ...(journalEntryId ? { journalEntryId } : {}),
-      },
-      include: {
-        thirdParty: {
-          select: { id: true, name: true, type: true },
+    // VALIDACIÓN DE PERIODO ABIERTO (Audit M2/Security)
+    const isOpen = await ensurePeriodOpen(invoice.companyId, new Date());
+    if (!isOpen) {
+      return error('No se pueden registrar pagos en un periodo contable cerrado o bloqueado');
+    }
+
+    // 1. Get bank account if provided, or first one
+    const { bankAccountId } = body;
+    const bankAccount = bankAccountId 
+      ? await db.bankAccount.findUnique({ where: { id: bankAccountId } })
+      : await db.bankAccount.findFirst({ where: { companyId: invoice.companyId } });
+
+    if (!bankAccount) return error('No se encontró una cuenta de banco para registrar el movimiento');
+
+    // 2. Ejecutar transacción atómica (SEGURIDAD TOTAL)
+    const result = await db.$transaction(async (tx) => {
+      // 2.1 Crear Movimiento Bancario
+      const isSale = invoice.invoiceType === 'SALE';
+      const movement = await tx.bankMovement.create({
+        data: {
+          bankAccountId: bankAccount.id,
+          movementDate: new Date(),
+          description: `Pago Factura ${invoice.number} - ${description || 'Liquidación'}`,
+          amount: paymentAmount,
+          movementType: isSale ? 'DEBIT' : 'CREDIT', // DEBIT = Ingresa dinero (Venta), CREDIT = Sale dinero (Compra)
+          status: 'RECONCILED'
+        }
+      });
+
+      // 2.2 Actualizar saldo del banco
+      await tx.bankAccount.update({
+        where: { id: bankAccount.id },
+        data: { 
+          currentBalance: { 
+            [isSale ? 'increment' : 'decrement']: paymentAmount 
+          }
+        }
+      });
+
+      // 2.3 Crear Asiento Contable (Póliza de Pago)
+      // Buscamos cuentas necesarias
+      const accounts = await tx.account.findMany({
+        where: { 
+          companyId: invoice.companyId, 
+          code: { in: [isSale ? '1.1.02.01' : '2.1.01.01', bankAccount.currency === 'USD' ? '1.1.01.02' : '1.1.01.01'] } 
+        }
+      });
+
+      const accParty = accounts.find(a => a.code === (isSale ? '1.1.02.01' : '2.1.01.01'));
+      const accBank = accounts.find(a => a.code === (bankAccount.currency === 'USD' ? '1.1.01.02' : '1.1.01.01'));
+
+      let journalEntryIdResult = journalEntryId;
+
+      if (accParty && accBank) {
+        const period = await tx.accountingPeriod.findFirst({
+          where: { companyId: invoice.companyId, status: 'OPEN', year: new Date().getFullYear(), month: new Date().getMonth() + 1 }
+        });
+
+        if (period) {
+          const je = await tx.journalEntry.create({
+            data: {
+              companyId: invoice.companyId,
+              periodId: period.id,
+              entryNumber: `PAG-${invoice.number}-${Date.now().toString().slice(-4)}`,
+              description: `Pago a factura ${invoice.number} - ${description || ''}`,
+              entryDate: new Date(),
+              entryType: isSale ? 'INGRESO' : 'EGRESO',
+              status: 'POSTED',
+              totalDebit: paymentAmount,
+              totalCredit: paymentAmount,
+              lines: {
+                create: [
+                  { 
+                    accountId: isSale ? accBank.id : accParty.id, 
+                    debit: paymentAmount, credit: 0, 
+                    description: `Liquidación Factura ${invoice.number}` 
+                  },
+                  { 
+                    accountId: isSale ? accParty.id : accBank.id, 
+                    debit: 0, credit: paymentAmount, 
+                    description: `Liquidación Factura ${invoice.number}` 
+                  }
+                ]
+              }
+            }
+          });
+          journalEntryIdResult = je.id;
+        }
+      }
+
+      // 2.4 Actualizar factura
+      const updatedInvoice = await tx.invoice.update({
+        where: { id },
+        data: {
+          balanceDue: Math.max(0, newBalanceDue),
+          status: newStatus,
+          journalEntryId: journalEntryIdResult,
         },
-      },
+        include: {
+          thirdParty: { select: { id: true, name: true, type: true } },
+        },
+      });
+
+      return { updatedInvoice, movement };
     });
 
     return success({
-      ...updatedInvoice,
+      ...result.updatedInvoice,
       paymentInfo: {
         amount: paymentAmount,
+        bankMovementId: result.movement.id,
         previousBalanceDue: invoice.balanceDue,
         newBalanceDue: Math.max(0, newBalanceDue),
         statusChanged: invoice.status !== newStatus,
-        previousStatus: invoice.status,
         newStatus,
-        description: description || null,
       },
     });
   } catch (err) {

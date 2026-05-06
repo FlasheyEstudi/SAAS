@@ -43,14 +43,14 @@ export async function GET(request: NextRequest) {
     
     if (search) {
       where.OR = [
-        { description: { contains: search, mode: 'insensitive' } },
-        { entryNumber: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search } },
+        { entryNumber: { contains: search } },
       ];
     }
 
     const includeLines = searchParams.get('includeLines') === 'true';
 
-    const [entries, total] = await Promise.all([
+    const [entries, total, globalStats] = await Promise.all([
       db.journalEntry.findMany({
         where,
         include: {
@@ -71,10 +71,32 @@ export async function GET(request: NextRequest) {
         take: limit,
       }),
       db.journalEntry.count({ where }),
+      db.journalEntry.groupBy({
+        by: ['status'],
+        where: companyId ? { companyId } : {},
+        _count: { _all: true },
+        _sum: { totalDebit: true, totalCredit: true }
+      })
     ]);
+
+    // Map global stats
+    const statsMap = {
+      POSTED: 0,
+      DRAFT: 0,
+      totalDebit: 0,
+      totalCredit: 0
+    };
+
+    globalStats.forEach(stat => {
+      if (stat.status === 'POSTED') statsMap.POSTED = stat._count._all;
+      if (stat.status === 'DRAFT') statsMap.DRAFT = stat._count._all;
+      statsMap.totalDebit += Number(stat._sum.totalDebit || 0);
+      statsMap.totalCredit += Number(stat._sum.totalCredit || 0);
+    });
 
     return success({
       data: entries,
+      stats: statsMap,
       pagination: {
         page,
         limit,

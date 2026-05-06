@@ -26,6 +26,9 @@ import { cn } from '@/lib/utils';
 import { exportAuditExcel } from '@/lib/utils/export';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { toast } from 'sonner';
+import { useEffect } from 'react';
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
+
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -52,7 +55,7 @@ function getActionColor(action: string) {
     case 'CREATE': return 'bg-success/15 text-success';
     case 'UPDATE': return 'bg-info/15 text-info';
     case 'DELETE': return 'bg-error/15 text-error';
-    case 'LOGIN': return 'bg-lavender/30 text-vintage-700';
+    case 'LOGIN': return 'bg-lavender/30 text-vintage-700 dark:text-zinc-200';
     default: return 'bg-vintage-100 text-vintage-600';
   }
 }
@@ -62,6 +65,8 @@ export function AuditView() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [entityType, setEntityType] = useState('');
+  const [loading, setLoading] = useState(true);
+
   
   const { logs, pagination, isLoading } = useAudit({
     page,
@@ -69,6 +74,16 @@ export function AuditView() {
     search: search || undefined,
     entityType: entityType || undefined,
   });
+
+  useEffect(() => {
+    if (!isLoading) {
+      const timer = setTimeout(() => setLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
+
+  if (loading) return <GaneshaLoader variant="compact" message="Sincronizando Bitácora..." />;
+
 
   const handleExport = async () => {
     if (!logs.length) return;
@@ -100,11 +115,11 @@ export function AuditView() {
       <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-lavender/30 flex items-center justify-center">
-            <ShieldCheck className="w-5 h-5 text-vintage-700" />
+            <ShieldCheck className="w-5 h-5 text-vintage-700 dark:text-zinc-200" />
           </div>
           <div>
-            <h1 className="text-2xl font-playfair text-vintage-800">Auditoría de Sistema</h1>
-            <p className="text-sm text-vintage-500">Trazabilidad completa de acciones y cambios</p>
+            <h1 className="text-2xl font-playfair text-vintage-800 dark:text-zinc-100">Auditoría de Sistema</h1>
+            <p className="text-sm text-vintage-500 dark:text-zinc-400">Trazabilidad completa de acciones y cambios</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -124,13 +139,13 @@ export function AuditView() {
             placeholder="Buscar por descripción o etiqueta de entidad..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400 text-sm transition-all"
+            className="w-full pl-10 pr-4 py-2 bg-card border border-vintage-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400 text-sm transition-all"
           />
         </div>
         <select
           value={entityType}
           onChange={(e) => setEntityType(e.target.value)}
-          className="px-4 py-2 bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400 text-sm"
+          className="px-4 py-2 bg-card border border-vintage-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400 text-sm"
         >
           <option value="">Todas las entidades</option>
           <option value="Invoice">Facturas</option>
@@ -148,11 +163,11 @@ export function AuditView() {
       <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <VintageCard variant="premium" className="p-4 flex items-center gap-4 border-none">
           <div className="w-10 h-10 rounded-lg bg-vintage-100 dark:bg-zinc-800 flex items-center justify-center">
-            <Clock className="w-5 h-5 text-vintage-500" />
+            <Clock className="w-5 h-5 text-vintage-500 dark:text-zinc-400" />
           </div>
           <div>
-            <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Total Eventos</p>
-            <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 font-bold">{pagination.total}</p>
+            <p className="text-xs text-vintage-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Total Eventos</p>
+            <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 dark:text-zinc-100 font-bold">{pagination.total}</p>
           </div>
         </VintageCard>
         <VintageCard variant="premium" className="p-4 flex items-center gap-4 border-none">
@@ -160,8 +175,8 @@ export function AuditView() {
             <Database className="w-5 h-5 text-info" />
           </div>
           <div>
-            <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Entidades</p>
-            <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 font-bold">{isLoading ? '...' : '6'}</p>
+            <p className="text-xs text-vintage-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Entidades</p>
+            <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 dark:text-zinc-100 font-bold">{isLoading ? '...' : '6'}</p>
           </div>
         </VintageCard>
         <VintageCard variant="premium" className="p-4 flex items-center gap-4 border-none">
@@ -169,8 +184,8 @@ export function AuditView() {
             <Clock className="w-5 h-5 text-success" />
           </div>
           <div>
-            <p className="text-xs text-vintage-500 font-medium uppercase tracking-wider">Días Historial</p>
-            <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 font-bold">{isLoading ? '...' : logs.length > 0 ? Math.ceil((new Date().getTime() - new Date(logs[logs.length-1].createdAt).getTime()) / (1000 * 3600 * 24)) : 0}</p>
+            <p className="text-xs text-vintage-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Días Historial</p>
+            <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 dark:text-zinc-100 font-bold">{isLoading ? '...' : logs.length > 0 ? Math.ceil((new Date().getTime() - new Date(logs[logs.length-1].createdAt).getTime()) / (1000 * 3600 * 24)) : 0}</p>
           </div>
         </VintageCard>
       </motion.div>
@@ -186,8 +201,8 @@ export function AuditView() {
             <>
               <td className="px-4 py-3">
                 <div className="flex flex-col">
-                  <span className="text-sm text-vintage-800 font-medium">{formatDate(row.createdAt, 'dd/MM/yyyy')}</span>
-                  <span className="text-xs text-vintage-500 font-mono">{formatDate(row.createdAt, 'HH:mm:ss')}</span>
+                  <span className="text-sm text-vintage-800 dark:text-zinc-100 font-medium">{formatDate(row.createdAt, 'dd/MM/yyyy')}</span>
+                  <span className="text-xs text-vintage-500 dark:text-zinc-400 font-mono">{formatDate(row.createdAt, 'HH:mm:ss')}</span>
                 </div>
               </td>
               <td className="px-4 py-3">
@@ -196,7 +211,7 @@ export function AuditView() {
                     {row.user?.name?.[0] || 'U'}
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm text-vintage-700 font-medium">{row.user?.name || 'Sistema'}</span>
+                    <span className="text-sm text-vintage-700 dark:text-zinc-200 font-medium">{row.user?.name || 'Sistema'}</span>
                     <span className="text-xs text-vintage-400">{row.user?.email || 'auto@ganesha.ai'}</span>
                   </div>
                 </div>
@@ -212,7 +227,7 @@ export function AuditView() {
               </td>
               <td className="px-4 py-3">
                 <div className="flex flex-col">
-                  <span className="text-sm font-semibold text-vintage-800">{row.entityLabel || row.entityType}</span>
+                  <span className="text-sm font-semibold text-vintage-800 dark:text-zinc-100">{row.entityLabel || row.entityType}</span>
                   <div className="flex items-center gap-1 text-[10px] text-vintage-400 uppercase tracking-tighter">
                     <Database className="w-2.5 h-2.5" />
                     {row.entityType}

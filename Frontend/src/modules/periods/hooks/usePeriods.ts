@@ -44,7 +44,7 @@ export function usePeriods() {
   });
 
   return {
-    periods: Array.isArray(data) ? data : (data as any)?.data || [],
+    periods: (Array.isArray(data) ? data : (data as any)?.periods || (data as any)?.data || []) as Period[],
     isLoading,
     error: error ? (error as any).error || 'Error fetching periods' : null,
     refetch,

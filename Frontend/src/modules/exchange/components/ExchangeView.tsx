@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeftRight, Calculator, Plus, Save, History as HistoryIcon, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,13 +9,33 @@ import { PastelButton } from '@/components/ui/pastel-button';
 import { FloatingInput } from '@/components/ui/floating-input';
 import { formatDate } from '@/lib/utils/format';
 import { useExchangeRates } from '../hooks/useExchangeRates';
-
 import { exportExchangeExcel } from '@/lib/utils/export';
 import { useAppStore } from '@/lib/stores/useAppStore';
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
+
 
 export function ExchangeView() {
   const currentCompany = useAppStore(s => s.currentCompany);
-  const { exchangeRates: rates, isLoading: loading, createExchangeRate, isCreating } = useExchangeRates();
+  const { exchangeRates: rates, isLoading, createExchangeRate, isCreating } = useExchangeRates();
+  const [loading, setLoading] = useState(true);
+
+  const [amount, setAmount] = useState('1000');
+  const [fromCurrency, setFromCurrency] = useState('USD');
+  const [toCurrency, setToCurrency] = useState('NIO');
+  const [convertedAmount, setConvertedAmount] = useState<string | null>(null);
+  const [newFrom, setNewFrom] = useState('USD');
+  const [newTo, setNewTo] = useState('NIO');
+  const [newRate, setNewRate] = useState('');
+  const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      const timer = setTimeout(() => setLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
+
+  if (loading) return <GaneshaLoader variant="compact" message="Sincronizando Tasas de Cambio..." />;
 
   const handleExport = async () => {
     if (!rates.length) return;
@@ -27,16 +47,6 @@ export function ExchangeView() {
       toast.error('Error al exportar divisas', { id: 'export-loading' });
     }
   };
-  const [amount, setAmount] = useState('1000');
-  const [fromCurrency, setFromCurrency] = useState('USD');
-  const [toCurrency, setToCurrency] = useState('NIO');
-  const [convertedAmount, setConvertedAmount] = useState<string | null>(null);
-
-  // New rate form state
-  const [newFrom, setNewFrom] = useState('USD');
-  const [newTo, setNewTo] = useState('NIO');
-  const [newRate, setNewRate] = useState('');
-  const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
 
   const getRate = (from: string, to: string): number => {
     if (from === to) return 1;
@@ -100,7 +110,6 @@ export function ExchangeView() {
 
   const currencies = ['USD', 'NIO', 'MXN', 'EUR', 'GBP', 'CAD', 'JPY'];
 
-  if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
   return (
     <div className="space-y-6">

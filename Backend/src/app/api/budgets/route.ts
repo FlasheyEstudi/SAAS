@@ -1,7 +1,8 @@
 import { db } from '@/lib/db';
-import { success, created, error, parsePagination, serverError } from '@/lib/api-helpers';
+import { success, created, error, parsePagination, serverError, validateAuth } from '@/lib/api-helpers';
 import type { PaginatedResponse } from '@/lib/api-helpers';
 import { Prisma } from '@prisma/client';
+import { logAudit } from '@/lib/audit-service';
 
 export async function GET(request: Request) {
   try {
@@ -11,12 +12,46 @@ export async function GET(request: Request) {
     const year = searchParams.get('year');
     const accountId = searchParams.get('accountId') || '';
     const costCenterId = searchParams.get('costCenterId') || '';
+    const shouldSync = searchParams.get('sync') === 'true';
 
     const where: Prisma.BudgetWhereInput = {};
     if (companyId) where.companyId = companyId;
     if (year) where.year = parseInt(year);
     if (accountId) where.accountId = accountId;
     if (costCenterId) where.costCenterId = costCenterId;
+
+    // 1. Sincronización bajo demanda (Fase 4 - Auditoría M5)
+    if (shouldSync && companyId) {
+      const budgetsToSync = await db.budget.findMany({ where });
+      for (const b of budgetsToSync) {
+        // Calcular ejecución real desde el Ledger
+        const dateFrom = new Date(b.year, b.month ? b.month - 1 : 0, 1);
+        const dateTo = new Date(b.year, b.month ? b.month : 12, 0, 23, 59, 59);
+
+        const lines = await db.journalEntryLine.aggregate({
+          where: {
+            accountId: b.accountId,
+            journalEntry: {
+              companyId: b.companyId,
+              status: 'POSTED',
+              entryDate: { gte: dateFrom, lte: dateTo }
+            }
+          },
+          _sum: { debit: true, credit: true }
+        });
+
+        const actualAmount = Number(lines._sum.debit || 0) - Number(lines._sum.credit || 0);
+        const variance = Number(b.budgetedAmount) - Math.abs(actualAmount);
+
+        await db.budget.update({
+          where: { id: b.id },
+          data: { 
+            actualAmount: Math.abs(actualAmount),
+            variance: variance
+          }
+        });
+      }
+    }
 
     const [budgets, total] = await Promise.all([
       db.budget.findMany({
@@ -45,6 +80,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const user = await validateAuth(request);
     const body = await request.json();
     const { companyId, year, month, accountId, costCenterId, budgetedAmount, description } = body;
 
@@ -68,6 +104,17 @@ export async function POST(request: Request) {
       include: {
         account: { select: { id: true, code: true, name: true, accountType: true } },
       },
+    });
+
+    // Audit Log
+    await logAudit({
+      companyId,
+      userId: user?.id || null,
+      action: 'CREATE',
+      entityType: 'BUDGET',
+      entityId: budget.id,
+      entityLabel: `Presupuesto ${budget.year} - ${budget.account.code}`,
+      newValues: budget,
     });
 
     return created(budget);

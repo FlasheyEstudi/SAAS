@@ -7,9 +7,11 @@ import {
   generateInvoiceNumber,
   validateAuth,
   requireAuth,
+  ensurePeriodOpen,
 } from '@/lib/api-helpers';
 import { invoiceSchema } from '@/lib/schemas/inventory';
 import { logAuditTx } from '@/lib/audit-service';
+import { generateInvoiceJournalEntry } from '@/lib/accounting-service';
 import { NextRequest } from 'next/server';
 
 // ============================================================
@@ -133,6 +135,12 @@ export async function POST(request: NextRequest) {
     }
     const data = result.data;
 
+    // VALIDACIÓN DE PERIODO ABIERTO (Audit M2/Security)
+    const isOpen = await ensurePeriodOpen(data.companyId, new Date(data.issueDate));
+    if (!isOpen) {
+      return error('No se pueden crear facturas en un periodo contable cerrado o bloqueado');
+    }
+
     // 2. Generar número si falta
     let finalNumber = data.number;
     if (!finalNumber || finalNumber.trim() === '') {
@@ -185,6 +193,9 @@ export async function POST(request: NextRequest) {
         entityLabel: `Factura ${finalNumber}`,
         newValues: newInvoice,
       });
+
+      // Generar Asiento Contable Automático
+      await generateInvoiceJournalEntry(tx, newInvoice.id, user!.id);
 
       return newInvoice;
     });

@@ -1,7 +1,7 @@
 'use client';
 
 import { useAppStore } from '@/lib/stores/useAppStore';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { LoginPage } from '@/modules/auth/components/LoginPage';
 import { RegisterPage } from '@/modules/auth/components/RegisterPage';
 import LandingPage from './landing/page';
@@ -38,6 +38,12 @@ import { Header } from '@/components/layout/header';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
+import { SupportView } from '@/modules/support/components/SupportView';
+import { DocumentationView } from '@/modules/support/components/DocumentationView';
+import { APIReferenceView } from '@/modules/support/components/APIReferenceView';
+import { UserManualView } from '@/modules/support/components/UserManualView';
+
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const sidebarCollapsed = useAppStore((s) => s.sidebarCollapsed);
@@ -62,98 +68,91 @@ function ViewRouter() {
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const navigate = useAppStore((s) => s.navigate);
 
-  // Redirección centralizada y manejo de sesión
   useEffect(() => {
-    const isAuthView = currentView === 'login' || currentView === 'register' || currentView === 'landing';
+    // Definir vistas que no requieren autenticación
+    const publicViews = ['landing', 'login', 'register', 'documentation', 'api-reference', 'user-manual', 'support'];
+    const isPublicView = publicViews.includes(currentView);
     
-    // Escuchar eventos globales de logout (ej: desde apiClient)
     const handleGlobalLogout = () => {
       useAppStore.getState().logout();
       navigate('login');
-      toast.error('Tu sesión ha expirado por seguridad.');
     };
 
     window.addEventListener('auth:logout', handleGlobalLogout);
 
-    if (isAuthenticated && isAuthView) {
-      const timer = setTimeout(() => navigate('dashboard'), 0);
-      return () => {
-        clearTimeout(timer);
-        window.removeEventListener('auth:logout', handleGlobalLogout);
-      };
-    }
-    
-    if (!isAuthenticated && !isAuthView) {
+    // Redirección inteligente
+    if (isAuthenticated && isPublicView && currentView !== 'support') {
+      setTimeout(() => navigate('dashboard'), 0);
+    } else if (!isAuthenticated && !isPublicView) {
       navigate('landing');
     }
 
     return () => window.removeEventListener('auth:logout', handleGlobalLogout);
   }, [isAuthenticated, currentView, navigate]);
 
-  const renderView = () => {
-    return (
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentView}
-          initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          exit={{ opacity: 0, y: -10, filter: 'blur(4px)' }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          className="w-full"
-        >
-          {(() => {
-            switch (currentView) {
-              case 'landing': return <LandingPage />;
-              case 'login': return <LoginPage />;
-              case 'register': return <RegisterPage />;
-              case 'dashboard': return <DashboardView />;
-              case 'companies': return <CompaniesView />;
-              case 'periods': return <PeriodsView />;
-              case 'accounts': return <AccountsView />;
-              case 'cost-centers': return <CostCentersView />;
-              case 'journal': return <JournalListView />;
-              case 'journal-create': return <JournalEntryForm />;
-              case 'journal-detail': return <JournalEntryDetail />;
-              case 'third-parties': return <ThirdPartiesView />;
-              case 'invoices': return <InvoiceListView />;
-              case 'invoice-create': return <InvoiceForm />;
-              case 'invoice-detail': return <InvoiceDetail />;
-              case 'banks': return <BanksView />;
-              case 'reports': return <ReportsView />;
-              case 'assets': return <AssetsView />;
-              case 'budgets': return <BudgetsView />;
-              case 'exchange': return <ExchangeView />;
-              case 'users': return <UsersView />;
-              case 'audit': return <AuditView />;
-              case 'notifications': return <NotificationsView />;
-              case 'search': return <SearchView />;
-              case 'data-mgmt':
-              case 'data-management': return <DataMgmtView />;
-              case 'system': return <SystemView />;
-              case 'ai-chat': return <AIChatView />;
-              case 'taxes': return <TaxView />;
-              case 'closing-entries': return <ClosingEntriesView />;
-              case 'financial-concepts': return <FinancialConceptsView />;
-              case 'payment-terms': return <PaymentTermsView />;
-              case 'company-settings': return <CompaniesView />;
-              default: return <DashboardView />;
-            }
-          })()}
-        </motion.div>
-      </AnimatePresence>
-    );
+  const renderContent = () => {
+    switch (currentView) {
+      case 'landing': return <LandingPage />;
+      case 'login': return <LoginPage />;
+      case 'register': return <RegisterPage />;
+      case 'dashboard': return <DashboardView />;
+      case 'companies': return <CompaniesView />;
+      case 'periods': return <PeriodsView />;
+      case 'accounts': return <AccountsView />;
+      case 'cost-centers': return <CostCentersView />;
+      case 'journal': return <JournalListView />;
+      case 'journal-create': return <JournalEntryForm />;
+      case 'journal-detail': return <JournalEntryDetail />;
+      case 'third-parties': return <ThirdPartiesView />;
+      case 'invoices': return <InvoiceListView />;
+      case 'invoice-create': return <InvoiceForm />;
+      case 'invoice-detail': return <InvoiceDetail />;
+      case 'banks': return <BanksView />;
+      case 'reports': return <ReportsView />;
+      case 'assets': return <AssetsView />;
+      case 'budgets': return <BudgetsView />;
+      case 'exchange': return <ExchangeView />;
+      case 'users': return <UsersView />;
+      case 'audit': return <AuditView />;
+      case 'notifications': return <NotificationsView />;
+      case 'search': return <SearchView />;
+      case 'data-management': return <DataMgmtView />;
+      case 'system': return <SystemView />;
+      case 'ai-chat': return <AIChatView />;
+      case 'taxes': return <TaxView />;
+      case 'closing-entries': return <ClosingEntriesView />;
+      case 'financial-concepts': return <FinancialConceptsView />;
+      case 'payment-terms': return <PaymentTermsView />;
+      case 'support': return <SupportView />;
+      case 'documentation': return <DocumentationView />;
+      case 'api-reference': return <APIReferenceView />;
+      case 'user-manual': return <UserManualView />;
+      default: return <DashboardView />;
+    }
   };
 
-  if (currentView === 'login' || currentView === 'register' || currentView === 'landing') {
-    return renderView();
-  }
+  const isFullPageView = ['login', 'register', 'landing', 'documentation', 'api-reference', 'user-manual'].includes(currentView);
 
   return (
-    <AuthenticatedLayout>
-      <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
-        {renderView()}
-      </div>
-    </AuthenticatedLayout>
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={currentView}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="w-full"
+      >
+        {isFullPageView ? (
+          renderContent()
+        ) : (
+          <AuthenticatedLayout>
+            <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+              {renderContent()}
+            </div>
+          </AuthenticatedLayout>
+        )}
+      </motion.div>
+    </AnimatePresence>
   );
 }
 

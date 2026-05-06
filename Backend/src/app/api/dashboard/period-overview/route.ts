@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     const [entries, invoices, bankAccounts, openPeriods, pendingInvoices] = await Promise.all([
       db.journalEntry.findMany({
         where: { companyId, status: 'POSTED', entryDate: { gte: dateFrom, lte: dateTo } },
-        include: { lines: true },
+        include: { lines: { include: { account: { select: { accountType: true, name: true } } } } },
       }),
       db.invoice.findMany({
         where: { companyId, issueDate: { gte: dateFrom, lte: dateTo } },
@@ -35,20 +35,28 @@ export async function GET(request: Request) {
       }),
     ]);
 
-    const lines = entries.flatMap(e => e.lines);
     let totalIncome = 0;
     let totalExpenses = 0;
     let totalDebit = 0;
     let totalCredit = 0;
+    const categoryMap = new Map();
 
-    for (const line of lines) {
-      totalDebit += Number(line.debit);
-      totalCredit += Number(line.credit);
-      if (line.accountId) {
-        const account = await db.account.findUnique({ where: { id: line.accountId }, select: { accountType: true } });
-        if (account) {
-          if (account.accountType === 'INCOME') totalIncome += Number(line.credit) - Number(line.debit);
-          if (account.accountType === 'EXPENSE') totalExpenses += Number(line.debit) - Number(line.credit);
+    for (const entry of entries) {
+      for (const line of entry.lines) {
+        const debit = Number(line.debit) || 0;
+        const credit = Number(line.credit) || 0;
+        totalDebit += debit;
+        totalCredit += credit;
+        
+        if (line.account) {
+          if (line.account.accountType === 'INCOME') {
+            totalIncome += (credit - debit);
+          }
+          if (line.account.accountType === 'EXPENSE') {
+            const amount = debit - credit;
+            totalExpenses += amount;
+            categoryMap.set(line.account.name, (categoryMap.get(line.account.name) || 0) + amount);
+          }
         }
       }
     }
@@ -83,8 +91,10 @@ export async function GET(request: Request) {
       if (trendMap.has(key)) {
         const item = trendMap.get(key);
         for (const line of entry.lines) {
-          if (line.account.accountType === 'INCOME') item.ingresos += (Number(line.credit) - Number(line.debit));
-          if (line.account.accountType === 'EXPENSE') item.egresos += (Number(line.debit) - Number(line.credit));
+          const debit = Number(line.debit) || 0;
+          const credit = Number(line.credit) || 0;
+          if (line.account.accountType === 'INCOME') item.ingresos += (credit - debit);
+          if (line.account.accountType === 'EXPENSE') item.egresos += (debit - credit);
         }
         item.utilidad = item.ingresos - item.egresos;
       }
@@ -92,18 +102,7 @@ export async function GET(request: Request) {
     const trends = Array.from(trendMap.values()).reverse();
 
     // ---- Expense Categories ----
-    const expenseLines = lines.filter(l => l.accountId);
-    const categoryMap = new Map();
     const colors = ['#f472b6', '#fbbf24', '#34d399', '#60a5fa', '#a78bfa', '#94a3b8'];
-    
-    for (const line of expenseLines) {
-      const account = await db.account.findUnique({ where: { id: line.accountId }, select: { accountType: true, name: true } });
-      if (account?.accountType === 'EXPENSE') {
-        const catName = account.name;
-        categoryMap.set(catName, (categoryMap.get(catName) || 0) + (Number(line.debit) - Number(line.credit)));
-      }
-    }
-
     const expenseCategories = Array.from(categoryMap.entries())
       .map(([categoria, monto], i) => ({
         categoria,

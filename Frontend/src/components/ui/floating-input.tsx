@@ -29,10 +29,11 @@ export const FloatingInput = forwardRef<HTMLInputElement, FloatingInputProps>(
             type={type}
             value={value ?? ''}
             className={cn(
-              'peer w-full px-3 pt-5 pb-2 text-sm bg-card border rounded-xl transition-all duration-300',
+              'peer w-full px-3 pt-5 pb-2 text-sm bg-card text-vintage-800 border rounded-xl transition-all duration-300',
               'focus:outline-none focus:ring-2 focus:ring-vintage-400 focus:border-vintage-400',
               'hover:border-vintage-300 dark:hover:border-zinc-700',
               'dark:bg-zinc-900/60 dark:border-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-700',
+              'placeholder:text-transparent focus:placeholder:text-vintage-400/50 dark:focus:placeholder:text-zinc-500/50',
               icon && 'pl-10',
               error ? 'border-error focus:ring-error' : 'border-vintage-200',
               className
@@ -53,7 +54,7 @@ export const FloatingInput = forwardRef<HTMLInputElement, FloatingInputProps>(
             className={cn(
               'absolute left-3 transition-all duration-300 pointer-events-none',
               icon && 'left-10',
-              (isFocused || hasValue)
+              (isFocused || hasValue || Boolean(value) || Boolean(props.defaultValue) || type === 'date')
                 ? 'top-1.5 text-xs text-vintage-500 font-medium dark:text-zinc-500'
                 : 'top-1/2 -translate-y-1/2 text-sm text-vintage-600 dark:text-zinc-600',
               isFocused && 'text-vintage-400 dark:text-zinc-400'
@@ -91,7 +92,7 @@ export const FloatingSelect = forwardRef<HTMLSelectElement, FloatingSelectProps>
           ref={ref}
           id={inputId}
           className={cn(
-            'peer w-full px-3 pt-5 pb-2 text-sm bg-card border rounded-xl transition-all duration-300 appearance-none',
+            'peer w-full px-3 pt-5 pb-2 text-sm bg-card text-vintage-800 border rounded-xl transition-all duration-300 appearance-none',
             'focus:outline-none focus:ring-2 focus:ring-vintage-400 focus:border-vintage-400',
             'hover:border-vintage-300 dark:hover:border-zinc-700',
             'dark:bg-zinc-900/60 dark:border-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-700',
@@ -115,9 +116,11 @@ export const FloatingSelect = forwardRef<HTMLSelectElement, FloatingSelectProps>
           htmlFor={inputId}
           className={cn(
             'absolute left-3 transition-all duration-300 pointer-events-none',
-            (isFocused || hasValue)
+            // Select elements always show some text, so we generally want to float the label
+            // if there's any value, or just always float it to avoid overlapping the default option text
+            (isFocused || hasValue || props.value !== undefined || Boolean(props.defaultValue))
               ? 'top-1.5 text-xs text-vintage-500 font-medium dark:text-zinc-500'
-              : 'top-1/2 -translate-y-1/2 text-sm text-vintage-600 dark:text-zinc-600',
+              : 'top-1.5 text-xs text-vintage-500 font-medium dark:text-zinc-500', // Always float for Select to avoid clash with default option
             isFocused && 'text-vintage-400 dark:text-zinc-400'
           )}
         >

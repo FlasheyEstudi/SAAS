@@ -12,7 +12,8 @@ import {
   AlertCircle,
   Search,
 } from 'lucide-react';
-import { useJournalEntries } from '../hooks/useJournalEntries';
+import { useRef } from 'react';
+import { useJournalEntries, useJournalEntry } from '../hooks/useJournalEntries';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
@@ -69,9 +70,11 @@ export function JournalEntryForm() {
     periods, 
     createEntry, 
     updateEntry,
+    postEntry,
     validateEntry,
     getEntry 
   } = useJournalEntries();
+  const { entry: detailedEntry, isLoading: detailLoading } = useJournalEntry(entryId || '');
 
   const [description, setDescription] = useState('');
   const [entryDate, setEntryDate] = useState(() => {
@@ -85,25 +88,22 @@ export function JournalEntryForm() {
   const [isLoading, setIsLoading] = useState(!!entryId);
 
   useEffect(() => {
-    if (entryId) {
-      const existing = getEntry(entryId);
-      if (existing) {
-        setDescription(existing.description);
-        setEntryDate(new Date(existing.entryDate).toISOString().split('T')[0]);
-        setEntryType(existing.entryType);
-        setPeriodId(existing.periodId);
-        setLines(existing.lines.map((l: any) => ({
-          _uid: generateUid(),
-          accountId: l.accountId,
-          costCenterId: l.costCenterId || '',
-          description: l.description,
-          debit: Number(l.debit),
-          credit: Number(l.credit)
-        })));
-        setIsLoading(false);
-      }
+    if (entryId && detailedEntry) {
+      setDescription(detailedEntry.description);
+      setEntryDate(new Date(detailedEntry.entryDate).toISOString().split('T')[0]);
+      setEntryType(detailedEntry.entryType as any);
+      setPeriodId(detailedEntry.periodId);
+      setLines(detailedEntry.lines.map((l: any) => ({
+        _uid: generateUid(),
+        accountId: l.accountId,
+        costCenterId: l.costCenterId || '',
+        description: l.description,
+        debit: Number(l.debit),
+        credit: Number(l.credit)
+      })));
+      setIsLoading(false);
     }
-  }, [entryId, getEntry]);
+  }, [entryId, detailedEntry]);
 
   const [saving, setSaving] = useState(false);
   const [posting, setPosting] = useState(false);
@@ -114,6 +114,18 @@ export function JournalEntryForm() {
   // Account search
   const [accountSearch, setAccountSearch] = useState('');
   const [activeLineUid, setActiveLineUid] = useState<string | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Close account search dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setActiveLineUid(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Filtered accounts for search
   const filteredAccounts = useMemo(() => {
@@ -123,6 +135,9 @@ export function JournalEntryForm() {
       (a) => !a.isGroup && (a.name.toLowerCase().includes(q) || a.code.includes(q))
     ).slice(0, 20);
   }, [accountSearch, accounts]);
+
+  // Helper for finding account info
+  const getAccount = useCallback((id: string) => accounts.find(a => a.id === id), [accounts]);
 
   // Totals
   const totalDebit = useMemo(() => lines.reduce((s, l) => s + Number(l.debit || 0), 0), [lines]);
@@ -276,8 +291,8 @@ export function JournalEntryForm() {
 
       toast.success('Póliza guardada como borrador');
       navigate('journal');
-    } catch {
-      toast.error('Error al guardar la póliza');
+    } catch (err: any) {
+      toast.error(err.message || 'Error al guardar la póliza');
     } finally {
       setSaving(false);
     }
@@ -302,54 +317,55 @@ export function JournalEntryForm() {
     try {
       const lineData: Omit<JournalEntryLine, 'id' | 'journalEntryId'>[] = lines.map((l) => ({
         accountId: l.accountId,
-        account: accounts.find((a) => a.id === l.accountId),
-        costCenterId: l.costCenterId || undefined,
-        costCenter: l.costCenterId ? costCenters.find((c) => c.id === l.costCenterId) : undefined,
         description: l.description,
         debit: l.debit,
         credit: l.credit,
+        costCenterId: l.costCenterId || undefined,
       }));
 
-      if (entryId) {
+      let currentEntryId = entryId;
+
+      if (currentEntryId) {
+        // Actualizar primero
         await updateEntry({
-          id: entryId,
+          id: currentEntryId,
           description,
           entryDate,
           entryType,
           periodId,
           lines: lineData as any,
-          status: 'POSTED'
         });
       } else {
-        await createEntry({
+        // Crear primero como borrador
+        const result = await createEntry({
           description,
           entryDate,
           entryType,
           periodId,
           lines: lineData,
-          status: 'POSTED',
+          status: 'DRAFT',
         });
+        currentEntryId = (result as any)?.id;
       }
 
-      toast.success('Póliza creada y publicada correctamente');
-      navigate('journal');
-    } catch {
-      toast.error('Error al publicar la póliza');
+      // Publicar después de guardar
+      if (currentEntryId) {
+        await postEntry(currentEntryId);
+        toast.success('Póliza publicada correctamente');
+        navigate('journal');
+      } else {
+        throw new Error('No se pudo identificar la póliza para publicar');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error al publicar la póliza');
     } finally {
       setPosting(false);
     }
-  }, [description, entryDate, entryType, periodId, lines, hasLines, isBalanced, accounts, costCenters, createEntry, navigate]);
+  }, [description, entryDate, entryType, periodId, lines, hasLines, isBalanced, entryId, createEntry, updateEntry, postEntry, navigate]);
 
   const handleBack = useCallback(() => {
     navigate('journal');
   }, [navigate]);
-
-  // Close account search dropdown when clicking outside
-  useEffect(() => {
-    const handleClick = () => setActiveLineUid(null);
-    document.addEventListener('click', handleClick);
-    return () => document.removeEventListener('click', handleClick);
-  }, []);
 
   return (
     <motion.div
@@ -410,7 +426,7 @@ export function JournalEntryForm() {
               >
                 <option value="">Seleccionar período</option>
                 {periods.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
+                  <option key={p.id} value={p.id}>{p.year} - {p.month === 0 ? 'Anual' : 'Mes ' + p.month}</option>
                 ))}
               </FloatingSelect>
             </div>
@@ -462,28 +478,31 @@ export function JournalEntryForm() {
                     <td className="px-3 py-2 relative">
                       <div
                         className="relative"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveLineUid(line._uid);
-                          setAccountSearch('');
-                        }}
+                        ref={activeLineUid === line._uid ? searchContainerRef : null}
                       >
-                        <div className={cn(
-                          'w-full px-2.5 py-2 text-sm border rounded-lg cursor-pointer transition-colors',
-                          line.accountId ? 'border-vintage-200 bg-white' : 'border-vintage-200 bg-vintage-50 text-vintage-400'
-                        )}>
-                          {line.accountId
-                            ? (() => {
-                                const acc = accounts.find((a) => a.id === line.accountId);
-                                return acc ? (
-                                  <span className="text-vintage-700">
-                                    <span className="text-vintage-400 font-mono mr-2">{acc.code}</span>
-                                    {acc.name}
-                                  </span>
-                                ) : 'Seleccionar cuenta';
-                              })()
-                            : 'Seleccionar cuenta'}
-                        </div>
+                        <button
+                          type="button"
+                          className={cn(
+                            'w-full px-2.5 py-2 text-sm border rounded-lg text-left transition-colors focus:outline-none focus:ring-2 focus:ring-vintage-400',
+                            line.accountId ? 'border-vintage-200 bg-white' : 'border-vintage-200 bg-vintage-50 text-vintage-400'
+                          )}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setActiveLineUid(activeLineUid === line._uid ? null : line._uid);
+                            setAccountSearch('');
+                          }}
+                        >
+                          {line.accountId ? (
+                            <div className="flex flex-col">
+                              <span className="text-[10px] text-vintage-400 font-mono leading-tight">{getAccount(line.accountId)?.code}</span>
+                              <span className="text-sm text-vintage-800 truncate">{getAccount(line.accountId)?.name}</span>
+                            </div>
+                          ) : (
+                            'Seleccionar cuenta'
+                          )}
+                        </button>
+                        
                         {/* Dropdown */}
                         {activeLineUid === line._uid && (
                           <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-vintage-200 rounded-xl shadow-lg max-h-64 overflow-hidden">

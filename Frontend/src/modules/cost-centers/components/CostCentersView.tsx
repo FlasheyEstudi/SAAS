@@ -8,6 +8,8 @@ import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
 import { FloatingInput } from '@/components/ui/floating-input';
 import { StatusBadge, ConfirmDialog } from '@/components/ui/vintage-ui';
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
+
 
 import { useCostCenters } from '../hooks/useCostCenters';
 
@@ -18,7 +20,7 @@ export function CostCentersView() {
   const currentCompany = useAppStore(s => s.currentCompany);
   const { 
     costCenters: centers = [], 
-    isLoading: loading,
+    isLoading,
     createCostCenter,
     updateCostCenter,
     deleteCostCenter,
@@ -26,21 +28,21 @@ export function CostCentersView() {
     isUpdating
   } = useCostCenters();
 
-  const handleExport = async () => {
-    if (!centers.length) return;
-    try {
-      toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
-      await exportCostCentersExcel(centers, currentCompany?.name || 'GANESHA');
-      toast.success('Catálogo de centros de costo exportado', { id: 'export-loading' });
-    } catch {
-      toast.error('Error al exportar centros de costo', { id: 'export-loading' });
-    }
-  };
-
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState({ code: '', name: '', description: '' });
+
+  useEffect(() => {
+    if (!isLoading) {
+      const timer = setTimeout(() => setLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
+
+  if (loading) return <GaneshaLoader variant="compact" message="Sincronizando Centros de Costo..." />;
+
 
   const openCreate = () => { setEditing(null); setForm({ code: '', name: '', description: '' }); setShowForm(true); };
   const openEdit = (c: any) => { setEditing(c); setForm({ code: c.code, name: c.name, description: c.description || '' }); setShowForm(true); };
@@ -54,11 +56,23 @@ export function CostCentersView() {
       } else {
         await createCostCenter(form);
       }
-      setShowForm(false);
+    setShowForm(false);
     } catch (err) {
       // Error handled by mutation
     }
   };
+
+  const handleExport = async () => {
+    if (!centers.length) return;
+    try {
+      toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
+      await exportCostCentersExcel(centers, currentCompany?.name || 'GANESHA');
+      toast.success('Catálogo de centros de costo exportado', { id: 'export-loading' });
+    } catch {
+      toast.error('Error al exportar centros de costo', { id: 'export-loading' });
+    }
+  };
+
 
   const handleDelete = async () => { 
     if (deleteId) { 
@@ -71,7 +85,6 @@ export function CostCentersView() {
     } 
   };
 
-  if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
   return (
     <div className="space-y-6">
@@ -86,7 +99,7 @@ export function CostCentersView() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <VintageCard><p className="text-xs text-vintage-500">Total</p><p className="text-2xl font-bold text-vintage-800">{(centers || []).length}</p></VintageCard>
         <VintageCard><p className="text-xs text-vintage-500">Activos</p><p className="text-2xl font-bold text-success">{(centers || []).filter(c => c.isActive).length}</p></VintageCard>
-        <VintageCard><p className="text-xs text-vintage-500">Total Pólizas</p><p className="text-2xl font-bold text-vintage-800">{(centers || []).reduce((s, c) => s + (Number(c.journalEntryCount) || 0), 0)}</p></VintageCard>
+        <VintageCard><p className="text-xs text-vintage-500">Total Pólizas</p><p className="text-2xl font-bold text-vintage-800">{(centers || []).reduce((s, c: any) => s + (Number(c._count?.journalLines) || 0), 0)}</p></VintageCard>
       </div>
 
       <VintageCard className="p-0 overflow-hidden">
@@ -107,7 +120,7 @@ export function CostCentersView() {
                 <td className="px-4 py-3"><span className="font-mono text-sm font-medium text-vintage-700 bg-vintage-100 px-2 py-0.5 rounded">{c.code}</span></td>
                 <td className="px-4 py-3 text-sm font-medium text-vintage-800">{c.name}</td>
                 <td className="px-4 py-3 text-xs text-vintage-600">{c.description}</td>
-                <td className="px-4 py-3 text-sm text-vintage-700 text-center">{c.journalEntryCount || 0}</td>
+                <td className="px-4 py-3 text-sm text-vintage-700 text-center">{c._count?.journalLines || 0}</td>
                 <td className="px-4 py-3 text-center"><StatusBadge status={c.isActive ? 'success' : 'neutral'} label={c.isActive ? 'Activo' : 'Inactivo'} /></td>
                 <td className="px-4 py-3 text-center">
                   <div className="flex justify-center gap-1">
@@ -123,7 +136,7 @@ export function CostCentersView() {
 
       {showForm && (
         <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowForm(false)} />
+          <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px]" onClick={() => setShowForm(false)} />
           <motion.div className="relative bg-card rounded-2xl p-6 max-w-md w-full shadow-xl border border-vintage-200" initial={{ scale: 0.95 }} animate={{ scale: 1 }}>
             <h3 className="text-lg font-playfair font-bold text-vintage-800 mb-4">{editing ? 'Editar' : 'Nuevo'} Centro de Costo</h3>
             <div className="space-y-4">

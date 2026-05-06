@@ -18,7 +18,8 @@ export interface ReportParams {
  * Hook for reports - consumes real Backend APIs
  */
 export function useReports(year?: number | string, month?: number | string, accountId?: string) {
-  const companyId = useAppStore(s => s.companyId);
+  const currentCompany = useAppStore(s => s.currentCompany);
+  const companyId = currentCompany?.id;
 
   const queryParams = { 
     ...(companyId ? { companyId } : {}),
@@ -27,11 +28,14 @@ export function useReports(year?: number | string, month?: number | string, acco
     ...(accountId ? { accountId } : {})
   };
 
+  const unbox = (d: any) => d?.data || d;
+
   // Trial Balance report
   const { data: trialBalance, isLoading: trialBalanceLoading } = useQuery({
     queryKey: ['reports', 'trial-balance', queryParams],
     queryFn: () => apiClient.get(REPORTS.trialBalance, queryParams),
     retry: false,
+    enabled: !!companyId,
   });
 
   // Balance Sheet report
@@ -39,6 +43,7 @@ export function useReports(year?: number | string, month?: number | string, acco
     queryKey: ['reports', 'balance-sheet', queryParams],
     queryFn: () => apiClient.get(REPORTS.balanceSheet, queryParams),
     retry: false,
+    enabled: !!companyId,
   });
 
   // Income Statement report
@@ -46,6 +51,7 @@ export function useReports(year?: number | string, month?: number | string, acco
     queryKey: ['reports', 'income-statement', queryParams],
     queryFn: () => apiClient.get(REPORTS.incomeStatement, queryParams),
     retry: false,
+    enabled: !!companyId,
   });
 
   // Cash Flow report
@@ -53,6 +59,7 @@ export function useReports(year?: number | string, month?: number | string, acco
     queryKey: ['reports', 'cash-flow', queryParams],
     queryFn: () => apiClient.get(REPORTS.cashFlow, queryParams),
     retry: false,
+    enabled: !!companyId,
   });
 
   // General Ledger report
@@ -60,14 +67,15 @@ export function useReports(year?: number | string, month?: number | string, acco
     queryKey: ['reports', 'general-ledger', queryParams],
     queryFn: () => apiClient.get(REPORTS.generalLedger, queryParams),
     retry: false,
+    enabled: !!companyId && !!accountId,
   });
 
   return {
-    trialBalance,
-    balanceSheet,
-    incomeStatement,
-    cashFlow,
-    generalLedger,
+    trialBalance: unbox(trialBalance),
+    balanceSheet: unbox(balanceSheet),
+    incomeStatement: unbox(incomeStatement),
+    cashFlow: unbox(cashFlow),
+    generalLedger: unbox(generalLedger),
     isLoading: trialBalanceLoading || balanceSheetLoading || incomeStatementLoading || cashFlowLoading || generalLedgerLoading,
   };
 }

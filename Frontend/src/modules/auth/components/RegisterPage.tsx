@@ -1,18 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { Input } from '@/components/ui/input';
-import { PastelButton } from '@/components/ui/pastel-button';
-import { Sparkles, ArrowLeft, ShieldCheck, Mail, Lock, Building, Phone, ArrowRight } from 'lucide-react';
+import { 
+  ArrowLeft, ArrowRight, Lock, Mail, User, Building, 
+  Phone, ShieldCheck, Check, X, Sparkles, Server, Zap,
+  Globe, Laptop, Smartphone, Binary
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { registerSchema } from '@/lib/schemas/auth';
 import { apiClient } from '@/lib/api/client';
 import { AUTH } from '@/lib/api/endpoints';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 export function RegisterPage() {
   const navigate = useAppStore((s) => s.navigate);
+  const theme = useAppStore((s) => s.theme);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ 
     name: '', 
@@ -35,212 +40,239 @@ export function RegisterPage() {
 
     try {
       await apiClient.post(AUTH.register, formData);
-      toast.success('Cuenta creada exitosamente. Bienvenido.');
+      toast.success('Cuenta creada exitosamente.');
       navigate('login');
     } catch (err: any) {
-      toast.error(err.error || 'Error al conectar con el servidor.');
-    } finally {
+      toast.error(err.error || 'Error en el registro.');
       setLoading(false);
     }
   };
 
+  const pass = formData.password;
+  const hasUppercase = /[A-Z]/.test(pass);
+  const hasLowercase = /[a-z]/.test(pass);
+  const hasNumber = /[0-9]/.test(pass);
+  const hasMinLength = pass.length >= 8;
+
   return (
-    <div className="min-h-screen w-full bg-background flex flex-col lg:flex-row overflow-hidden font-sans selection:bg-primary/30">
-      {/* Lado Izquierdo: Arte Minimalista */}
+    <div className={cn(
+      "h-screen w-full bg-background text-foreground flex flex-col lg:grid lg:grid-cols-[480px_1fr] selection:bg-primary/40 relative overflow-hidden transition-colors duration-700",
+      theme
+    )}>
+      
+      {/* --- FONDO CINEMÁTICO --- */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-40">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 blur-[150px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-primary/10 blur-[150px] rounded-full" />
+      </div>
+
+      {/* --- IZQUIERDA: MARCA Y MASCOTA --- */}
       <motion.div 
-        initial={{ opacity: 0, x: -100 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="hidden lg:flex lg:w-[45%] relative bg-foreground/[0.02] items-center justify-center overflow-hidden border-r border-primary/5"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="hidden lg:flex flex-col p-12 relative bg-zinc-950/50 border-r border-white/5 overflow-hidden justify-between"
       >
-        <div className="absolute inset-0 mandala-bg opacity-20 scale-110 rotate-180" />
-        
-        <div className="relative z-10 flex flex-col items-center text-center p-12">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3, duration: 1 }}
-            className="relative mb-8"
-          >
-            <div className="absolute inset-[-60px] bg-primary/10 blur-[100px] rounded-full animate-aura" />
-            <motion.img 
-              animate={{ y: [0, -20, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-              src="/personaje.png" 
-              className="w-[400px] h-auto object-contain relative z-10 drop-shadow-[0_0_100px_rgba(var(--primary-rgb),0.3)]"
-              alt="Ganesha Creator"
+         <div className="relative z-10">
+            <div className="flex items-center gap-4 cursor-pointer group" onClick={() => navigate('landing')}>
+               <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:scale-110 transition-all shadow-[0_0_30px_rgba(234,88,12,0.15)]">
+                  <img src="/logo_ganesha.png" alt="Logo" className="w-6 h-6" onError={(e) => e.currentTarget.src = "/GaneshaLogo.png"} />
+               </div>
+               <div className="flex flex-col">
+                  <span className="text-lg font-black tracking-tighter uppercase leading-none">Ganesha<span className="text-primary">.</span></span>
+                  <span className="text-[9px] text-zinc-500 uppercase font-black tracking-[0.3em]">Constructor de Imperios</span>
+               </div>
+            </div>
+
+            <div className="mt-16 space-y-8">
+               <h2 className="text-3xl font-black tracking-tighter uppercase leading-tight">Inicia tu <br /><span className="text-primary italic">Expansión.</span></h2>
+               <div className="space-y-6">
+                  {[
+                    { i: <Zap className="w-5 h-5"/>, t: 'Activación Inmediata', d: 'Tu núcleo listo en menos de 60 segundos.' },
+                    { i: <ShieldCheck className="w-5 h-5"/>, t: 'Arquitectura Segura', d: 'Protección HMAC y aislamiento de datos.' },
+                    { i: <Binary className="w-5 h-5"/>, t: 'IA Nativa', d: 'Llama 3.2 lista para auditar tus movimientos.' }
+                  ].map((feat, i) => (
+                    <div key={i} className="flex gap-4 group">
+                       <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                          {feat.i}
+                       </div>
+                       <div>
+                          <div className="text-[9px] font-black uppercase tracking-widest text-white">{feat.t}</div>
+                          <p className="text-[10px] text-zinc-500 leading-relaxed font-medium mt-1">{feat.d}</p>
+                       </div>
+                    </div>
+                  ))}
+               </div>
+            </div>
+         </div>
+
+         <div className="relative group pt-10">
+            <div className="absolute inset-0 bg-primary/20 blur-[100px] opacity-10 group-hover:opacity-30 transition-opacity" />
+            <img 
+               src="/mascota.png" 
+               alt="Mascota" 
+               className="relative z-10 w-full max-w-[220px] mx-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] opacity-80"
+               onError={(e) => e.currentTarget.src = "/personaje.png"}
             />
-          </motion.div>
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="max-sm space-y-4"
-          >
-            <h2 className="text-4xl font-playfair font-bold text-foreground leading-none tracking-tighter uppercase">
-              Crea tu <span className="text-primary italic font-normal">Imperio.</span>
-            </h2>
-            <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-              Únete a la red de empresas más prósperas del mundo.
-            </p>
-          </motion.div>
-        </div>
+         </div>
       </motion.div>
 
-      {/* Lado Derecho: Formulario Compacto Premium */}
-      <motion.div 
-        initial={{ opacity: 0, x: 100 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="w-full lg:w-[55%] flex flex-col relative bg-background h-full overflow-y-auto"
-      >
-        {/* Header del Formulario */}
-        <div className="p-4 sm:p-6 flex justify-between items-center">
-           <motion.button
-            whileHover={{ x: -5 }}
-            onClick={() => navigate('landing')}
-            className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-all group"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-[9px] font-black uppercase tracking-[0.3em]">Regresar</span>
-          </motion.button>
-          <div className="flex items-center gap-2">
-             <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Registro Seguro</span>
-             <ShieldCheck className="w-4 h-4 text-primary" />
+      {/* --- DERECHA: SECCIÓN DEL FORMULARIO (SIN SCROLL) --- */}
+      <div className="relative flex flex-col items-center justify-center p-6 lg:p-12 z-10 bg-background/50 backdrop-blur-3xl overflow-hidden">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-[500px] space-y-8"
+        >
+          <div className="space-y-3">
+             <button onClick={() => navigate('landing')} className="flex items-center gap-2 text-zinc-500 hover:text-primary mb-6 transition-colors">
+                <ArrowLeft className="w-4 h-4" />
+                <span className="text-[8px] font-black uppercase tracking-[0.4em]">Regresar</span>
+             </button>
+             <h1 className="text-3xl lg:text-4xl font-black tracking-tighter uppercase leading-none">Nueva <br/><span className="text-primary italic">Identidad.</span></h1>
+             <p className="text-[11px] text-zinc-500 font-bold uppercase tracking-widest">Define los parámetros de tu imperio.</p>
           </div>
-        </div>
 
-        <div className="flex-1 flex flex-col justify-center px-4 sm:px-12 xl:px-24 w-full max-w-4xl mx-auto pb-8">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="mb-8"
-          >
-            <h1 className="text-3xl sm:text-4xl font-playfair font-bold text-foreground mb-1 tracking-tighter uppercase leading-none">Iniciación</h1>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-[0.4em] font-black">Comienza tu viaje hacia la abundancia</p>
-          </motion.div>
-
-          <motion.form 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            onSubmit={handleSubmit} 
-            className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5"
-          >
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
             <div className="space-y-1.5">
-              <label className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground ml-1">Nombre Completo</label>
+              <label className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-500 ml-1">Tu Nombre</label>
               <div className="relative group">
-                <Input
-                  placeholder="Tu Nombre"
-                  className="h-13 bg-muted/20 border-primary/10 text-foreground placeholder:text-muted-foreground/30 pl-11 rounded-xl focus:bg-card focus:ring-1 focus:ring-primary/30 transition-all border shadow-sm"
+                <input
+                  placeholder="Administrador"
+                  className="w-full h-12 bg-zinc-900/50 border border-white/5 text-white pl-12 rounded-[1rem] focus:border-primary transition-all text-[10px] font-bold uppercase tracking-widest placeholder:text-zinc-800"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
                 />
-                <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-40" />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-30" />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground ml-1">Portal de Email</label>
+              <label className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-500 ml-1">Email Maestro</label>
               <div className="relative group">
-                <Input
+                <input
                   type="email"
-                  placeholder="tu@email.com"
-                  className="h-13 bg-muted/20 border-primary/10 text-foreground placeholder:text-muted-foreground/30 pl-11 rounded-xl focus:bg-card focus:ring-1 focus:ring-primary/30 transition-all border shadow-sm"
+                  placeholder="ceo@empresa.com"
+                  className="w-full h-12 bg-zinc-900/50 border border-white/5 text-white pl-12 rounded-[1rem] focus:border-primary transition-all text-[10px] font-bold uppercase tracking-widest placeholder:text-zinc-800"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
                 />
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-40" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-30" />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground ml-1">Empresa</label>
+              <label className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-500 ml-1">Razón Social</label>
               <div className="relative group">
-                <Input
-                  placeholder="Nombre de Negocio"
-                  className="h-13 bg-muted/20 border-primary/10 text-foreground placeholder:text-muted-foreground/30 pl-11 rounded-xl focus:bg-card focus:ring-1 focus:ring-primary/30 transition-all border shadow-sm"
+                <input
+                  placeholder="Nombre de Empresa"
+                  className="w-full h-12 bg-zinc-900/50 border border-white/5 text-white pl-12 rounded-[1rem] focus:border-primary transition-all text-[10px] font-bold uppercase tracking-widest placeholder:text-zinc-800"
                   value={formData.company}
                   onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                   required
                 />
-                <Building className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-40" />
+                <Building className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-30" />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground ml-1">Teléfono</label>
+              <label className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-500 ml-1">Teléfono</label>
               <div className="relative group">
-                <Input
+                <input
                   placeholder="+505 ..."
-                  className="h-13 bg-muted/20 border-primary/10 text-foreground placeholder:text-muted-foreground/30 pl-11 rounded-xl focus:bg-card focus:ring-1 focus:ring-primary/30 transition-all border shadow-sm"
+                  className="w-full h-12 bg-zinc-900/50 border border-white/5 text-white pl-12 rounded-[1rem] focus:border-primary transition-all text-[10px] font-bold uppercase tracking-widest placeholder:text-zinc-800"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 />
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-40" />
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-30" />
               </div>
             </div>
 
-            <div className="md:col-span-2 space-y-1.5">
-              <label className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground ml-1">Llave Maestra</label>
+            <div className="md:col-span-2 space-y-2">
+              <label className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-500 ml-1">Llave de Acceso</label>
               <div className="relative group">
-                <Input
+                <input
                   type="password"
-                  placeholder="••••••••"
-                  className="h-13 bg-muted/20 border-primary/10 text-foreground placeholder:text-muted-foreground/30 pl-11 rounded-xl focus:bg-card focus:ring-1 focus:ring-primary/30 transition-all border shadow-sm"
+                  placeholder="Mínimo 8 caracteres"
+                  className="w-full h-14 bg-zinc-900/50 border border-white/5 text-white pl-12 rounded-[1.2rem] focus:border-primary transition-all text-xs font-bold placeholder:text-zinc-800"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
                 />
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-40" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary opacity-30" />
+              </div>
+              <div className="flex flex-wrap gap-4 px-1">
+                {[
+                  { label: '8+ Caracteres', valid: hasMinLength },
+                  { label: 'Mayúscula', valid: hasUppercase },
+                  { label: 'Número', valid: hasNumber }
+                ].map((req, i) => (
+                  <div key={i} className={cn(
+                    "flex items-center gap-1 text-[8px] font-black uppercase tracking-widest transition-all",
+                    req.valid ? "text-primary" : "text-zinc-700"
+                  )}>
+                    {req.valid ? <Check className="w-2.5 h-2.5" /> : <X className="w-2.5 h-2.5" />} {req.label}
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="md:col-span-2 pt-2">
-              <PastelButton
+            <div className="md:col-span-2 pt-4">
+              <button
                 type="submit"
-                className="w-full h-14 bg-primary text-primary-foreground font-black uppercase tracking-[0.4em] text-[10px] shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all border-none"
                 disabled={loading}
+                className="group relative w-full h-14 bg-primary text-black rounded-[1.2rem] font-black uppercase tracking-[0.5em] text-[10px] overflow-hidden transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-primary/20 border-none"
               >
-                {loading ? (
-                  <span>Creando...</span>
-                ) : (
-                  <div className="flex items-center justify-center gap-2">
-                     <span>Crear mi Cuenta</span>
-                     <ArrowRight className="w-4 h-4" />
-                  </div>
-                )}
-              </PastelButton>
+                <div className="absolute inset-0 bg-black/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                <div className="relative z-10 flex items-center justify-center gap-3">
+                  <span>Consolidar Imperio</span>
+                  <ArrowRight className="w-4 h-4" />
+                </div>
+              </button>
             </div>
-          </motion.form>
+          </form>
 
+          <div className="pt-6 border-t border-white/5 text-center">
+            <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-[0.1em]">
+              ¿Ya estás en el nucleo?{' '}
+              <button onClick={() => navigate('login')} className="text-primary hover:underline underline-offset-4 font-black">Entrar aquí</button>
+            </p>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* --- CARGADOR CINEMÁTICO --- */}
+      <AnimatePresence>
+        {loading && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="mt-8 text-center"
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-zinc-950/90 backdrop-blur-3xl flex flex-col items-center justify-center"
           >
-            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em]">
-              ¿Ya eres un iniciado?{' '}
-              <button
-                onClick={() => navigate('login')}
-                className="text-primary hover:underline underline-offset-4 decoration-2 transition-all"
-              >
-                Inicia sesión aquí
-              </button>
-            </p>
+             <div className="space-y-8 flex flex-col items-center">
+                <div className="relative">
+                   <motion.div 
+                     animate={{ rotate: 360 }}
+                     transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                     className="w-48 h-48 rounded-full border border-primary/20 border-t-primary"
+                   />
+                   <div className="absolute inset-0 flex items-center justify-center">
+                      <motion.img 
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        src="/logo_ganesha.png" 
+                        className="w-20 h-20"
+                        onError={(e) => e.currentTarget.src = "/GaneshaLogo.png"}
+                      />
+                   </div>
+                </div>
+                <h2 className="text-xl font-black uppercase tracking-[0.6em] text-primary animate-pulse">Expandiendo Horizonte</h2>
+             </div>
           </motion.div>
-        </div>
-
-        {/* Footer del Formulario */}
-        <div className="p-6 mt-auto text-center border-t border-primary/5">
-           <span className="text-[8px] text-muted-foreground/40 uppercase tracking-[0.5em] font-black">Ganesha Enterprise System © 2026</span>
-        </div>
-      </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

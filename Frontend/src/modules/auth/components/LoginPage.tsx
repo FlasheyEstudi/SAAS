@@ -1,19 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { Input } from '@/components/ui/input';
-import { PastelButton } from '@/components/ui/pastel-button';
-import { ArrowLeft, ArrowRight, Lock, Mail } from 'lucide-react';
+import { 
+  ArrowLeft, ArrowRight, Lock, Mail, Eye, EyeOff, 
+  ShieldCheck, Activity, Globe, Wifi, Clock, Zap,
+  Fingerprint, Terminal
+} from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import { AUTH } from '@/lib/api/endpoints';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 export function LoginPage() {
   const navigate = useAppStore((s) => s.navigate);
+  const theme = useAppStore((s) => s.theme);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const [systemTime, setSystemTime] = useState('');
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSystemTime(new Date().toLocaleTimeString());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,193 +35,191 @@ export function LoginPage() {
     
     try {
       const response = await apiClient.post(AUTH.login, formData);
-      
       const { user, token } = response;
-      
-      // Guardar token para el apiClient
       localStorage.setItem('auth_token', token);
-      
-      useAppStore.getState().login(
-        user, 
-        token,
-        user.companyId || (user.availableCompanies?.[0]?.id) || ''
-      );
-      
-      toast.success(`Bienvenido, ${user.name}. El camino está despejado.`);
+      useAppStore.getState().login(user, token, user.companyId || (user.availableCompanies?.[0]?.id) || '');
+      toast.success(`Acceso Autorizado.`);
     } catch (err: any) {
-      toast.error(err.error || 'Obstáculo detectado: Revisa tus credenciales.');
-    } finally {
+      toast.error(err.error || 'Obstáculo detectado.');
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen w-full bg-background flex flex-col lg:flex-row overflow-hidden font-sans selection:bg-primary/30">
-      {/* Lado Izquierdo: Arte Minimalista */}
+    <div className={cn(
+      "min-h-screen w-full bg-background text-foreground flex flex-col lg:grid lg:grid-cols-[1fr_550px] selection:bg-primary/40 relative overflow-hidden transition-colors duration-700",
+      theme
+    )}>
+      
+      {/* --- CINEMATIC BACKGROUND --- */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-40">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 blur-[150px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-primary/10 blur-[150px] rounded-full" />
+      </div>
+
+      {/* --- LEFT: BRAND & MASCOT --- */}
       <motion.div 
-        initial={{ opacity: 0, x: -100 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="hidden lg:flex lg:w-[55%] relative bg-foreground/[0.02] items-center justify-center overflow-hidden border-r border-primary/5"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="hidden lg:flex flex-col p-16 relative bg-zinc-950/50 border-r border-white/5 overflow-hidden"
       >
-        <div className="absolute inset-0 mandala-bg opacity-30 scale-110" />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
-        
-        <div className="relative z-10 flex flex-col items-center text-center p-12">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3, duration: 1 }}
-            className="relative mb-8"
-          >
-            <div className="absolute inset-[-40px] bg-primary/10 blur-[80px] rounded-full animate-aura" />
-            <motion.img 
-              animate={{ y: [0, -20, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-              src="/personaje.png" 
-              className="w-[450px] h-auto object-contain relative z-10 drop-shadow-[0_0_80px_rgba(var(--primary-rgb),0.3)]"
-              alt="Ganesha Master"
-            />
-          </motion.div>
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="max-w-md space-y-4"
-          >
-            <h2 className="text-5xl font-playfair font-bold text-foreground leading-none tracking-tighter uppercase">
-              Claridad <span className="text-primary italic font-normal">Infinita.</span>
-            </h2>
-            <p className="text-base text-muted-foreground font-medium leading-relaxed">
-              "El conocimiento es el removedor de todos los obstáculos."
-            </p>
-          </motion.div>
-        </div>
+         <div className="relative z-10 flex flex-col h-full">
+            <div className="flex items-center gap-4 cursor-pointer group" onClick={() => navigate('landing')}>
+               <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:scale-110 transition-all shadow-[0_0_30px_rgba(234,88,12,0.15)]">
+                  <img src="/logo_ganesha.png" alt="Logo" className="w-8 h-8" onError={(e) => e.currentTarget.src = "/GaneshaLogo.png"} />
+               </div>
+               <div className="flex flex-col">
+                  <span className="text-xl font-black tracking-tighter uppercase leading-none">Ganesha<span className="text-primary">.</span></span>
+                  <span className="text-[10px] text-zinc-500 uppercase font-black tracking-[0.3em]">Soberanía Tecnológica</span>
+               </div>
+            </div>
+
+            <div className="mt-32 relative group">
+               <div className="absolute inset-0 bg-primary/20 blur-[120px] opacity-20 group-hover:opacity-40 transition-opacity duration-1000" />
+               <motion.img 
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                  src="/mascota.png" 
+                  alt="Mascota" 
+                  className="relative z-10 w-full max-w-md mx-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+                  onError={(e) => e.currentTarget.src = "/personaje.png"}
+               />
+            </div>
+
+            <div className="mt-auto grid grid-cols-2 gap-8 relative z-10">
+               <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary tracking-widest">
+                     <Fingerprint className="w-4 h-4" /> Identidad Verificada
+                  </div>
+                  <p className="text-[11px] text-zinc-500 leading-relaxed font-medium">Cada sesión es auditada forensemente por el motor de IA.</p>
+               </div>
+               <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 tracking-widest">
+                     <Terminal className="w-4 h-4" /> {systemTime}
+                  </div>
+                  <p className="text-[11px] text-zinc-500 leading-relaxed font-medium">Conectado al núcleo central • Nicaragua • 2026</p>
+               </div>
+            </div>
+         </div>
       </motion.div>
 
-      {/* Lado Derecho: Formulario Compacto Premium */}
-      <motion.div 
-        initial={{ opacity: 0, x: 100 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="w-full lg:w-[45%] flex flex-col relative bg-background h-full overflow-y-auto"
-      >
-        {/* Header del Formulario */}
-        <div className="p-4 sm:p-8 flex justify-between items-center">
-           <motion.button
-            whileHover={{ x: -5 }}
-            onClick={() => navigate('landing')}
-            className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-all group"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-[9px] font-black uppercase tracking-[0.3em]">Inicio</span>
-          </motion.button>
-          <motion.img 
-            initial={{ rotate: -180, opacity: 0 }}
-            animate={{ rotate: 0, opacity: 1 }}
-            transition={{ duration: 1 }}
-            src="/GaneshaLogo.png" 
-            className="w-10 h-10 object-contain drop-shadow-lg" 
-            alt="Logo" 
-          />
-        </div>
+      {/* --- RIGHT: FORM SECTION --- */}
+      <div className="relative flex flex-col items-center justify-center p-8 lg:p-20 z-10 bg-background/50 backdrop-blur-3xl">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-[420px] space-y-12"
+        >
+          <div className="space-y-4">
+             <div className="w-12 h-1 rounded-full bg-primary/20" />
+             <h1 className="text-4xl lg:text-5xl font-black tracking-tighter uppercase leading-none">Acceder al <br/><span className="text-primary italic">Imperio.</span></h1>
+             <p className="text-sm text-zinc-500 font-medium">Ingresa tus credenciales maestras para sincronizarte.</p>
+          </div>
 
-        <div className="flex-1 flex flex-col justify-center px-6 sm:px-12 xl:px-24 max-w-2xl mx-auto w-full pb-8">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="mb-10"
-          >
-            <h1 className="text-3xl sm:text-4xl font-playfair font-bold text-foreground mb-2 tracking-tighter uppercase">Bienvenido</h1>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-[0.4em] font-black">Acceso a tu sistema de prosperidad</p>
-          </motion.div>
-
-          <motion.form 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            onSubmit={handleSubmit} 
-            className="space-y-6"
-          >
+          <form onSubmit={handleSubmit} className="space-y-8">
             <div className="space-y-2">
-              <div className="flex items-center justify-between px-1">
-                <label className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground">Portal de Email</label>
-              </div>
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 ml-1">Protocolo Email</label>
               <div className="relative group">
-                <Input
+                <input
                   type="email"
-                  placeholder="usuario@ganesha.dev"
-                  className="h-14 bg-muted/20 border-primary/10 text-foreground placeholder:text-muted-foreground/30 pl-12 rounded-xl focus:bg-card focus:ring-1 focus:ring-primary/30 transition-all border shadow-sm"
+                  placeholder="admin@ganesha.com"
+                  className="w-full h-16 bg-zinc-900/50 border border-white/5 text-white pl-16 rounded-[1.5rem] focus:border-primary transition-all text-sm font-bold uppercase tracking-widest placeholder:text-zinc-700"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
                 />
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-40 group-focus-within:opacity-100 transition-opacity" />
+                <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-primary opacity-30 group-focus-within:opacity-100 transition-opacity" />
               </div>
             </div>
 
             <div className="space-y-2">
               <div className="flex justify-between items-center px-1">
-                <label className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground">Llave de Sabiduría</label>
-                <button type="button" className="text-[8px] font-bold text-primary hover:opacity-70 transition-opacity uppercase tracking-widest">¿Olvidaste?</button>
+                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Llave Criptográfica</label>
               </div>
               <div className="relative group">
-                <Input
-                  type="password"
+                <input
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="h-14 bg-muted/20 border-primary/10 text-foreground placeholder:text-muted-foreground/30 pl-12 rounded-xl focus:bg-card focus:ring-1 focus:ring-primary/30 transition-all border shadow-sm"
+                  className="w-full h-16 bg-zinc-900/50 border border-white/5 text-white pl-16 pr-16 rounded-[1.5rem] focus:border-primary transition-all text-sm font-bold placeholder:text-zinc-700"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
                 />
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-40 group-focus-within:opacity-100 transition-opacity" />
+                <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-primary opacity-30 group-focus-within:opacity-100 transition-opacity" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-6 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
             </div>
 
-            <PastelButton
+            <button
               type="submit"
-              className="w-full h-14 bg-primary text-primary-foreground font-black uppercase tracking-[0.4em] text-[10px] shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.98] transition-all border-none mt-4"
               disabled={loading}
+              className="relative w-full h-16 bg-primary text-black rounded-[1.5rem] font-black uppercase tracking-[0.5em] text-xs overflow-hidden transition-all hover:scale-[1.02] active:scale-95 shadow-2xl shadow-primary/20 border-none group"
             >
-              {loading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-3 h-3 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  <span>Entrando...</span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center gap-2">
-                   <span>Entrar al Sistema</span>
-                   <ArrowRight className="w-4 h-4" />
-                </div>
-              )}
-            </PastelButton>
-          </motion.form>
+              <div className="absolute inset-0 bg-black/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+              <div className="relative z-10 flex items-center justify-center gap-3">
+                 {loading ? <Zap className="w-5 h-5 animate-spin" /> : <><span>Sincronizar</span> <ArrowRight className="w-4 h-4" /></>}
+              </div>
+            </button>
+          </form>
 
+          <div className="pt-10 border-t border-white/5 text-center space-y-6">
+            <p className="text-[11px] text-zinc-500 font-bold uppercase tracking-[0.1em]">
+              ¿Sin Acceso?{' '}
+              <button onClick={() => navigate('register')} className="text-primary hover:underline underline-offset-4 font-black">Iniciar Registro</button>
+            </p>
+            
+            <div className="flex justify-center gap-4">
+               <div className="p-3 rounded-xl border border-white/5 bg-zinc-950/50 grayscale hover:grayscale-0 transition-all cursor-pointer">
+                  <Globe className="w-5 h-5 text-zinc-500" />
+               </div>
+               <div className="p-3 rounded-xl border border-white/5 bg-zinc-950/50 grayscale hover:grayscale-0 transition-all cursor-pointer">
+                  <ShieldCheck className="w-5 h-5 text-zinc-500" />
+               </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* --- CINEMATIC LOADER --- */}
+      <AnimatePresence>
+        {loading && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="mt-10 text-center"
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-zinc-950/90 backdrop-blur-3xl flex flex-col items-center justify-center"
           >
-            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em]">
-              ¿Nuevo aquí?{' '}
-              <button
-                onClick={() => navigate('register')}
-                className="text-primary hover:underline underline-offset-4 decoration-2 transition-all"
-              >
-                Crea tu cuenta
-              </button>
-            </p>
+             <div className="space-y-12 flex flex-col items-center">
+                <div className="relative">
+                   <motion.div 
+                     animate={{ rotate: 360 }}
+                     transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                     className="w-56 h-56 rounded-full border border-primary/20 border-t-primary"
+                   />
+                   <div className="absolute inset-0 flex items-center justify-center">
+                      <motion.img 
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        src="/logo_ganesha.png" 
+                        className="w-24 h-24"
+                        onError={(e) => e.currentTarget.src = "/GaneshaLogo.png"}
+                      />
+                   </div>
+                </div>
+                <div className="text-center space-y-4">
+                   <h2 className="text-2xl font-black uppercase tracking-[0.6em] text-primary">Abriendo Caminos</h2>
+                   <p className="text-[10px] text-zinc-500 uppercase font-black tracking-[0.4em]">Protocolo de Enlace Activo • Núcleo Soberano • Nicaragua</p>
+                </div>
+             </div>
           </motion.div>
-        </div>
-
-        {/* Footer del Formulario */}
-        <div className="p-8 mt-auto text-center border-t border-primary/5">
-           <span className="text-[8px] text-muted-foreground/40 uppercase tracking-[0.5em] font-black">Ganesha Enterprise System © 2026</span>
-        </div>
-      </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

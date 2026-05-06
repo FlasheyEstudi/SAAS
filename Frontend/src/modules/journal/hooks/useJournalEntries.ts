@@ -42,7 +42,8 @@ export function useJournalEntries() {
   // Fetch journal entries list with pagination and filters
   const { data: entriesData, isLoading: entriesLoading, error: entriesError } = useQuery<{ 
     data: JournalEntry[], 
-    pagination: { total: number, totalPages: number } 
+    pagination: { total: number, totalPages: number },
+    stats: { POSTED: number, DRAFT: number, totalDebit: number, totalCredit: number }
   }>({
     queryKey: ['journal-entries', 'list', companyId, page, search, typeFilter, statusFilter],
     queryFn: () => {
@@ -56,7 +57,7 @@ export function useJournalEntries() {
       if (typeFilter) params.append('entryType', typeFilter);
       if (statusFilter) params.append('status', statusFilter);
       
-      return apiClient.get<{ data: JournalEntry[], pagination: { total: number, totalPages: number } }>(
+      return apiClient.get<{ data: JournalEntry[], pagination: { total: number, totalPages: number }, stats: any }>(
         `${JOURNAL.list}?${params.toString()}`
       );
     },
@@ -65,34 +66,35 @@ export function useJournalEntries() {
     staleTime: 30000, // 30 seconds cache
   });
 
-  // Fetch accounts tree (static-ish, high cache)
-  const { data: accountsData, isLoading: accountsLoading } = useQuery<Account[]>({
-    queryKey: ['accounts', 'tree', companyId],
-    queryFn: () => apiClient.get<Account[]>(`${ACCOUNTS.tree}?companyId=${companyId}`),
+  // Fetch flat accounts list for selection
+  const { data: accountsData, isLoading: accountsLoading } = useQuery<any>({
+    queryKey: ['accounts', 'list', companyId],
+    queryFn: () => apiClient.get<any>(`${ACCOUNTS.list}?companyId=${companyId}&limit=1000`),
     enabled: !!companyId,
-    staleTime: 300000, // 5 minutes
   });
 
-  const { data: costCentersData, isLoading: costCentersLoading } = useQuery<{ data: CostCenter[] }>({
+  const { data: costCentersData, isLoading: costCentersLoading } = useQuery<any>({
     queryKey: ['cost-centers', 'list', companyId],
-    queryFn: () => apiClient.get<{ data: CostCenter[] }>(`${COST_CENTERS.list}?companyId=${companyId}`),
+    queryFn: () => apiClient.get<any>(`${COST_CENTERS.list}?companyId=${companyId}`),
     enabled: !!companyId,
   });
 
-  const { data: periodsData, isLoading: periodsLoading } = useQuery<{ data: Period[] }>({
+  const { data: periodsData, isLoading: periodsLoading } = useQuery<any>({
     queryKey: ['periods', 'list', companyId],
-    queryFn: () => apiClient.get<{ data: Period[] }>(`${PERIODS.list}?companyId=${companyId}`),
+    queryFn: () => apiClient.get<any>(`${PERIODS.list}?companyId=${companyId}`),
     enabled: !!companyId,
   });
 
   // Mutations (unchanged but ensured they invalidate correct keys)
   const createMutation = useMutation({
-    mutationFn: (data: CreateJournalEntryData) => {
+    mutationFn: async (data: CreateJournalEntryData) => {
       const finalData = { ...data, companyId: data.companyId || companyId || '' };
-      return apiClient.post<JournalEntry>(JOURNAL.create, finalData);
+      const res = await apiClient.post<any>(JOURNAL.create, finalData);
+      return res?.data || res;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['cost-centers'] });
     },
   });
 
@@ -103,6 +105,7 @@ export function useJournalEntries() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['cost-centers'] });
     },
   });
 
@@ -110,13 +113,18 @@ export function useJournalEntries() {
     mutationFn: (id: string) => apiClient.delete(JOURNAL.delete(id)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['cost-centers'] });
     },
   });
 
   const postMutation = useMutation({
-    mutationFn: (id: string) => apiClient.post<JournalEntry>(JOURNAL.post(id), {}),
+    mutationFn: async (id: string) => {
+      const res = await apiClient.post<any>(JOURNAL.post(id), {});
+      return res?.data || res;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['cost-centers'] });
     },
   });
 
@@ -129,6 +137,7 @@ export function useJournalEntries() {
     pagination: entriesData?.pagination,
     total: entriesData?.pagination?.total || 0,
     totalPages: entriesData?.pagination?.totalPages || 1,
+    stats: entriesData?.stats || { POSTED: 0, DRAFT: 0, totalDebit: 0, totalCredit: 0 },
     page,
     limit,
     search,
@@ -144,9 +153,9 @@ export function useJournalEntries() {
       setStatusFilter('');
       setPage(1);
     },
-    accounts: accountsData || [],
-    costCenters: costCentersData?.data || [],
-    periods: periodsData?.data || [],
+    accounts: (Array.isArray(accountsData?.data?.data) ? accountsData.data.data : (Array.isArray(accountsData?.data) ? accountsData.data : [])) as Account[],
+    costCenters: (Array.isArray(costCentersData?.data?.data) ? costCentersData.data.data : (Array.isArray(costCentersData?.data) ? costCentersData.data : [])) as CostCenter[],
+    periods: (Array.isArray(periodsData?.data?.data) ? periodsData.data.data : (Array.isArray(periodsData?.data) ? periodsData.data : [])) as Period[],
     isLoading: entriesLoading || accountsLoading || costCentersLoading || periodsLoading,
     error: entriesError,
     createEntry: createMutation.mutateAsync,
@@ -169,15 +178,18 @@ export function useJournalEntries() {
 export function useJournalEntry(id: string) {
   const queryClient = useQueryClient();
 
-  const { data, isLoading, error } = useQuery<JournalEntry>({
+  const { data: entryData, isLoading, error } = useQuery<any>({
     queryKey: ['journal-entries', id],
-    queryFn: () => apiClient.get<JournalEntry>(JOURNAL.get(id)),
+    queryFn: async () => {
+      const res = await apiClient.get<any>(JOURNAL.get(id));
+      return res?.data || res;
+    },
     enabled: !!id,
     retry: false,
   });
 
   return {
-    entry: data,
+    entry: entryData,
     isLoading,
     error,
   };

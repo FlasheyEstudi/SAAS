@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
 
 // Animated table component
 export function AnimatedTable({
@@ -30,19 +31,8 @@ export function AnimatedTable({
 }) {
   if (isLoading) {
     return (
-      <div className={cn('bg-card dark:bg-zinc-950 border border-border dark:border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm', className)}>
-        <div className="p-8 space-y-4">
-          {Array.from({ length: lines }).map((_, i) => (
-            <div 
-              key={i} 
-              className={cn(
-                "h-5 bg-muted/40 dark:bg-zinc-900/60 rounded-lg shimmer-bg",
-                i === lines - 1 ? 'w-[40%]' : i === 0 ? 'w-[90%]' : 'w-full'
-              )} 
-              style={{ animationDelay: `${i * 100}ms` }} 
-            />
-          ))}
-        </div>
+      <div className={cn('bg-card/40 backdrop-blur-md border border-primary/10 rounded-2xl overflow-hidden shadow-sm flex items-center justify-center py-20', className)}>
+        <GaneshaLoader variant="compact" message="Sincronizando Registros..." />
       </div>
     );
   }

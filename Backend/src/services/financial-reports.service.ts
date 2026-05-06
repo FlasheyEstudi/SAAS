@@ -210,7 +210,7 @@ export async function getBalanceSheet(companyId: string, periodId: string, conso
         where: {
           accountId: { in: leafAccountIds },
           journalEntry: { 
-            period: { year: period.year, month: period.month },
+            entryDate: { lte: new Date(period.year, period.month, 0, 23, 59, 59) }, // Acumulativo hasta el fin del mes
             status: 'POSTED' 
           },
         },
@@ -511,8 +511,10 @@ export async function getCashFlow(companyId: string, periodId?: string, year?: n
   let changeInReceivables = 0;
   let changeInPayables = 0;
   for (const line of allLines) {
-    if (line.account.accountType === 'ASSET' && line.account.code.startsWith('1.3')) changeInReceivables += Number(line.debit || 0) - Number(line.credit || 0);
-    if (line.account.accountType === 'LIABILITY' && line.account.code.startsWith('2.1')) changeInPayables += Number(line.credit || 0) - Number(line.debit || 0);
+    // Clientes (AR) - Códigos 1.1.02
+    if (line.account.accountType === 'ASSET' && line.account.code.startsWith('1.1.02')) changeInReceivables += Number(line.debit || 0) - Number(line.credit || 0);
+    // Proveedores (AP) - Códigos 2.1.01
+    if (line.account.accountType === 'LIABILITY' && line.account.code.startsWith('2.1.01')) changeInPayables += Number(line.credit || 0) - Number(line.debit || 0);
   }
 
   const operatingActivities = netIncome - changeInReceivables + changeInPayables;

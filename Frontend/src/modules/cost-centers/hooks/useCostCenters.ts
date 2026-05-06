@@ -5,14 +5,19 @@ import { apiClient } from '@/lib/api/client';
 import { COST_CENTERS } from '@/lib/api/endpoints';
 import type { CostCenter } from '@/lib/api/types';
 import { toast } from 'sonner';
+import { useAppStore } from '@/lib/stores/useAppStore';
 
 export function useCostCenters() {
   const queryClient = useQueryClient();
 
+  const currentCompany = useAppStore(s => s.currentCompany);
+  const companyId = currentCompany?.id;
+
   const { data, isLoading, error, refetch } = useQuery<any>({
-    queryKey: ['cost-centers', 'list'],
-    queryFn: () => apiClient.get<any>(COST_CENTERS.list),
+    queryKey: ['cost-centers', 'list', companyId],
+    queryFn: () => apiClient.get<any>(`${COST_CENTERS.list}?companyId=${companyId || ''}`),
     retry: false,
+    enabled: !!companyId,
   });
 
   const createMutation = useMutation({

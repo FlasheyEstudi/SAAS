@@ -56,8 +56,8 @@
 
 :root {
   --radius: 0.75rem;
-  --background: #FFFFFF;
-  --foreground: #09090B;
+  --background: #050505;
+  --foreground: #FAFAFA;
   --card: #FFFFFF;
   --card-foreground: #09090B;
   --popover: #FFFFFF;
@@ -83,12 +83,12 @@
 .dark {
   --background: #050505;
   --foreground: #FAFAFA;
-  --card: #0A0A0A;
+  --card: #09090B;
   --card-foreground: #FAFAFA;
-  --popover: #0A0A0A;
+  --popover: #09090B;
   --popover-foreground: #FAFAFA;
-  --primary: #F59E0B;
-  --primary-foreground: #000000;
+  --primary: #EA580C; /* Naranja Ganesha Vibrante */
+  --primary-foreground: #FFFFFF;
   --secondary: #18181B;
   --secondary-foreground: #FAFAFA;
   --muted: #18181B;
@@ -96,13 +96,13 @@
   --accent: #27272A;
   --accent-foreground: #FAFAFA;
   --destructive: #EF4444;
-  --border: #18181B;
-  --input: #18181B;
-  --ring: #F59E0B;
+  --border: #27272A; /* Bordes más nítidos */
+  --input: #27272A;
+  --ring: #EA580C;
   --sidebar: #050505;
   --sidebar-foreground: #FAFAFA;
-  --sidebar-border: #18181B;
-  --sidebar-primary: #F59E0B;
+  --sidebar-border: #27272A;
+  --sidebar-primary: #EA580C;
 }
 
 /* --- UNIVERSOS VISUALES (TEMAS) --- */
@@ -134,15 +134,17 @@
 }
 
 .theme-frost {
-  --background: #F8FAFC;
-  --foreground: #1E293B;
+  --background: #F0F9FF;
+  --foreground: #082F49;
   --card: #FFFFFF;
-  --card-foreground: #1E293B;
-  --primary: #475569;
+  --card-foreground: #0C4A6E;
+  --primary: #0284C7;
   --primary-foreground: #FFFFFF;
-  --border: #CBD5E1;
-  --sidebar: #FFFFFF;
-  --ring: #475569;
+  --secondary: #E0F2FE;
+  --secondary-foreground: #0369A1;
+  --border: #BAE6FD;
+  --sidebar: #F0F9FF;
+  --ring: #38BDF8;
 }
 
 .theme-copper {
@@ -174,7 +176,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground transition-colors duration-300;
+    @apply bg-background text-foreground transition-colors duration-300 overflow-x-hidden max-w-full;
   }
 
   /* --- CORRECCIÓN DE CONTRASTE DE BOTONES (SINTAXIS REPARADA) --- */
@@ -201,6 +203,31 @@
 
   input, select, textarea {
     @apply text-foreground bg-background;
+  }
+
+  /* --- ESTILOS GLOBALES DE TABLAS PREMIUM --- */
+  table {
+    @apply w-full text-left border-collapse rounded-xl overflow-hidden shadow-sm ring-1 ring-border bg-card text-[13px];
+  }
+  thead {
+    @apply bg-muted/40 text-muted-foreground uppercase text-[10px] font-bold tracking-[0.2em] border-b border-border;
+  }
+  th {
+    @apply px-4 py-3 border-b border-border;
+  }
+  td {
+    @apply px-4 py-3 border-b border-border/40;
+  }
+  tbody tr {
+    @apply transition-colors hover:bg-primary/5 cursor-default;
+  }
+  tbody tr:last-child td {
+    @apply border-0;
+  }
+
+  /* --- BUSCADORES Y INPUTS --- */
+  input, select, textarea {
+    @apply focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-all duration-200;
   }
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   FileText,
@@ -26,6 +26,7 @@ import { ConfirmDialog } from '@/components/ui/vintage-ui';
 import { formatCurrency, formatDate, getStatusLabel } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -74,44 +75,16 @@ export function InvoiceListView() {
     setSearch, setTypeFilter, setStatusFilter, setPage, clearFilters,
   } = useInvoices() as any;
 
-  // Compute summary from real data — the backend summary returns { totalAmount, totalBalanceDue }
-  // but we also compute from invoices array as a reliable fallback
-  const totalInvoiced = Number(rawSummary?.totalAmount || invoices.reduce((s: number, i: any) => s + (Number(i.totalAmount) || 0), 0));
-  const pendingAmount = Number(rawSummary?.totalBalanceDue || invoices.filter((i: any) => i.status === 'PENDING' || i.status === 'PARTIAL').reduce((s: number, i: any) => s + (Number(i.balanceDue) || 0), 0));
-  const overdueAmount = Number(invoices.filter((i: any) => i.status === 'OVERDUE').reduce((s: number, i: any) => s + (Number(i.balanceDue) || 0), 0));
-  const paidAmount = Number(invoices.filter((i: any) => i.status === 'PAID').reduce((s: number, i: any) => s + (Number(i.totalAmount) || 0), 0));
-  const total = rawTotal || invoices.length;
-
-
+  const [loading, setLoading] = useState(true);
   const [cancelDialogId, setCancelDialogId] = useState<string | null>(null);
   const [payingId, setPayingId] = useState<string | null>(null);
 
-  const handleExport = async (format: 'excel' | 'pdf') => {
-    const toastId = toast.loading('Generando reporte de facturas...');
-    try {
-      const currentCompany = useAppStore.getState().currentCompany;
-      const companyName = currentCompany?.name || 'GANESHA Compañía';
-      
-      const exportData = invoices.map((inv: any) => ({
-        number: inv.number,
-        issueDate: inv.issueDate,
-        thirdParty: { name: getThirdPartyName(inv.thirdPartyId) },
-        subtotal: inv.subtotal || (Number(inv.totalAmount) / 1.15),
-        taxAmount: inv.taxAmount || (Number(inv.totalAmount) - (Number(inv.totalAmount) / 1.15)),
-        totalAmount: inv.totalAmount,
-        status: inv.status
-      }));
-
-      if (format === 'excel') {
-        await exportInvoicesExcel(exportData, companyName);
-      } else {
-        await exportInvoicesPDF(exportData, companyName);
-      }
-      toast.success(`Facturas exportadas en ${format.toUpperCase()}`, { id: 'export-loading' });
-    } catch {
-      toast.error('Error al exportar facturas', { id: 'export-loading' });
+  useEffect(() => {
+    if (!isLoading) {
+      const timer = setTimeout(() => setLoading(false), 500);
+      return () => clearTimeout(timer);
     }
-  };
+  }, [isLoading]);
 
   const getThirdPartyName = useCallback((tpId: string) => {
     const tp = thirdParties.find((t) => t.id === tpId);
@@ -144,7 +117,7 @@ export function InvoiceListView() {
     } finally {
       setPayingId(null);
     }
-  }, [payInvoice]);
+  }, [invoices, payInvoice]);
 
   const handleCancel = useCallback(async () => {
     if (!cancelDialogId) return;
@@ -158,6 +131,41 @@ export function InvoiceListView() {
       setCancelDialogId(null);
     }
   }, [cancelDialogId, cancelInvoice]);
+
+  const handleExport = async (format: 'excel' | 'pdf') => {
+    const toastId = toast.loading('Generando reporte de facturas...');
+    try {
+      const currentCompany = useAppStore.getState().currentCompany;
+      const companyName = currentCompany?.name || 'GANESHA Compañía';
+      
+      const exportData = invoices.map((inv: any) => ({
+        number: inv.number,
+        issueDate: inv.issueDate,
+        thirdParty: { name: getThirdPartyName(inv.thirdPartyId) },
+        subtotal: inv.subtotal || (Number(inv.totalAmount) / 1.15),
+        taxAmount: inv.taxAmount || (Number(inv.totalAmount) - (Number(inv.totalAmount) / 1.15)),
+        totalAmount: inv.totalAmount,
+        status: inv.status
+      }));
+
+      if (format === 'excel') {
+        await exportInvoicesExcel(exportData, companyName);
+      } else {
+        await exportInvoicesPDF(exportData, companyName);
+      }
+      toast.success(`Facturas exportadas en ${format.toUpperCase()}`, { id: 'export-loading' });
+    } catch {
+      toast.error('Error al exportar facturas', { id: 'export-loading' });
+    }
+  };
+
+  if (loading) return <GaneshaLoader variant="compact" message="Sincronizando Facturas..." />;
+
+  const totalInvoiced = Number(rawSummary?.totalAmount || invoices.reduce((s: number, i: any) => s + (Number(i.totalAmount) || 0), 0));
+  const pendingAmount = Number(rawSummary?.totalBalanceDue || invoices.filter((i: any) => i.status === 'PENDING' || i.status === 'PARTIAL').reduce((s: number, i: any) => s + (Number(i.balanceDue) || 0), 0));
+  const overdueAmount = Number(invoices.filter((i: any) => i.status === 'OVERDUE').reduce((s: number, i: any) => s + (Number(i.balanceDue) || 0), 0));
+  const paidAmount = Number(invoices.filter((i: any) => i.status === 'PAID').reduce((s: number, i: any) => s + (Number(i.totalAmount) || 0), 0));
+  const total = rawTotal || invoices.length;
 
   const tableHeaders = [
     { key: 'number', label: '# Factura', align: 'left' as const, className: 'w-[160px]' },

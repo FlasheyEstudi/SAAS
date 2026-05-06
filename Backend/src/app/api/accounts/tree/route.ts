@@ -1,55 +1,41 @@
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { success, error, serverError } from '@/lib/api-helpers';
+import { validateAuth } from '@/lib/api-helpers';
 
-// ============================================================
-// Helper: Build tree structure from flat list
-// ============================================================
-function buildTree(items: any[], parentId: string | null = null): any[] {
-  return items
-    .filter(item => item.parentId === parentId)
-    .map(item => ({
-      ...item,
-      children: buildTree(items, item.id),
-    }));
-}
-
-// ============================================================
-// GET /api/accounts/tree - Return full account tree for a company
-// Query param: companyId (required)
-// Each node: { id, code, name, accountType, nature, level, isGroup, isActive, children: [...] }
-// ============================================================
 export async function GET(request: Request) {
   try {
+    const user = await validateAuth(request);
+    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
     const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get('companyId') || '';
+    const companyId = searchParams.get('companyId') || user.companyId;
 
-    if (!companyId) {
-      return error('El parámetro companyId es obligatorio');
-    }
+    if (!companyId) return NextResponse.json({ error: 'Falta companyId' }, { status: 400 });
 
-    // Fetch ALL accounts for the company, ordered by code
+    // 1. Obtener todas las cuentas de la empresa
     const accounts = await db.account.findMany({
       where: { companyId },
-      select: {
-        id: true,
-        code: true,
-        name: true,
-        parentId: true,
-        accountType: true,
-        nature: true,
-        level: true,
-        isGroup: true,
-        isActive: true,
-      },
       orderBy: { code: 'asc' },
     });
 
-    // Build the tree from the flat list
-    const tree = buildTree(accounts);
+    // 2. Construir el árbol
+    const buildTree = (parentId: string | null = null): any[] => {
+      return accounts
+        .filter(account => account.parentId === parentId)
+        .map(account => ({
+          ...account,
+          children: buildTree(account.id),
+        }));
+    };
 
-    return success(tree);
-  } catch (err) {
-    console.error('Error building account tree:', err);
-    return serverError('Error al obtener el árbol de cuentas');
+    const accountTree = buildTree(null);
+
+    return NextResponse.json({
+      data: accountTree,
+      total: accounts.length,
+    });
+  } catch (error) {
+    console.error('Error fetching account tree:', error);
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }

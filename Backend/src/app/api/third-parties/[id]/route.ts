@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
-import { success, notFound, error, serverError } from '@/lib/api-helpers';
+import { success, notFound, error, serverError, validateAuth } from '@/lib/api-helpers';
 import { Prisma } from '@prisma/client';
+import { logAudit } from '@/lib/audit-service';
 
 type RouteContext = { params: Promise<{ id: string }> };
 

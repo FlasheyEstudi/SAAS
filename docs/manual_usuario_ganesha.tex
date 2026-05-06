@@ -6,86 +6,98 @@
 \usepackage{tcolorbox}
 \usepackage{titlesec}
 \usepackage{enumitem}
+\usepackage{graphicx}
 \usepackage{hyperref}
 
-% Colores Profesionales
-\definecolor{brandblue}{HTML}{1E40AF}
-\definecolor{brandteal}{HTML}{0D9488}
-\definecolor{brandbg}{HTML}{F8FAFC}
+% Colores Oficiales (Vintage & Orange)
+\definecolor{brandorange}{HTML}{EA580C} % Orange-600
+\definecolor{branddark}{HTML}{27272A}   % Zinc-800
+\definecolor{brandbg}{HTML}{FAFAF9}     % Stone-50
 
 \geometry{margin=2.5cm}
 
-\titleformat{\section}{\color{brandblue}\normalfont\Large\bfseries}{\thesection}{2em}{}
-\titleformat{\subsection}{\color{brandteal}\normalfont\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\section}{\color{brandorange}\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\color{branddark}\normalfont\large\bfseries}{\thesubsection}{1em}{}
 
 \begin{document}
 
 \begin{titlepage}
     \centering
-    \vspace*{1cm}
-    \includegraphics[width=0.3\textwidth]{logo.png} \par % Placeholder si existiera
-    \vspace{1cm}
-    {\Huge\bfseries\color{brandblue} Ganesha ERP v2.0}\\[0.5cm]
-    {\Large\bfseries Manual de Usuario Profesional}\\[2cm]
+    \pagecolor{brandbg}
+    \vspace*{2cm}
     
-    \begin{tcolorbox}[colback=brandblue,colframe=brandblue,arc=10pt,left=20pt,right=20pt,top=20pt,bottom=20pt]
+    % Placeholder para el Logo en Overleaf
+    \begin{tcolorbox}[colback=white, colframe=brandorange, width=5cm, height=5cm, arc=50pt, halign=center, valign=center, center]
+        \includegraphics[width=4cm, height=4cm, keepaspectratio]{logo_placeholder.png} \\
+        \textit{\small [Insertar Logo Aquí]}
+    \end{tcolorbox}
+    
+    \vspace{2cm}
+    {\Huge\bfseries\color{brandorange} Ganesha ERP v2.5}\\[0.5cm]
+    {\Large\bfseries Manual de Usuario y Administración}\\[2cm]
+    
+    \begin{tcolorbox}[colback=branddark,colframe=branddark,arc=10pt,left=20pt,right=20pt,top=20pt,bottom=20pt]
         \centering
         \color{white}
-        \textbf{Solución Integral de Contabilidad, Facturación e Inteligencia de Negocios para Empresas Modernas}
+        \textbf{Solución Integral de Contabilidad, Seguridad y Asesoría Financiera Inteligente}
     \end{tcolorbox}
     
     \vfill
-    {\large Elaborado por: Antigravity AI Support}\\[0.5cm]
+    {\large Elaborado por: \textbf{FlasheyEstudi}}\\[0.5cm]
     {\large \today}
 \end{titlepage}
+
+\pagecolor{white} % Restaurar el color de página normal
 
 \tableofcontents
 \newpage
 
 \section{Introducción}
-Ganesha ERP es una plataforma diseñada para automatizar la gestión financiera y operativa de su empresa. Este manual explica los flujos de trabajo, la navegación por módulos y el uso del asistente inteligente integrado.
+Ganesha ERP es una plataforma diseñada para automatizar la gestión financiera y operativa de su empresa. Esta nueva versión incorpora controles de seguridad estrictos y un asistente de Inteligencia Artificial (CFO Virtual) optimizado para la toma de decisiones gerenciales.
+
+\section{Seguridad y Control de Acceso (NUEVO)}
+La plataforma ahora cuenta con un esquema de seguridad de nivel empresarial.
+
+\subsection{Control de Acceso Basado en Roles (RBAC)}
+El acceso a los distintos módulos está estrictamente regulado por el rol asignado a cada usuario:
+\begin{itemize}
+    \item \textbf{Administrador:} Acceso total al sistema, configuración de la empresa y gestión de usuarios.
+    \item \textbf{Contador:} Acceso completo a los módulos financieros, reportería y generación de pólizas.
+    \item \textbf{Operador:} Acceso limitado a facturación y caja, sin visibilidad de estados financieros globales.
+\end{itemize}
+
+\subsection{Protección Criptográfica}
+Las contraseñas de todos los usuarios están protegidas mediante encriptación \textbf{Bcrypt} de grado militar. El sistema es invulnerable a la lectura directa de credenciales en la base de datos.
+
+\subsection{Auditoría de Usuarios}
+Todo evento de acceso, modificación o creación de registros incluye automáticamente la huella digital del usuario responsable, asegurando transparencia y trazabilidad en los procesos.
 
 \section{Módulo de Facturación (Invoices)}
 El corazón de la generación de ingresos. 
 \subsection{Flujo de una Factura}
-Cuando usted registra una factura de venta:
 \begin{enumerate}[label=\arabic*.]
     \item \textbf{Registro}: Los datos se guardan en el módulo de facturación.
     \item \textbf{Contabilización Automática}: El sistema genera un \textbf{Asiento Contable} (Journal Entry) de forma inmediata.
     \item \textbf{Impacto en Reportes}: La cuenta por cobrar aumenta y los ingresos se reflejan en el \textit{Estado de Resultados}.
 \end{enumerate}
 
-\begin{tcolorbox}[colback=yellow!10, colframe=orange, title=Nota Importante]
-    Si una factura no está "Pagada", el sistema la mantendrá en el reporte de \textbf{Antigüedad de Saldos} automáticamente.
+\begin{tcolorbox}[colback=brandorange!10, colframe=brandorange, title=Gestión de Cartera]
+    Las facturas pendientes de pago alimentan automáticamente el reporte de \textbf{Antigüedad de Saldos} (Aging Report), vital para el análisis de liquidez de Ganesha AI.
 \end{tcolorbox}
 
 \section{Módulo de Contabilidad (Journal \& Ledger)}
-Este módulo centraliza todos los movimientos financieros.
-\subsection{Libro Diario}
-Cada póliza registrada debe cumplir con la \textbf{Partida Doble}. El sistema no permitirá guardar asientos descuadrados, garantizando la integridad de su contabilidad desde el origen.
+\subsection{Libro Diario y Partida Doble}
+El sistema garantiza que todas las transacciones cumplan el principio de partida doble. Se bloquea la creación de asientos descuadrados para mantener una contabilidad inmaculada.
 
-\section{Tesorería y Bancos}
-Gestión de cuentas bancarias y conciliación.
+\section{Asesoría Financiera Inteligente (Ganesha AI)}
+Su Directora Financiera y Auditora Virtual.
+
+\subsection{Capacidades del CFO Virtual}
+Ganesha AI analiza en tiempo real la balanza de comprobación, carteras y flujo de caja.
 \begin{itemize}
-    \item \textbf{Conciliación Bancaria}: Permite marcar movimientos bancarios contra asientos contables registrados.
-    \item \textbf{Flujo de Caja}: Basado en las fechas de pago reales de las facturas y gastos.
+    \item \textbf{Análisis de Tendencias:} Ganesha es capaz de cruzar datos de los últimos tres meses para predecir desviaciones en gastos.
+    \item \textbf{Generación de Gráficos:} Al solicitar comparativas, la IA generará gráficas profesionales exportables directamente desde el chat.
+    \item \textbf{Exportación de Reportes:} Puede instruir a la IA para que emita reportes oficiales en formato PDF o Excel con un solo clic.
 \end{itemize}
-
-\section{Módulo de Activos Fijos}
-Gestión del patrimonio empresarial.
-\begin{itemize}
-    \item \textbf{Depreciación Automática}: Usted solo ingresa el valor inicial y la vida útil; el sistema calcula y genera los asientos de depreciación mes a mes.
-\end{itemize}
-
-\section{Uso del Asistente IA (Ganesha AI)}
-Ubicado en el panel lateral, el asistente puede:
-\begin{itemize}
-    \item \textbf{Consultar Datos}: "¿Cuál fue mi utilidad neta el mes pasado?"
-    \item \textbf{Generar Reportes}: "Dame la balanza de comprobación de mayo."
-    \item \textbf{Análisis Predictivo}: Ayuda a identificar tendencias de gastos inusuales.
-\end{itemize}
-
-\section{Seguridad y Auditoría}
-Cada cambio en el sistema genera una huella digital en el \textbf{Registro de Auditoría}, indicando qué usuario hizo el cambio, en qué fecha y qué valor fue modificado.
 
 \end{document}

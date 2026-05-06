@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Package, TrendingDown, Calculator, History, Plus, Edit2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,9 +13,19 @@ import { cn } from '@/lib/utils';
 import { useFixedAssets, FixedAsset } from '../hooks/useFixedAssets';
 import { exportAssetsExcel, exportAssetsPDF } from '@/lib/utils/export';
 import { useAppStore } from '@/lib/stores/useAppStore';
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
 
 export function AssetsView() {
-  const { assets = [], summary: rawSummary, loading, depreciating, refreshAssets, depreciateAsset, bulkDepreciate, getAssetHistory, createAsset, updateAsset, deleteAsset } = useFixedAssets();
+  const { assets = [], summary: rawSummary, loading: hookLoading, depreciating, refreshAssets, depreciateAsset, bulkDepreciate, getAssetHistory, createAsset, updateAsset, deleteAsset } = useFixedAssets();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!hookLoading) {
+      const timer = setTimeout(() => setLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [hookLoading]);
+
   const currentCompany = useAppStore(s => s.currentCompany);
 
   const handleExport = async (format: 'excel' | 'pdf') => {
@@ -67,6 +77,8 @@ export function AssetsView() {
     status: 'ACTIVE',
     location: '',
   });
+
+  if (loading) return <GaneshaLoader variant="compact" message="Sincronizando Inventario de Activos..." />;
 
   const handleBulkDepreciate = () => {
     if (!companyId) {
@@ -139,7 +151,6 @@ export function AssetsView() {
     }
   };
 
-  if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
   return (
     <div className="space-y-6">
@@ -217,7 +228,7 @@ export function AssetsView() {
 
       {showForm && (
         <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowForm(false)} />
+          <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px]" onClick={() => setShowForm(false)} />
           <motion.div className="relative bg-card rounded-2xl p-6 max-w-2xl w-full shadow-xl border border-vintage-200 overflow-y-auto max-h-[90vh]" initial={{ scale: 0.95 }} animate={{ scale: 1 }}>
             <h3 className="text-lg font-playfair font-bold text-vintage-800 mb-4">{editing ? 'Editar' : 'Nuevo'} Activo Fijo</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

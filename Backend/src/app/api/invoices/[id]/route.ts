@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
-import { success, notFound, error, serverError } from '@/lib/api-helpers';
-import { Prisma } from '@prisma/client';
+import { success, error, serverError, ensurePeriodOpen, validateAuth } from '@/lib/api-helpers';
+import { generateInvoiceJournalEntry } from '@/lib/accounting-service';
+import { logAudit } from '@/lib/audit-service';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -36,12 +37,12 @@ export async function GET(_request: Request, context: RouteContext) {
     });
 
     if (!invoice) {
-      return notFound('Factura no encontrada');
+      return error('Factura no encontrada', 404);
     }
 
     // Compute days overdue
     let daysOverdue = 0;
-    if (invoice.dueDate && invoice.status !== 'PAID' && invoice.status !== 'CANCELLED' && invoice.balanceDue > 0) {
+    if (invoice.dueDate && invoice.status !== 'PAID' && invoice.status !== 'CANCELLED' && Number(invoice.balanceDue) > 0) {
       const diffMs = new Date().getTime() - invoice.dueDate.getTime();
       daysOverdue = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
     }
@@ -89,7 +90,13 @@ export async function PUT(request: Request, context: RouteContext) {
     // Check invoice exists
     const existing = await db.invoice.findUnique({ where: { id } });
     if (!existing) {
-      return notFound('Factura no encontrada');
+      return error('Factura no encontrada', 404);
+    }
+
+    // PROTECCIÓN DE PERIODO (Fecha Original)
+    const periodOpen = await ensurePeriodOpen(existing.companyId, existing.issueDate);
+    if (!periodOpen) {
+      return error('No se puede editar una factura en un periodo contable cerrado', 403);
     }
 
     // Validate status if provided
@@ -98,101 +105,119 @@ export async function PUT(request: Request, context: RouteContext) {
       return error('El estado debe ser PENDING, PARTIAL, PAID o CANCELLED');
     }
 
-    // Build update data
-    const updateData: Prisma.InvoiceUpdateInput = {};
+    const { lines, totalAmount, subtotal, taxAmount } = body;
+    const user = await validateAuth(request);
 
-    if (status !== undefined) {
-      updateData.status = status;
-    }
-
-    if (balanceDue !== undefined) {
-      if (balanceDue < 0) {
-        return error('El saldo pendiente no puede ser negativo');
+    const result = await db.$transaction(async (tx) => {
+      // 1. Delete old lines if lines are provided
+      if (lines) {
+        await tx.invoiceLine.deleteMany({ where: { invoiceId: id } });
+        await tx.taxEntry.deleteMany({ where: { invoiceId: id } });
       }
-      updateData.balanceDue = balanceDue;
 
-      // Auto-update status based on balanceDue if status not explicitly set
-      if (status === undefined) {
-        if (balanceDue <= 0) {
-          updateData.status = 'PAID';
-        } else if (balanceDue < existing.totalAmount) {
-          updateData.status = 'PARTIAL';
-        } else if (balanceDue === existing.totalAmount) {
-          updateData.status = 'PENDING';
+      // 2. Build update data
+      const updateData: any = {};
+      if (status !== undefined) updateData.status = status;
+      if (balanceDue !== undefined) updateData.balanceDue = balanceDue;
+      if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
+      if (description !== undefined) updateData.description = description?.trim() || null;
+      if (totalAmount !== undefined) updateData.totalAmount = totalAmount;
+      if (subtotal !== undefined) updateData.subtotal = subtotal;
+      if (taxAmount !== undefined) updateData.taxAmount = taxAmount;
+
+      // 3. Update main record
+      const updatedInvoice = await tx.invoice.update({
+        where: { id },
+        data: updateData,
+      });
+
+      // 4. Create new lines if provided
+      if (lines && Array.isArray(lines)) {
+        for (const line of lines) {
+          await tx.invoiceLine.create({
+            data: {
+              invoiceId: id,
+              lineNumber: line.lineNumber,
+              description: line.description,
+              quantity: line.quantity,
+              unitPrice: line.unitPrice,
+              unit: line.unit || 'PIEZA',
+              subtotal: line.subtotal,
+              discountRate: line.discountRate || 0,
+              accountId: line.accountId,
+              costCenterId: line.costCenterId,
+            },
+          });
         }
       }
-    }
 
-    if (dueDate !== undefined) {
-      updateData.dueDate = dueDate ? new Date(dueDate) : null;
-    }
+      // 5. Regenerar Asiento Contable Automático
+      try {
+        await generateInvoiceJournalEntry(tx as any, id, user!.id);
+      } catch (accErr) {
+        console.error('Error regenerando contabilidad:', accErr);
+      }
 
-    if (description !== undefined) {
-      updateData.description = description?.trim() || null;
-    }
-
-    const invoice = await db.invoice.update({
-      where: { id },
-      data: updateData,
-      include: {
-        thirdParty: {
-          select: { id: true, name: true, type: true },
-        },
-        journalEntry: {
-          select: {
-            id: true,
-            entryNumber: true,
-            description: true,
-            entryDate: true,
-            entryType: true,
-            status: true,
-          },
-        },
-      },
+      return updatedInvoice;
     });
 
-    return success(invoice);
+    return success(result);
   } catch (err: unknown) {
     console.error('Error updating invoice:', err);
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === 'P2002') {
-        return error('Ya existe una factura con ese número para este tipo en la empresa');
-      }
-    }
     return serverError('Error al actualizar la factura');
   }
 }
 
-// ============================================================
-// DELETE /api/invoices/[id] - Delete only if DRAFT/PENDING and no journal entry linked
-// ============================================================
+// DELETE /api/invoices/[id] - Delete and its journal entry
 export async function DELETE(_request: Request, context: RouteContext) {
   try {
     const { id } = await context.params;
+    const user = await validateAuth(_request);
 
     const invoice = await db.invoice.findUnique({
       where: { id },
+      include: { journalEntry: true }
     });
 
-    if (!invoice) {
-      return notFound('Factura no encontrada');
+    if (!invoice) return error('Factura no encontrada', 404);
+
+    // Permitir eliminar si es PENDING o DRAFT
+    if (String(invoice.status) !== 'PENDING' && String(invoice.status) !== 'DRAFT') {
+      return error(`Solo facturas PENDING o DRAFT pueden ser eliminadas. Estado actual: ${invoice.status}`);
     }
 
-    // Only allow deletion if DRAFT/PENDING (schema uses PENDING as initial status)
-    if (!['PENDING'].includes(invoice.status)) {
-      return error(
-        `No se puede eliminar la factura. Solo se pueden eliminar facturas en estado PENDING. Estado actual: ${invoice.status}`
-      );
-    }
+    await db.$transaction(async (tx) => {
+      // Registrar auditoría ANTES de borrar
+      await logAudit({
+        companyId: invoice.companyId,
+        userId: user!.id,
+        action: 'DELETE',
+        entityType: 'Invoice',
+        entityId: invoice.id,
+        entityLabel: `Factura ${invoice.number}`,
+        oldValues: invoice
+      });
 
-    // Check if journal entry is linked
-    if (invoice.journalEntryId) {
-      return error(
-        'No se puede eliminar la factura. Tiene una póliza contable ligada.'
-      );
-    }
+      // Si tiene póliza, la manejamos
+      if (invoice.journalEntryId) {
+        await tx.invoice.update({
+          where: { id: id },
+          data: { journalEntryId: null }
+        });
+        
+        if (invoice.journalEntry?.status === 'DRAFT') {
+          await tx.journalEntryLine.deleteMany({ where: { journalEntryId: invoice.journalEntryId } });
+          await tx.journalEntry.delete({ where: { id: invoice.journalEntryId } });
+        }
+      }
 
-    await db.invoice.delete({ where: { id } });
+      // Limpieza profunda (Cascade manual)
+      await tx.invoiceLine.deleteMany({ where: { invoiceId: id } });
+      await tx.taxEntry.deleteMany({ where: { invoiceId: id } });
+      await tx.paymentSchedule.deleteMany({ where: { invoiceId: id } });
+      
+      await tx.invoice.delete({ where: { id } });
+    });
 
     return success({ deleted: true, id });
   } catch (err) {

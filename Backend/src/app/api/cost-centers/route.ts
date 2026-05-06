@@ -1,7 +1,8 @@
 import { db } from '@/lib/db';
-import { success, created, error, parsePagination, serverError } from '@/lib/api-helpers';
+import { success, created, error, parsePagination, serverError, validateAuth } from '@/lib/api-helpers';
 import type { PaginatedResponse } from '@/lib/api-helpers';
 import { Prisma } from '@prisma/client';
+import { logAudit } from '@/lib/audit-service';
 
 // ============================================================
 // GET /api/cost-centers - List cost centers for a company
@@ -86,6 +87,7 @@ export async function GET(request: Request) {
 // ============================================================
 export async function POST(request: Request) {
   try {
+    const user = await validateAuth(request);
     const body = await request.json();
     const { companyId, code, name, parentId } = body;
 
@@ -154,6 +156,17 @@ export async function POST(request: Request) {
           },
         },
       },
+    });
+
+    // Audit Log
+    await logAudit({
+      companyId,
+      userId: user?.id || null,
+      action: 'CREATE',
+      entityType: 'COST_CENTER',
+      entityId: costCenter.id,
+      entityLabel: `${costCenter.code} - ${costCenter.name}`,
+      newValues: costCenter,
     });
 
     return created(costCenter);

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
-import { useInvoices } from '../hooks/useInvoices';
+import { useInvoices, useInvoice } from '../hooks/useInvoices';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
@@ -34,8 +34,10 @@ interface LineRow {
 const emptyLine: LineRow = { description: '', quantity: 1, unitPrice: 0, taxRate: 15 };
 
 export function InvoiceForm() {
-  const navigate = useAppStore((s) => s.navigate);
-  const { thirdParties, isLoading, createInvoice } = useInvoices();
+  const { navigate, viewParams } = useAppStore();
+  const invoiceId = viewParams?.id;
+  const { thirdParties, isLoading, createInvoice, updateInvoice } = useInvoices();
+  const { invoice: existingInvoice, isLoading: loadingDetail } = useInvoice(invoiceId || '');
 
   const [thirdPartyId, setThirdPartyId] = useState('');
   const [invoiceType, setInvoiceType] = useState<'SALE' | 'PURCHASE'>('SALE');
@@ -44,6 +46,26 @@ export function InvoiceForm() {
   const [dueDate, setDueDate] = useState('');
   const [lines, setLines] = useState<LineRow[]>([{ ...emptyLine }]);
   const [saving, setSaving] = useState(false);
+
+  // Populate form if editing
+  useEffect(() => {
+    if (invoiceId && existingInvoice) {
+      setThirdPartyId(existingInvoice.thirdPartyId);
+      setInvoiceType(existingInvoice.invoiceType);
+      setDescription(existingInvoice.description || '');
+      setInvoiceDate(new Date(existingInvoice.issueDate).toISOString().split('T')[0]);
+      setDueDate(existingInvoice.dueDate ? new Date(existingInvoice.dueDate).toISOString().split('T')[0] : '');
+      
+      if (existingInvoice.lines && existingInvoice.lines.length > 0) {
+        setLines(existingInvoice.lines.map(l => ({
+          description: l.description,
+          quantity: Number(l.quantity),
+          unitPrice: Number(l.unitPrice),
+          taxRate: Number(l.taxRate || 15)
+        })));
+      }
+    }
+  }, [invoiceId, existingInvoice]);
 
   // Filter third parties based on invoice type
   const filteredThirdParties = useMemo(() => {
@@ -81,23 +103,21 @@ export function InvoiceForm() {
     );
   }, []);
 
-
-
   const handleSave = useCallback(async () => {
-    const companyId = useAppStore.getState().companyId;
+    const companyId = useAppStore.getState().currentCompany?.id;
     
     // Preparing data for validation
     const dataToValidate: any = {
       companyId: companyId || '',
       thirdPartyId,
       invoiceType,
-      number: 'AUTO', // Backend generates it if empty
+      number: existingInvoice?.number || 'AUTO', 
       description: description || '',
       issueDate: invoiceDate,
       dueDate: dueDate || null,
       totalAmount,
       balanceDue: totalAmount,
-      status: 'PENDING',
+      status: existingInvoice?.status || 'PENDING',
       subtotal,
       taxAmount,
       lines: lines.map((l, idx) => ({
@@ -109,6 +129,7 @@ export function InvoiceForm() {
         discountRate: 0,
         subtotal: l.quantity * l.unitPrice,
         taxBase: l.quantity * l.unitPrice,
+        taxRate: l.taxRate,
       })),
     };
 
@@ -121,21 +142,26 @@ export function InvoiceForm() {
 
     setSaving(true);
     try {
-      const invoice = await createInvoice(dataToValidate);
-      if (invoice) {
-        toast.success('Factura creada correctamente');
-        navigate('invoice-detail', { id: invoice.id });
+      let result;
+      if (invoiceId) {
+        result = await updateInvoice({ id: invoiceId, data: dataToValidate });
+        toast.success('Factura actualizada correctamente');
       } else {
-        toast.error('No se pudo crear la factura');
+        result = await createInvoice(dataToValidate);
+        toast.success('Factura creada correctamente');
+      }
+
+      if (result) {
+        navigate('invoice-detail', { id: result.id });
       }
     } catch (err: any) {
-      toast.error(err.error || 'Error al crear la factura');
+      toast.error(err.error || 'Error al guardar la factura');
     } finally {
       setSaving(false);
     }
-  }, [thirdPartyId, invoiceType, description, invoiceDate, dueDate, lines, totalAmount, subtotal, taxAmount, createInvoice, navigate]);
+  }, [invoiceId, existingInvoice, thirdPartyId, invoiceType, description, invoiceDate, dueDate, lines, totalAmount, subtotal, taxAmount, createInvoice, updateInvoice, navigate]);
 
-  if (isLoading) return <PageLoader text="Cargando datos..." />;
+  if (isLoading || (invoiceId && loadingDetail)) return <PageLoader text="Cargando..." />;
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
@@ -148,8 +174,10 @@ export function InvoiceForm() {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-playfair text-vintage-800">Nueva Factura</h1>
-          <p className="text-sm text-vintage-500">Crear una nueva factura de {invoiceType === 'SALE' ? 'venta' : 'compra'}</p>
+          <h1 className="text-2xl font-playfair text-vintage-800">{invoiceId ? 'Editar Factura' : 'Nueva Factura'}</h1>
+          <p className="text-sm text-vintage-500">
+            {invoiceId ? `Modificar ${existingInvoice?.number}` : `Crear una nueva factura de ${invoiceType === 'SALE' ? 'venta' : 'compra'}`}
+          </p>
         </div>
       </motion.div>
 

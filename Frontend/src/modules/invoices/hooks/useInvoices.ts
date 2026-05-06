@@ -19,43 +19,51 @@ export interface CreateInvoiceData {
   }>;
 }
 
+import { useAppStore } from '@/lib/stores/useAppStore';
+
 /**
  * Hook for invoices - consumes real Backend APIs
  */
 export function useInvoices() {
   const queryClient = useQueryClient();
+  const currentCompany = useAppStore(s => s.currentCompany);
+  const companyId = currentCompany?.id;
 
   // Fetch invoices list
-  const { data: invoicesData, isLoading: invoicesLoading, error: invoicesError } = useQuery<{ data: Invoice[] }>({
-    queryKey: ['invoices', 'list'],
-    queryFn: () => apiClient.get<{ data: Invoice[] }>(INVOICES.list),
+  const { data: invoicesData, isLoading: invoicesLoading, error: invoicesError } = useQuery<any>({
+    queryKey: ['invoices', 'list', companyId],
+    queryFn: () => apiClient.get<any>(`${INVOICES.list}?companyId=${companyId || ''}`),
     retry: false,
+    enabled: !!companyId,
   });
 
   // Fetch third parties
-  const { data: thirdPartiesData, isLoading: thirdPartiesLoading } = useQuery<{ data: ThirdParty[] }>({
-    queryKey: ['third-parties', 'list'],
-    queryFn: () => apiClient.get<{ data: ThirdParty[] }>(THIRD_PARTIES.list),
+  const { data: thirdPartiesData, isLoading: thirdPartiesLoading } = useQuery<any>({
+    queryKey: ['third-parties', 'list', companyId],
+    queryFn: () => apiClient.get<any>(`${THIRD_PARTIES.list}?companyId=${companyId || ''}`),
     retry: false,
+    enabled: !!companyId,
   });
 
   // Fetch aging report
   const { data: agingData, isLoading: agingLoading } = useQuery<any>({
-    queryKey: ['invoices', 'aging'],
-    queryFn: () => apiClient.get(INVOICES.aging),
+    queryKey: ['invoices', 'aging', companyId],
+    queryFn: () => apiClient.get(`${INVOICES.aging}?companyId=${companyId || ''}`),
     retry: false,
+    enabled: !!companyId,
   });
 
   // Fetch summary
   const { data: summaryData, isLoading: summaryLoading } = useQuery<any>({
-    queryKey: ['invoices', 'summary'],
-    queryFn: () => apiClient.get(INVOICES.summary),
+    queryKey: ['invoices', 'summary', companyId],
+    queryFn: () => apiClient.get(`${INVOICES.summary}?companyId=${companyId || ''}`),
     retry: false,
+    enabled: !!companyId,
   });
 
   // Create invoice mutation
   const createMutation = useMutation({
-    mutationFn: (data: CreateInvoiceData) => apiClient.post<Invoice>(INVOICES.create, data),
+    mutationFn: (data: CreateInvoiceData) => apiClient.post<Invoice>(INVOICES.create, { ...data, companyId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
     },
@@ -95,11 +103,20 @@ export function useInvoices() {
     },
   });
 
+  const unboxList = (d: any) => {
+    if (Array.isArray(d?.data?.data)) return d.data.data;
+    if (Array.isArray(d?.data)) return d.data;
+    if (Array.isArray(d)) return d;
+    return [];
+  };
+
+  const unboxData = (d: any) => d?.data || d;
+
   return {
-    invoices: invoicesData?.data || [],
-    thirdParties: thirdPartiesData?.data || [],
-    aging: agingData,
-    summary: summaryData,
+    invoices: unboxList(invoicesData) as Invoice[],
+    thirdParties: unboxList(thirdPartiesData) as ThirdParty[],
+    aging: unboxData(agingData),
+    summary: unboxData(summaryData),
     isLoading: invoicesLoading || thirdPartiesLoading || agingLoading || summaryLoading,
     error: invoicesError,
     createInvoice: createMutation.mutateAsync,
@@ -111,7 +128,7 @@ export function useInvoices() {
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
     isPaying: payMutation.isPending,
-    getInvoice: (id: string) => invoicesData?.data?.find(inv => inv.id === id),
+    getInvoice: (id: string) => (unboxList(invoicesData) as Invoice[]).find(inv => inv.id === id),
   };
 }
 
@@ -119,15 +136,15 @@ export function useInvoices() {
  * Hook for single invoice detail
  */
 export function useInvoice(id: string) {
-  const { data, isLoading, error } = useQuery<Invoice>({
+  const { data, isLoading, error } = useQuery<any>({
     queryKey: ['invoices', id],
-    queryFn: () => apiClient.get<Invoice>(INVOICES.get(id)),
+    queryFn: () => apiClient.get<any>(INVOICES.get(id)),
     enabled: !!id,
     retry: false,
   });
 
   return {
-    invoice: data,
+    invoice: (data?.data || data) as Invoice,
     isLoading,
     error,
   };

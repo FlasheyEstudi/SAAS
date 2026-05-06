@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Percent, 
@@ -24,6 +24,8 @@ import { useTaxes } from '../hooks/useTaxes';
 import { formatCurrency, formatDate } from '@/lib/utils/format';
 import { ConfirmDialog, VintageTabs } from '@/components/ui/vintage-ui';
 import { cn } from '@/lib/utils';
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
+
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -54,18 +56,7 @@ export function TaxView() {
     createRate, updateRate, deleteRate,
     isCreating, isUpdating, isDeleting 
   } = useTaxes();
-
-  const handleExport = async () => {
-    if (!entries.length) return;
-    try {
-      const companyName = currentCompany?.name || 'GANESHA';
-      toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
-      await exportTaxesExcel(entries, companyName);
-      toast.success('Reporte de impuestos exportado', { id: 'export-loading' });
-    } catch (error) {
-      toast.error('Error al exportar impuestos', { id: 'export-loading' });
-    }
-  };
+  const [loading, setLoading] = useState(true);
 
   const [activeTab, setActiveTab] = useState('rates');
   const [showForm, setShowForm] = useState(false);
@@ -81,6 +72,29 @@ export function TaxView() {
     isRetention: false,
     effectiveFrom: new Date().toISOString().split('T')[0],
   });
+
+  useEffect(() => {
+    if (!isLoading) {
+      const timer = setTimeout(() => setLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
+
+  if (loading) return <GaneshaLoader variant="compact" message="Sincronizando Tasas Impositivas..." />;
+
+
+  const handleExport = async () => {
+    if (!entries.length) return;
+    try {
+      const companyName = currentCompany?.name || 'GANESHA';
+      toast.loading('Generando reporte...', { id: 'export-loading', duration: 8000 });
+      await exportTaxesExcel(entries, companyName, '2024');
+      toast.success('Reporte de impuestos exportado', { id: 'export-loading' });
+    } catch (error) {
+      toast.error('Error al exportar impuestos', { id: 'export-loading' });
+    }
+  };
+
 
   const handleOpenCreate = () => {
     setEditingId(null);
@@ -136,7 +150,6 @@ export function TaxView() {
     }
   };
 
-  if (isLoading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6 font-sans">
@@ -297,7 +310,7 @@ export function TaxView() {
       {/* Form Modal */}
       <AnimatePresence>
         {showForm && (
-          <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-[1px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <motion.div className="bg-card w-full max-w-lg rounded-2xl shadow-2xl border border-vintage-200 overflow-hidden" initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}>
               <div className="p-6 border-b border-vintage-100 flex items-center justify-between bg-vintage-50/20">
                 <div className="flex items-center gap-2">

@@ -37,8 +37,9 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  // @ts-ignore - Propiedad requerida por Next.js para acceso desde red local
-  allowedDevOrigins: ['172.16.27.202', 'localhost:3000'],
+  // Permitir acceso desde cualquier origen en desarrollo (HMR, etc)
+  // @ts-ignore
+  allowedDevOrigins: ['localhost:3000', '127.0.0.1:3000', '0.0.0.0:3000'],
 };
 
 export default nextConfig;

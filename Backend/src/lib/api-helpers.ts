@@ -14,6 +14,18 @@ export interface AuthUser {
   availableCompanies: { id: string, name: string, role: string }[];
 }
 
+/**
+ * Valida si un periodo contable está abierto para transacciones
+ */
+export async function ensurePeriodOpen(companyId: string, date: Date): Promise<boolean> {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const period = await db.accountingPeriod.findFirst({
+    where: { companyId, year, month }
+  });
+  return period?.status === 'OPEN';
+}
+
 export async function validateAuth(request: Request): Promise<AuthUser | null> {
   try {
     let token = '';
@@ -22,7 +34,6 @@ export async function validateAuth(request: Request): Promise<AuthUser | null> {
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.substring(7);
     } else {
-      // Intentar obtener de las cookies si es un Request de Next.js
       const cookieHeader = request.headers.get('cookie');
       if (cookieHeader) {
         const matches = cookieHeader.match(/auth_token=([^;]+)/);
@@ -32,11 +43,33 @@ export async function validateAuth(request: Request): Promise<AuthUser | null> {
 
     if (!token) return null;
 
-    const decoded = Buffer.from(token, 'base64').toString('utf-8');
-    const [userId] = decoded.split(':');
+    // 1. Decodificar y verificar firma HMAC
+    const decodedStr = Buffer.from(token, 'base64').toString('utf-8');
+    const [payloadStr, signature] = decodedStr.split('.');
+    
+    if (!payloadStr || !signature) return null;
 
+    const crypto = await import('crypto');
+    const secret = process.env.NEXTAUTH_SECRET || 'ganesha_super_secret_123';
+    const expectedSignature = crypto.createHmac('sha256', secret).update(payloadStr).digest('hex');
+
+    if (signature !== expectedSignature) {
+      console.warn('❌ Intento de suplantación de token detectado');
+      return null;
+    }
+
+    const payload = JSON.parse(payloadStr);
+    
+    // 2. Verificar expiración
+    if (payload.exp && payload.exp < Date.now()) {
+      console.warn('❌ Token expirado');
+      return null;
+    }
+
+    const userId = payload.userId;
     if (!userId) return null;
 
+    // 3. Obtener usuario
     const user = await db.user.findFirst({
       where: { id: userId, isActive: true },
       select: {
@@ -63,16 +96,16 @@ export async function validateAuth(request: Request): Promise<AuthUser | null> {
       role: m.role
     }));
 
-    // Auto-curación: Si el usuario no tiene membresías pero tiene un companyId por defecto,
-    // creamos una membresía OWNER al vuelo para evitar el 401.
+    // 4. Auto-curación (Fixing Race Condition with await)
     if (availableCompanies.length === 0 && user.companyId) {
       try {
         const defaultCompany = await db.company.findUnique({ where: { id: user.companyId } });
         if (defaultCompany) {
-          // Crear la membresía en la base de datos de forma asíncrona (fuego y olvido relativo)
-          db.userCompany.create({
+          console.log('🛡️ Auto-healing membership for company:', user.companyId);
+          // Usamos await para evitar race conditions
+          await db.userCompany.create({
             data: { userId: user.id, companyId: user.companyId, role: 'OWNER' }
-          }).catch(e => console.error('Error in auto-heal membership creation:', e));
+          }).catch(() => {}); // Ignorar si ya existe
 
           availableCompanies = [{
             id: defaultCompany.id,
@@ -220,8 +253,8 @@ export interface LineItem {
  * Retorna true si cuadra, false si no.
  */
 export function validateDoubleEntry(lines: LineItem[]): { valid: boolean; difference: number; totalDebit: number; totalCredit: number } {
-  const totalDebit = lines.reduce((sum, line) => sum + (line.debit || 0), 0);
-  const totalCredit = lines.reduce((sum, line) => sum + (line.credit || 0), 0);
+  const totalDebit = lines.reduce((sum, line) => sum + Number(line.debit || 0), 0);
+  const totalCredit = lines.reduce((sum, line) => sum + Number(line.credit || 0), 0);
   const difference = Math.round((totalDebit - totalCredit) * 100) / 100;
   return {
     valid: difference === 0,
@@ -277,8 +310,8 @@ export async function validatePeriodOpen(periodId: string): Promise<{ valid: boo
 /**
  * Formatea un número como moneda
  */
-export function formatCurrency(amount: number, currency = 'MXN'): string {
-  return new Intl.NumberFormat('es-MX', {
+export function formatCurrency(amount: number, currency = 'NIO'): string {
+  return new Intl.NumberFormat('es-NI', {
     style: 'currency',
     currency,
     minimumFractionDigits: 2,
@@ -298,8 +331,15 @@ export async function generateEntryNumber(periodId: string, companyId: string): 
 
   if (!lastEntry) return '0001';
 
-  const lastNum = parseInt(lastEntry.entryNumber, 10);
-  return String(lastNum + 1).padStart(4, '0');
+  // Extract digits only from the end of the string
+  const match = lastEntry.entryNumber.match(/(\d+)$/);
+  if (!match) return '0001';
+
+  const lastNum = parseInt(match[1], 10);
+  const nextNum = lastNum + 1;
+  
+  // Keep the same length as the original number part
+  return String(nextNum).padStart(match[1].length, '0');
 }
 
 /**

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { PiggyBank, BarChart3, Plus, Edit2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -15,18 +15,57 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend
 import { useBudgets } from '../hooks/useBudgets';
 import { exportBudgetsExcel } from '@/lib/utils/export';
 import { useAppStore } from '@/lib/stores/useAppStore';
+import { useAccounts } from '@/modules/accounts/hooks/useAccounts';
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
 
 const statusColors: Record<string, string> = { DRAFT: 'neutral', APPROVED: 'info', ACTIVE: 'success', CLOSED: 'warning' };
 const statusLabels: Record<string, string> = { DRAFT: 'Borrador', APPROVED: 'Aprobado', ACTIVE: 'Activo', CLOSED: 'Cerrado' };
 
 export function BudgetsView() {
-  const { budgets = [], isLoading: loading, createBudget, updateBudget, deleteBudget, isCreating, isUpdating, isDeleting } = useBudgets() as any;
+  const { budgets = [], isLoading, createBudget, updateBudget, deleteBudget, isCreating, isUpdating, isDeleting } = useBudgets() as any;
   const currentCompany = useAppStore(s => s.currentCompany);
   const [selected, setSelected] = useState<any | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const { accounts = [] } = useAccounts() as any;
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: '', description: '', totalBudgeted: 0 });
+  const [formData, setFormData] = useState({ 
+    accountId: '', 
+    year: new Date().getFullYear(), 
+    month: new Date().getMonth() + 1, 
+    budgetedAmount: 0, 
+    description: '' 
+  });
+
+  const groupedBudgets = useMemo(() => {
+    if (!budgets.length) return [];
+    
+    const map = new Map<string, any>();
+    
+    budgets.forEach((b: any) => {
+      const periodName = b.month === 0 ? `Anual ${b.year}` : `${b.year}-${String(b.month).padStart(2, '0')}`;
+      const groupKey = b.description || periodName;
+      
+      if (!map.has(groupKey)) {
+        map.set(groupKey, {
+          id: groupKey,
+          name: groupKey,
+          description: b.description || `Presupuesto para ${periodName}`,
+          status: 'ACTIVE',
+          totalBudgeted: 0,
+          totalActual: 0,
+          lines: []
+        });
+      }
+      
+      const group = map.get(groupKey);
+      group.totalBudgeted += Number(b.budgetedAmount || 0);
+      group.totalActual += Number(b.actualAmount || 0);
+      group.lines.push(b);
+    });
+    
+    return Array.from(map.values());
+  }, [budgets]);
 
   const handleExport = async () => {
     if (!budget) return;
@@ -40,9 +79,19 @@ export function BudgetsView() {
     }
   };
 
-  if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
+  const [loading, setLoading] = useState(true);
 
-  const budget = selected || budgets[0];
+  useEffect(() => {
+    if (!isLoading) {
+      const timer = setTimeout(() => setLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
+
+
+  const budget = selected || groupedBudgets[0];
+
+  if (loading) return <GaneshaLoader variant="compact" message="Sincronizando Presupuestos..." />;
 
 
 
@@ -65,13 +114,20 @@ export function BudgetsView() {
   }
 
   function handleSave() {
-    if (!formData.name) { toast.error('Ingresa un nombre'); return; }
+    if (!formData.accountId) { toast.error('Selecciona una cuenta contable'); return; }
+    if (formData.budgetedAmount <= 0) { toast.error('El monto debe ser mayor a 0'); return; }
+    
+    const payload = {
+      ...formData,
+      companyId: currentCompany?.id
+    };
+
     if (isEditing && selected) {
-      updateBudget({ id: selected.id, data: formData }, {
+      updateBudget({ id: selected.id, data: payload }, {
         onSuccess: () => setShowModal(false)
       });
     } else {
-      createBudget(formData, {
+      createBudget(payload, {
         onSuccess: () => setShowModal(false)
       });
     }
@@ -91,7 +147,7 @@ export function BudgetsView() {
     return (
       <AnimatePresence>
         {showModal && (
-          <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-[1px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <motion.div className="bg-card w-full max-w-md rounded-2xl shadow-2xl border border-vintage-200" initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}>
               <div className="p-6 border-b border-vintage-100 flex items-center justify-between">
                 <h3 className="text-lg font-playfair font-bold text-vintage-800">{isEditing ? 'Editar Presupuesto' : 'Nuevo Presupuesto'}</h3>
@@ -99,16 +155,36 @@ export function BudgetsView() {
               </div>
               <div className="p-6 space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-vintage-600 ml-1">Nombre</label>
-                  <input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400" />
+                  <label className="text-xs font-semibold text-vintage-600 ml-1">Cuenta Contable</label>
+                  <select value={formData.accountId} onChange={e => setFormData({ ...formData, accountId: e.target.value })} className="w-full px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400">
+                    <option value="">Selecciona una cuenta</option>
+                    {accounts.filter((a: any) => !a.isGroup).map((a: any) => (
+                      <option key={a.id} value={a.id}>{a.code} - {a.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-vintage-600 ml-1">Año</label>
+                    <input type="number" value={formData.year} onChange={e => setFormData({ ...formData, year: parseInt(e.target.value) || new Date().getFullYear() })} className="w-full px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-vintage-600 ml-1">Mes</label>
+                    <select value={formData.month} onChange={e => setFormData({ ...formData, month: parseInt(e.target.value) })} className="w-full px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400">
+                      <option value={0}>Anual</option>
+                      {[...Array(12)].map((_, i) => (
+                        <option key={i+1} value={i+1}>Mes {i+1}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-vintage-600 ml-1">Monto Total (NIO)</label>
-                  <input type="number" value={formData.totalBudgeted} onChange={e => setFormData({ ...formData, totalBudgeted: parseFloat(e.target.value) })} className="w-full px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400" />
+                  <label className="text-xs font-semibold text-vintage-600 ml-1">Monto Presupuestado (NIO)</label>
+                  <input type="number" value={formData.budgetedAmount || ''} onChange={e => setFormData({ ...formData, budgetedAmount: e.target.value === '' ? 0 : parseFloat(e.target.value) })} className="w-full px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-vintage-400" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-vintage-600 ml-1">Descripción</label>
-                  <textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl min-h-[100px] focus:outline-none focus:ring-2 focus:ring-vintage-400" />
+                  <textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full px-3 py-2.5 text-sm bg-card border border-vintage-200 rounded-xl min-h-[80px] focus:outline-none focus:ring-2 focus:ring-vintage-400" />
                 </div>
               </div>
               <div className="p-6 bg-vintage-50/50 flex justify-end gap-3 rounded-b-2xl">
@@ -139,7 +215,13 @@ export function BudgetsView() {
           </PastelButton>
           <PastelButton variant="outline" size="sm" onClick={() => {
             if (!budget) return;
-            setFormData({ name: budget.name, description: budget.description || '', totalBudgeted: budget.totalBudgeted });
+            setFormData({ 
+              accountId: budget.lines?.[0]?.accountId || '', 
+              description: budget.description || '', 
+              budgetedAmount: budget.totalBudgeted,
+              year: budget.lines?.[0]?.year || new Date().getFullYear(),
+              month: budget.lines?.[0]?.month || 0
+            });
             setIsEditing(true);
             setShowModal(true);
           }}>
@@ -151,7 +233,7 @@ export function BudgetsView() {
             Eliminar
           </PastelButton>
           <PastelButton onClick={() => {
-            setFormData({ name: '', description: '', totalBudgeted: 0 });
+            setFormData({ accountId: '', year: new Date().getFullYear(), month: new Date().getMonth() + 1, budgetedAmount: 0, description: '' });
             setIsEditing(false);
             setShowModal(true);
           }}>
@@ -162,8 +244,8 @@ export function BudgetsView() {
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-2">
-        {budgets.map(b => (
-          <button key={b.id} onClick={() => setSelected(b)} className={`px-4 py-2 text-sm rounded-xl whitespace-nowrap transition-all ${selected?.id === b.id ? 'bg-vintage-400 text-white shadow-sm' : 'bg-vintage-100 text-vintage-700 hover:bg-vintage-200'}`}>
+        {groupedBudgets.map(b => (
+          <button key={b.id} onClick={() => setSelected(b)} className={`px-4 py-2 text-sm rounded-xl whitespace-nowrap transition-all ${selected?.id === b.id ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'}`}>
             {b.name}
           </button>
         ))}

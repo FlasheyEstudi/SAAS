@@ -13,6 +13,7 @@ import { formatCurrency } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 import { useAccounts } from '../hooks/useAccounts';
 import { useAppStore } from '@/lib/stores/useAppStore';
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
 
 interface Account {
   id: string; code: string; name: string; accountType: 'ASSET' | 'LIABILITY' | 'EQUITY' | 'INCOME' | 'EXPENSE';
@@ -61,12 +62,30 @@ function AccountRow({ account, expanded, onToggle, onEdit, onDelete, level }: { 
 }
 
 export function AccountsView() {
-  const { accounts, isLoading: loading, createAccount, updateAccount, deleteAccount, isCreating, isUpdating, isDeleting } = useAccounts();
+  const { accounts, isLoading: hookLoading, createAccount, updateAccount, deleteAccount, isCreating, isUpdating, isDeleting } = useAccounts();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!hookLoading) {
+      const timer = setTimeout(() => setLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [hookLoading]);
+
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['1', '2', '3', '4', '5']));
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState({
+    code: '',
+    name: '',
+    accountType: 'ASSET' as 'ASSET' | 'LIABILITY' | 'EQUITY' | 'INCOME' | 'EXPENSE',
+    nature: 'DEBIT' as 'DEBIT' | 'CREDIT',
+    isGroup: false,
+    parentId: ''
+  });
 
   const flattenAccounts = (list: any[]): any[] => {
     let result: any[] = [];
@@ -97,14 +116,8 @@ export function AccountsView() {
     }
   };
 
-  const [formData, setFormData] = useState({
-    code: '',
-    name: '',
-    accountType: 'ASSET' as 'ASSET' | 'LIABILITY' | 'EQUITY' | 'INCOME' | 'EXPENSE',
-    nature: 'DEBIT' as 'DEBIT' | 'CREDIT',
-    isGroup: false,
-    parentId: ''
-  });
+  if (loading) return <GaneshaLoader variant="compact" message="Sincronizando Plan de Cuentas..." />;
+
 
   const toggle = (id: string) => setExpanded(prev => {
     const n = new Set(prev);
@@ -199,7 +212,7 @@ export function AccountsView() {
 
       <AnimatePresence>
         {showModal && (
-          <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-[1px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <motion.div className="bg-card w-full max-w-lg rounded-2xl shadow-2xl border border-vintage-200 overflow-hidden" initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}>
               <div className="p-6 border-b border-vintage-100 flex items-center justify-between">
                 <h3 className="text-xl font-playfair font-bold text-vintage-800">{editing ? 'Editar' : 'Nueva'} Cuenta Contable</h3>

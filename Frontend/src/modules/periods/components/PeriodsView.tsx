@@ -152,24 +152,28 @@ export function PeriodsView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-vintage-100">
-              {(periods || []).map((p: any) => (
-                <tr key={p.id} className="hover:bg-vintage-50 transition-colors">
-                  <td className="px-4 py-3 text-sm font-medium text-vintage-800">{p.name}</td>
-                  <td className="px-4 py-3 text-xs text-vintage-600">{formatDate(p.startDate)}</td>
-                  <td className="px-4 py-3 text-xs text-vintage-600">{formatDate(p.endDate)}</td>
-                  <td className="px-4 py-3 text-sm text-vintage-700 text-center">{p.entryCount || 0}</td>
-                  <td className="px-4 py-3 text-center">
-                    <StatusBadge status={p.status === 'OPEN' ? 'success' : 'neutral'} label={p.status === 'OPEN' ? 'Abierto' : 'Cerrado'} />
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {p.status === 'OPEN' ? (
-                      <PastelButton variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setConfirmAction({ id: p.id, action: 'close' }); }}>Cerrar</PastelButton>
-                    ) : (
-                      <PastelButton variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setConfirmAction({ id: p.id, action: 'reopen' }); }}>Reabrir</PastelButton>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {(periods || []).map((p: any) => {
+                const startDate = new Date(p.year, p.month - 1, 1).toISOString();
+                const endDate = new Date(p.year, p.month, 0).toISOString();
+                return (
+                  <tr key={p.id} className="hover:bg-vintage-50 transition-colors">
+                    <td className="px-4 py-3 text-sm font-medium text-vintage-800">{months[p.month - 1]} {p.year}</td>
+                    <td className="px-4 py-3 text-xs text-vintage-600">{formatDate(startDate)}</td>
+                    <td className="px-4 py-3 text-xs text-vintage-600">{formatDate(endDate)}</td>
+                    <td className="px-4 py-3 text-sm text-vintage-700 text-center">{p.entryCount || 0}</td>
+                    <td className="px-4 py-3 text-center">
+                      <StatusBadge status={p.status === 'OPEN' ? 'success' : 'neutral'} label={p.status === 'OPEN' ? 'Abierto' : 'Cerrado'} />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {p.status === 'OPEN' ? (
+                        <PastelButton variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setConfirmAction({ id: p.id, action: 'close' }); }}>Cerrar</PastelButton>
+                      ) : (
+                        <PastelButton variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setConfirmAction({ id: p.id, action: 'reopen' }); }}>Reabrir</PastelButton>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

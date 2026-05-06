@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   AreaChart,
@@ -41,7 +41,9 @@ import { useAppStore } from '@/lib/stores/useAppStore';
 import { useDashboard } from '../hooks/useDashboard';
 import { VintageCard } from '@/components/ui/vintage-card';
 import { PastelButton } from '@/components/ui/pastel-button';
-import { AnimatedCounter, PageLoader, StatusBadge, VintageTabs } from '@/components/ui/vintage-ui';
+import { AnimatedCounter, StatusBadge, VintageTabs } from '@/components/ui/vintage-ui';
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
+
 import { formatCurrency, formatCompactNumber, formatDate, getStatusColor, getStatusLabel } from '@/lib/utils/format';
 
 // ─── Animation Variants ────────────────────────────────────────────
@@ -338,12 +340,21 @@ export function DashboardView() {
   const companyId = useAppStore((s) => s.companyId);
   const currentCompany = useAppStore((s) => s.currentCompany);
   const availableCompanies = useAppStore((s) => s.availableCompanies);
+  const [loading, setLoading] = useState(true);
 
   const hasBranches = availableCompanies.length > 1;
 
   const [activeTab, setActiveTab] = useState('polizas');
 
+  useEffect(() => {
+    if (!isLoading) {
+      const timer = setTimeout(() => setLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
+
   if (!companyId) {
+
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center px-4">
         <div className="w-20 h-20 rounded-full bg-vintage-100 flex items-center justify-center">
@@ -362,8 +373,8 @@ export function DashboardView() {
     );
   }
 
-  if (isLoading) {
-    return <PageLoader text="Cargando panel de control..." />;
+  if (loading) {
+    return <GaneshaLoader variant="compact" message="Sincronizando Dashboard..." />;
   }
 
   if (error || !data) {

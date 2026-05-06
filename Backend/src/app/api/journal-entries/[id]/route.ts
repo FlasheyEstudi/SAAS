@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { success, error, notFound, serverError } from '@/lib/api-helpers';
+import { success, error, notFound, serverError, validatePeriodOpen } from '@/lib/api-helpers';
 
 // ============================================================
 // GET /api/journal-entries/[id] — Obtener póliza con todas sus partidas
@@ -49,16 +49,18 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { description, entryDate, entryType } = body as {
+    const { description, entryDate, entryType, lines, periodId } = body as {
       description?: string;
       entryDate?: string;
       entryType?: string;
+      periodId?: string;
+      lines?: any[];
     };
 
     // Verificar que la póliza existe
     const existing = await db.journalEntry.findUnique({
       where: { id },
-      select: { id: true, status: true },
+      select: { id: true, status: true, periodId: true },
     });
 
     if (!existing) return notFound('Póliza no encontrada');
@@ -66,30 +68,67 @@ export async function PUT(
       return error('No se puede modificar una póliza que ya está publicada (POSTED). Solo se pueden editar pólizas en estado BORRADOR (DRAFT).');
     }
 
-    // Validar entryType si se proporciona
-    if (entryType && !['DIARIO', 'EGRESO', 'INGRESO', 'TRASPASO'].includes(entryType)) {
-      return error('entryType debe ser DIARIO, EGRESO, INGRESO o TRASPASO.');
+    // Sincronización con el Período Contable
+    const periodValidation = await validatePeriodOpen(existing.periodId);
+    if (!periodValidation.valid) {
+      return error(periodValidation.error || 'El periodo contable no está abierto para modificaciones');
     }
 
-    // Construir datos de actualización
-    const updateData: Record<string, unknown> = {};
-    if (description !== undefined) updateData.description = description.trim();
-    if (entryDate !== undefined) updateData.entryDate = new Date(entryDate + 'T12:00:00.000Z');
-    if (entryType !== undefined) updateData.entryType = entryType;
+    // Calcular nuevos totales si hay líneas
+    let totalDebit = undefined;
+    let totalCredit = undefined;
+    if (lines && Array.isArray(lines)) {
+      totalDebit = lines.reduce((sum, l) => sum + Number(l.debit || 0), 0);
+      totalCredit = lines.reduce((sum, l) => sum + Number(l.credit || 0), 0);
+    }
 
-    const updated = await db.journalEntry.update({
-      where: { id },
-      data: updateData,
-      include: {
-        lines: {
-          include: {
-            account: { select: { id: true, code: true, name: true } },
-            costCenter: { select: { id: true, code: true, name: true } },
+    // Realizar actualización en transacción
+    const updated = await db.$transaction(async (tx) => {
+      // 1. Si hay nuevas líneas, borrar las anteriores y crear las nuevas
+      if (lines && Array.isArray(lines)) {
+        await tx.journalEntryLine.deleteMany({ where: { journalEntryId: id } });
+        await tx.journalEntry.update({
+          where: { id },
+          data: {
+            lines: {
+              create: lines.map((l) => ({
+                accountId: l.accountId,
+                costCenterId: l.costCenterId || null,
+                description: l.description || '',
+                debit: Number(l.debit || 0),
+                credit: Number(l.credit || 0),
+              })),
+            },
           },
-          orderBy: { createdAt: 'asc' },
+        });
+      }
+
+      // 2. Actualizar cabecera
+      const updateData: any = {};
+      if (description !== undefined) updateData.description = description.trim();
+      if (entryDate !== undefined) updateData.entryDate = new Date(entryDate);
+      if (entryType !== undefined) updateData.entryType = entryType;
+      if (periodId !== undefined) updateData.periodId = periodId;
+      if (totalDebit !== undefined) updateData.totalDebit = totalDebit;
+      if (totalCredit !== undefined) updateData.totalCredit = totalCredit;
+      if (totalDebit !== undefined && totalCredit !== undefined) {
+        updateData.difference = Math.abs(totalDebit - totalCredit);
+      }
+
+      return tx.journalEntry.update({
+        where: { id },
+        data: updateData,
+        include: {
+          lines: {
+            include: {
+              account: { select: { id: true, code: true, name: true } },
+              costCenter: { select: { id: true, code: true, name: true } },
+            },
+            orderBy: { createdAt: 'asc' },
+          },
+          period: { select: { id: true, year: true, month: true, status: true } },
         },
-        period: { select: { id: true, year: true, month: true, status: true } },
-      },
+      });
     });
 
     return success(updated);

@@ -4,13 +4,17 @@ import type { NextRequest } from 'next/server';
 const allowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
-  'http://172.16.27.22:3000',
-  'http://172.16.27.216:3000',
 ];
 
 export function middleware(request: NextRequest) {
   const origin = request.headers.get('origin') || '';
-  const isAllowed = allowedOrigins.includes(origin) || origin.startsWith('http://172.16.');
+  
+  // Permitir cualquier origen local (localhost, 127.0.0.1, 192.168.x, 10.x, 172.x)
+  const isAllowed = 
+    allowedOrigins.includes(origin) || 
+    origin.startsWith('http://192.168.') || 
+    origin.startsWith('http://10.') || 
+    origin.startsWith('http://172.');
 
   // 1. Manejo de Preflight (OPTIONS)
   if (request.method === 'OPTIONS') {

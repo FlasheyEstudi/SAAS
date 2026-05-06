@@ -20,7 +20,11 @@ import {
   Calculator,
   GanttChartSquare,
   Network,
-  X
+  X,
+  HelpCircle,
+  Code2,
+  Terminal,
+  BookMarked
 } from 'lucide-react';
 import { useAppStore, type AppView } from '@/lib/stores/useAppStore';
 import { cn } from '@/lib/utils';
@@ -36,33 +40,38 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   // Principal
-  { title: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" />, view: 'dashboard', category: 'General' },
+  { title: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" />, view: 'dashboard', category: 'General' },
   
   // Contabilidad
-  { title: 'Pólizas', icon: <FileSpreadsheet className="w-5 h-5" />, view: 'journal', category: 'Contabilidad' },
-  { title: 'Catálogo de Cuentas', icon: <BookOpen className="w-5 h-5" />, view: 'accounts', category: 'Contabilidad' },
-  { title: 'Periodos Fiscales', icon: <Calculator className="w-5 h-5" />, view: 'periods', category: 'Contabilidad' },
-  { title: 'Centros de Costo', icon: <Network className="w-5 h-5" />, view: 'cost-centers', category: 'Contabilidad' },
+  { title: 'Pólizas', icon: <FileSpreadsheet className="w-4 h-4" />, view: 'journal', category: 'Contabilidad' },
+  { title: 'Catálogo de Cuentas', icon: <BookOpen className="w-4 h-4" />, view: 'accounts', category: 'Contabilidad' },
+  { title: 'Periodos Fiscales', icon: <Calculator className="w-4 h-4" />, view: 'periods', category: 'Contabilidad' },
+  { title: 'Centros de Costo', icon: <Network className="w-4 h-4" />, view: 'cost-centers', category: 'Contabilidad' },
   
   // Facturación
-  { title: 'Facturas', icon: <FileText className="w-5 h-5" />, view: 'invoices', category: 'Tesorería' },
-  { title: 'Terceros / Clientes', icon: <Users className="w-5 h-5" />, view: 'third-parties', category: 'Tesorería' },
-  { title: 'Bancos / Cuentas', icon: <CreditCard className="w-5 h-5" />, view: 'banks', category: 'Tesorería' },
+  { title: 'Facturas', icon: <FileText className="w-4 h-4" />, view: 'invoices', category: 'Tesorería' },
+  { title: 'Terceros / Clientes', icon: <Users className="w-4 h-4" />, view: 'third-parties', category: 'Tesorería' },
+  { title: 'Bancos / Cuentas', icon: <CreditCard className="w-4 h-4" />, view: 'banks', category: 'Tesorería' },
   
   // Avanzado
-  { title: 'Activos Fijos', icon: <FileBox className="w-5 h-5" />, view: 'assets', category: 'Avanzado' },
-  { title: 'Presupuestos', icon: <GanttChartSquare className="w-5 h-5" />, view: 'budgets', category: 'Avanzado' },
-  { title: 'Tipo de Cambio', icon: <Globe className="w-5 h-5" />, view: 'exchange', category: 'Avanzado' },
+  { title: 'Activos Fijos', icon: <FileBox className="w-4 h-4" />, view: 'assets', category: 'Avanzado' },
+  { title: 'Presupuestos', icon: <GanttChartSquare className="w-4 h-4" />, view: 'budgets', category: 'Avanzado' },
+  { title: 'Tipo de Cambio', icon: <Globe className="w-4 h-4" />, view: 'exchange', category: 'Avanzado' },
   
   // Reportes
-  { title: 'Reportes', icon: <BarChart3 className="w-5 h-5" />, view: 'reports', category: 'Reportes' },
-  { title: 'Impuestos', icon: <Briefcase className="w-5 h-5" />, view: 'taxes', category: 'Reportes' },
+  { title: 'Reportes', icon: <BarChart3 className="w-4 h-4" />, view: 'reports', category: 'Reportes' },
+  { title: 'Impuestos', icon: <Briefcase className="w-4 h-4" />, view: 'taxes', category: 'Reportes' },
   
   // Sistema
-  { title: 'Usuarios', icon: <Users className="w-5 h-5" />, view: 'users', category: 'Sistema' },
-  { title: 'Auditoría', icon: <ShieldCheck className="w-5 h-5" />, view: 'audit', category: 'Sistema' },
-  { title: 'Gestión de Datos', icon: <Database className="w-5 h-5" />, view: 'data-management', category: 'Sistema' },
-  { title: 'Configuración', icon: <Settings className="w-5 h-5" />, view: 'system', category: 'Sistema' },
+  { title: 'Usuarios', icon: <Users className="w-4 h-4" />, view: 'users', category: 'Sistema' },
+  { title: 'Auditoría', icon: <ShieldCheck className="w-4 h-4" />, view: 'audit', category: 'Sistema' },
+  { title: 'Gestión de Datos', icon: <Database className="w-4 h-4" />, view: 'data-management', category: 'Sistema' },
+  { title: 'Configuración', icon: <Settings className="w-4 h-4" />, view: 'system', category: 'Sistema' },
+
+  // Soporte & Docs
+  { title: 'Documentación', icon: <BookMarked className="w-4 h-4" />, view: 'support', category: 'Soporte' },
+  { title: 'API Reference', icon: <Terminal className="w-4 h-4" />, view: 'support', category: 'Soporte' },
+  { title: 'Manual Maestro', icon: <HelpCircle className="w-4 h-4" />, view: 'support', category: 'Soporte' },
 ];
 
 export function Sidebar() {
@@ -99,160 +108,118 @@ export function Sidebar() {
   // Group items by category
   const categories = Array.from(new Set(filteredMenuItems.map(item => item.category)));
 
-  const sidebarContent = (
-    <>
-      {/* Branding Section */}
-      <div className="h-20 flex items-center justify-between px-4 border-b border-white/10 mb-4 overflow-hidden relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent pointer-events-none" />
-        
-        <div className="flex items-center gap-3 relative z-10">
-          <div className="relative group">
-            <div className="absolute inset-0 bg-amber-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <img 
-              src="/GaneshaLogo.png" 
-              alt="Ganesha Logo"
-              onClick={() => navigate('dashboard')}
-              className="w-12 h-12 object-contain cursor-pointer transition-all duration-500 hover:scale-110 drop-shadow-[0_0_15px_rgba(245,158,11,0.3)] relative z-10"
-            />
-          </div>
-          {(!sidebarCollapsed || sidebarOpen) && (
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex flex-col"
-            >
-               <h2 className="text-lg font-black text-white leading-none tracking-tighter">GANESHA</h2>
-               <span className="text-[9px] font-black text-amber-500 uppercase tracking-[0.3em] mt-1">Intelligence</span>
-            </motion.div>
-          )}
-        </div>
-
-        {/* Close button for mobile */}
-        <button
-          onClick={() => setSidebarOpen(false)}
-          className="lg:hidden p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition-all relative z-10"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Navegación */}
-      <div className="h-[calc(100vh-140px)] overflow-y-auto px-3 py-2 custom-scrollbar">
-        {categories.map((cat) => (
-          <div key={cat} className="mb-4 last:mb-0">
-            {(!sidebarCollapsed || sidebarOpen) && (
-              <p className="px-3 mb-2 text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em]">
-                {cat}
-              </p>
-            )}
-            <div className="space-y-1">
-              {filteredMenuItems
-                .filter(item => item.category === cat)
-                .map((item) => {
-                  const isActive = currentView === item.view || (item.view === 'data-management' && currentView === 'data-mgmt');
-                  return (
-                    <button
-                      key={item.view}
-                      onClick={() => navigate(item.view)}
-                      className={cn(
-                        'w-full flex items-center gap-3 px-3 py-3 lg:py-2.5 rounded-xl transition-all duration-200 group relative text-left',
-                        isActive 
-                          ? 'bg-amber-500/10 text-amber-500 ring-1 ring-amber-500/20 shadow-lg shadow-amber-500/5' 
-                          : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5'
-                      )}
-                    >
-                      <span className={cn(
-                        'transition-transform duration-200 group-hover:scale-110',
-                        isActive ? 'text-amber-500' : 'text-zinc-600'
-                      )}>
-                        {item.icon}
-                      </span>
-                      
-                      {(!sidebarCollapsed || sidebarOpen) && (
-                        <span className="text-[12px] lg:text-[11px] font-bold tracking-wide transition-all truncate">
-                          {item.title}
-                        </span>
-                      )}
-
-                      {isActive && (
-                        <motion.div 
-                          layoutId="active-indicator"
-                          className="absolute left-0 w-1 h-5 bg-amber-500 rounded-r-full"
-                        />
-                      )}
-                    </button>
-                  );
-                })}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* IA Assistant */}
-      <div className="absolute bottom-4 left-0 w-full px-4">
-        <button 
-          onClick={() => navigate('ai-chat')}
-          className={cn(
-            "w-full flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 border border-amber-400/50 hover:scale-[1.02] active:scale-95 transition-all group overflow-hidden relative shadow-lg shadow-amber-500/20",
-            sidebarCollapsed && !sidebarOpen && "justify-center"
-          )}
-        >
-          <Zap className="w-5 h-5 text-black animate-pulse" />
-          {(!sidebarCollapsed || sidebarOpen) && (
-            <div className="flex flex-col items-start leading-none">
-               <span className="text-[11px] font-black text-black uppercase tracking-wider">IA Ganesha</span>
-               <span className="text-[8px] text-black/60 font-black uppercase tracking-widest mt-1">Asesor Activo</span>
-            </div>
-          )}
-          <div className="absolute top-[-100%] left-[-100%] w-[300%] h-[300%] bg-white/20 rotate-45 translate-x-[-50%] group-hover:translate-x-[50%] transition-transform duration-1000 pointer-events-none" />
-        </button>
-      </div>
-    </>
-  );
-
   return (
     <>
-      {/* MOBILE OVERLAY BACKDROP */}
+      {/* Mobile backdrop */}
       <AnimatePresence>
         {sidebarOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[55] lg:hidden"
             onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[110] lg:hidden"
           />
         )}
       </AnimatePresence>
 
-      {/* MOBILE SIDEBAR (drawer) */}
+      {/* Sidebar container */}
       <aside
         className={cn(
-          'fixed left-0 top-0 h-screen z-[60] transition-transform duration-300 border-r border-white/5 w-[280px] bg-sidebar lg:hidden',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          "fixed top-0 left-0 z-[120] h-full bg-background border-r border-border transition-all duration-300 ease-in-out",
+          sidebarCollapsed ? "w-[70px]" : "w-[260px]",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        {sidebarContent}
-      </aside>
+        {/* Header/Logo */}
+        <div className="h-[65px] flex items-center px-5 border-b border-border/50">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+               <img src="/GaneshaLogo.png" className="w-5 h-5 object-contain" alt="Logo" />
+            </div>
+            {!sidebarCollapsed && (
+              <motion.span
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="font-black tracking-tighter uppercase text-sm truncate"
+              >
+                Ganesha<span className="text-primary">.</span>
+              </motion.span>
+            )}
+          </div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden ml-auto p-1.5 text-zinc-500 hover:text-white"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-      {/* DESKTOP SIDEBAR (persistent) */}
-      <aside
-        className={cn(
-          'fixed left-0 top-0 h-screen z-50 transition-all duration-300 border-r border-white/5 hidden lg:block',
-          sidebarCollapsed ? 'w-[70px]' : 'w-[260px]',
-          'bg-sidebar'
-        )}
-      >
-        {sidebarContent}
+        {/* Menu Items */}
+        <div className="h-[calc(100%-140px)] overflow-y-auto overflow-x-hidden p-3 custom-scrollbar">
+          {categories.map((cat) => (
+            <div key={cat} className="mb-6 last:mb-0">
+              {!sidebarCollapsed && cat && (
+                <p className="px-3 mb-2 text-[9px] font-black text-zinc-500 uppercase tracking-[0.3em] opacity-60">
+                  {cat}
+                </p>
+              )}
+              <div className="space-y-1">
+                {filteredMenuItems
+                  .filter((item) => item.category === cat)
+                  .map((item) => (
+                    <button
+                      key={item.title}
+                      onClick={() => {
+                        navigate(item.view);
+                        if (window.innerWidth < 1024) setSidebarOpen(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all group relative",
+                        currentView === item.view
+                          ? "bg-primary/10 text-primary"
+                          : "text-zinc-500 hover:text-foreground hover:bg-zinc-800/50"
+                      )}
+                      title={sidebarCollapsed ? item.title : undefined}
+                    >
+                      <div className={cn(
+                        "flex-shrink-0 transition-transform group-hover:scale-110",
+                        currentView === item.view ? "text-primary" : "text-zinc-500 group-hover:text-primary"
+                      )}>
+                        {item.icon}
+                      </div>
+                      {!sidebarCollapsed && (
+                        <span className="text-[12px] font-bold tracking-tight truncate">
+                          {item.title}
+                        </span>
+                      )}
+                      {currentView === item.view && (
+                        <motion.div
+                          layoutId="active-indicator"
+                          className="absolute left-0 w-1 h-4 bg-primary rounded-r-full"
+                        />
+                      )}
+                    </button>
+                  ))}
+              </div>
+            </div>
+          ))}
+        </div>
 
-        {/* Collapse Toggle (desktop only) */}
-        <button
-          onClick={toggleSidebar}
-          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-500 hover:text-white hover:border-amber-500/50 transition-all shadow-xl z-50"
-        >
-          {sidebarCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
-        </button>
+        {/* Footer/Toggle */}
+        <div className="absolute bottom-0 left-0 w-full p-3 border-t border-border/50 bg-background/80 backdrop-blur-md">
+          <button
+            onClick={toggleSidebar}
+            className="w-full flex items-center justify-center p-2 rounded-xl border border-border/50 text-zinc-500 hover:text-white hover:bg-zinc-800 transition-all"
+          >
+            {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : (
+              <div className="flex items-center gap-2">
+                <ChevronLeft className="w-4 h-4" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Colapsar</span>
+              </div>
+            )}
+          </button>
+        </div>
       </aside>
     </>
   );

@@ -24,12 +24,20 @@ export async function POST(request: NextRequest) {
       await tx.fixedAsset.deleteMany();
       await tx.exchangeRate.deleteMany();
       await tx.auditLog.deleteMany();
+      await tx.userCompany.deleteMany();
       await tx.user.deleteMany();
       await tx.bankMovement.deleteMany();
+      await tx.taxEntry.deleteMany();
+      await tx.paymentSchedule.deleteMany();
+      await tx.invoiceLine.deleteMany();
       await tx.invoice.deleteMany();
-      await tx.journalEntry.deleteMany(); // cascades to JournalEntryLine
+      await tx.journalEntryLine.deleteMany();
+      await tx.journalEntry.deleteMany();
       await tx.bankAccount.deleteMany();
+      await tx.paymentTerm.deleteMany();
+      await tx.taxRate.deleteMany();
       await tx.thirdParty.deleteMany();
+      await tx.financialConcept.deleteMany();
       await tx.costCenter.deleteMany();
       await tx.account.deleteMany();
       await tx.accountingPeriod.deleteMany();
@@ -748,6 +756,7 @@ export async function POST(request: NextRequest) {
         { email: 'admin@alpha.com.ni', name: 'Carlos Mendoza', role: 'ADMIN' as const, password: 'Admin123!' },
         { email: 'contador@alpha.com.ni', name: 'María García', role: 'ACCOUNTANT' as const, password: 'Contador123!' },
         { email: 'gerente@alpha.com.ni', name: 'Roberto López', role: 'MANAGER' as const, password: 'Gerente123!' },
+        { email: 'admin@ganesha.com', name: 'Administrador Ganesha', role: 'ADMIN' as const, password: 'Admin123!' },
       ];
 
       const createdUsers: any[] = [];

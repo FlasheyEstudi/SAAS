@@ -5,19 +5,23 @@ import { apiClient } from '@/lib/api/client';
 import { THIRD_PARTIES } from '@/lib/api/endpoints';
 import type { ThirdParty } from '@/lib/api/types';
 import { toast } from 'sonner';
+import { useAppStore } from '@/lib/stores/useAppStore';
 
 export function useThirdParties() {
   const queryClient = useQueryClient();
+  const currentCompany = useAppStore(s => s.currentCompany);
+  const companyId = currentCompany?.id;
 
-  const { data, isLoading, error, refetch } = useQuery<{ thirdParties: ThirdParty[] }>({
-    queryKey: ['third-parties', 'list'],
-    queryFn: () => apiClient.get<{ thirdParties: ThirdParty[] }>(THIRD_PARTIES.list),
+  const { data, isLoading, error, refetch } = useQuery<any>({
+    queryKey: ['third-parties', 'list', companyId],
+    queryFn: () => apiClient.get<any>(`${THIRD_PARTIES.list}?companyId=${companyId || ''}`),
     retry: false,
+    enabled: !!companyId,
   });
 
   const createMutation = useMutation({
     mutationFn: (newParty: Partial<ThirdParty>) => 
-      apiClient.post(THIRD_PARTIES.create, newParty),
+      apiClient.post(THIRD_PARTIES.create, { ...newParty, companyId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['third-parties'] });
       toast.success('Tercero creado correctamente');
@@ -44,8 +48,13 @@ export function useThirdParties() {
     onError: (err: any) => toast.error(err.error || 'Error al eliminar tercero'),
   });
 
+  // Extract parties safely
+  const parties = Array.isArray(data?.data?.data) 
+    ? data.data.data 
+    : (Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : (data as any)?.thirdParties || []));
+
   return {
-    parties: Array.isArray(data) ? data : data?.thirdParties || [],
+    parties: parties as ThirdParty[],
     isLoading,
     error: error ? (error as any).error || 'Error fetching third parties' : null,
     refetch,

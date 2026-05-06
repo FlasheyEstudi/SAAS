@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
     if (!user) return error('Credenciales inválidas');
 
-    // 3. Verificar contraseña (usando passwordHash del nuevo esquema)
+    // 3. Verificar contraseña
     let passwordMatches = false;
     try {
       passwordMatches = await bcrypt.compare(password, (user as any).passwordHash);
@@ -41,35 +41,17 @@ export async function POST(request: Request) {
       passwordMatches = false;
     }
 
-    // Compatibilidad legacy si fuera necesario (Base64)
     if (!passwordMatches) {
-      const base64Password = Buffer.from(password).toString('base64');
-      if ((user as any).passwordHash === base64Password || (email === 'admin@alpha.com.ni' && password === 'Admin123!')) {
-        passwordMatches = true;
-        
-        // AUTO-HEAL: Migrar a Bcrypt
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-        await db.user.update({
-          where: { id: user.id },
-          data: { passwordHash: hashedPassword } as any
-        });
-      }
-    }
-
-    if (!passwordMatches) {
-
       return error('Credenciales inválidas');
     }
 
-    // 4. Actualizar auditoría básica y último login
-    await db.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
-
-
-    const token = Buffer.from(`${user.id}:${Date.now()}:${process.env.NEXTAUTH_SECRET}`).toString('base64');
+    // 4. Generar Token Seguro (HMAC SHA256)
+    // Usamos crypto para firmar el token y evitar suplantación
+    const crypto = await import('crypto');
+    const secret = process.env.NEXTAUTH_SECRET || 'ganesha_super_secret_123';
+    const payload = JSON.stringify({ userId: user.id, exp: Date.now() + (1000 * 60 * 60 * 24 * 7) }); // 7 días
+    const signature = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+    const token = Buffer.from(`${payload}.${signature}`).toString('base64');
 
     // 5. Send cookie (100/100 Hardening)
     const response = success({

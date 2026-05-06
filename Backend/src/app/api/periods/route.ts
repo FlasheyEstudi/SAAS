@@ -28,7 +28,7 @@ export async function GET(request: Request) {
       }
     }
     if (status) {
-      where.status = status;
+      where.status = status as any;
     }
 
     const [periods, total] = await Promise.all([
@@ -44,12 +44,9 @@ export async function GET(request: Request) {
             },
           },
         },
-        orderBy: {
-          // Default sort: year desc, month desc when sortBy is createdAt
-          ...(sortBy === 'createdAt' || sortBy === 'updatedAt'
+        orderBy: (sortBy === 'createdAt' || sortBy === 'updatedAt')
             ? { [sortBy]: sortOrder }
-            : { year: sortOrder as 'asc' | 'desc', month: sortOrder as 'asc' | 'desc' }),
-        },
+            : [{ year: sortOrder as 'asc' | 'desc' }, { month: sortOrder as 'asc' | 'desc' }],
         skip: (page - 1) * limit,
         take: limit,
       }),

@@ -1,7 +1,8 @@
 import { db } from '@/lib/db';
-import { success, created, error, parsePagination, serverError } from '@/lib/api-helpers';
+import { success, created, error, parsePagination, serverError, validateAuth } from '@/lib/api-helpers';
 import type { PaginatedResponse } from '@/lib/api-helpers';
 import { Prisma } from '@prisma/client';
+import { logAudit } from '@/lib/audit-service';
 
 // ============================================================
 // Validaciones de tipo y naturaleza contable
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
     const where: Prisma.AccountWhereInput = { companyId };
 
     if (accountType && VALID_ACCOUNT_TYPES.includes(accountType as any)) {
-      where.accountType = accountType;
+      where.accountType = accountType as any;
     }
 
     if (isActiveParam !== null && isActiveParam !== '') {
@@ -117,6 +118,7 @@ export async function GET(request: Request) {
 // ============================================================
 export async function POST(request: Request) {
   try {
+    const user = await validateAuth(request);
     const body = await request.json();
     const { companyId, code, name, accountType, nature, parentId, description } = body;
 
@@ -211,6 +213,17 @@ export async function POST(request: Request) {
           },
         },
       },
+    });
+
+    // Audit Log
+    await logAudit({
+      companyId,
+      userId: user?.id || null,
+      action: 'CREATE',
+      entityType: 'ACCOUNT',
+      entityId: account.id,
+      entityLabel: `${account.code} - ${account.name}`,
+      newValues: account,
     });
 
     return created(account);

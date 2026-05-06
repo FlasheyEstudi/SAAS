@@ -32,10 +32,10 @@ export async function GET(request: Request) {
       const month = entry.entryDate.getMonth() + 1;
       for (const line of entry.lines) {
         if (line.account.accountType === 'EXPENSE') {
-          const category = line.account.code.substring(0, 5);
+          // Usamos el nombre completo de la cuenta para diversificar la gráfica
           const categoryName = line.account.name;
           if (!monthlyData[month][categoryName]) monthlyData[month][categoryName] = 0;
-          monthlyData[month][categoryName] += line.debit - line.credit;
+          monthlyData[month][categoryName] += Number(line.debit) - Number(line.credit);
         }
       }
     }

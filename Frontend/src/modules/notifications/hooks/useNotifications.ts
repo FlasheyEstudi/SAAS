@@ -13,7 +13,7 @@ export function useNotifications() {
   });
 
   return {
-    notifications: Array.isArray(data) ? data : data?.notifications || [],
+    notifications: Array.isArray(data) ? data : data?.notifications || (data as any)?.data || [],
     isLoading,
     error: error ? (error as any).error || 'Error fetching notifications' : null,
     refetch,

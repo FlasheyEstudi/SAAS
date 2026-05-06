@@ -1,0 +1,1168 @@
+\documentclass[12pt, a4paper, oneside]{book}
+
+% --- Paquetes Requeridos ---
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{tcolorbox}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{tocloft}
+\usepackage{listings}
+\lstset{breaklines=true, basicstyle=\ttfamily\scriptsize, backgroundcolor=\color{brandgray}, keywordstyle=\color{brandorange}, stringstyle=\color{brandwhite}, showstringspaces=false}
+
+% --- Geometría de Página ---
+\geometry{
+    top=2.5cm,
+    bottom=2.5cm,
+    left=3cm,
+    right=2.5cm,
+    headheight=15pt
+}
+
+% --- Colores Oficiales (Modo Oscuro) ---
+\definecolor{brandorange}{HTML}{EA580C} % Naranja corporativo
+\definecolor{brandblack}{HTML}{000000}  % Fondo negro puro
+\definecolor{brandgray}{HTML}{18181B}
+\definecolor{branddark}{HTML}{18181B}   % Gris oscuro para cajas
+\definecolor{brandwhite}{HTML}{FFFFFF}  % Blanco para contrastes
+
+% --- Estilos de Títulos ---
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{brandorange}}
+  {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-20pt}{40pt}
+
+\titleformat{\section}{\color{brandwhite}\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\color{brandwhite}\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+% --- Configuración de Enlaces ---
+\hypersetup{
+    colorlinks=true,
+    linkcolor=brandorange,
+    filecolor=magenta,      
+    urlcolor=brandorange,
+    pdftitle={Manual Completo Ganesha ERP},
+}
+
+% --- Estilo de Página (Cabeceras y Pies) ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\color{branddark} Ganesha ERP v2.5}
+\fancyhead[R]{\color{brandorange} \leftmark}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{brandorange}\leaders\hrule height \headrulewidth\hfill}}
+
+% --- Cajas de Resaltado ---
+\newtcolorbox{notainfo}[1][Nota Importante]{
+  colback=brandgray,
+  colframe=brandorange,
+  coltext=brandorange,  % <-- Letra naranja para el contenido
+  coltitle=brandwhite,  % <-- Letra blanca para el título
+  fonttitle=\bfseries,
+  title=#1,
+  arc=5pt,
+  boxrule=1pt
+}
+
+
+\begin{document}
+
+% Establecer el tema oscuro a nivel global
+\pagecolor{brandblack}
+\color{brandorange}
+
+% =========================================================================
+% PORTADA
+% =========================================================================
+\begin{titlepage}
+    \centering
+    \vspace*{1cm}
+    
+    % --- INSTRUCCIÓN PARA EL LOGO EN OVERLEAF ---
+    % Simplemente sube tu imagen a Overleaf asegurándote de que se llame "logo.png"
+    % El sistema lo reconocerá e imprimirá automáticamente aquí.
+    \includegraphics[width=6cm, keepaspectratio]{logo.png}
+    
+    \vspace{2cm}
+    {\fontsize{40}{50}\selectfont\bfseries\color{brandorange} Ganesha ERP}\\[0.5cm]
+    {\Huge\bfseries\color{branddark} Versión 2.5}\\[1.5cm]
+    
+    {\huge\bfseries Manual del Usuario y}\\[0.5cm]
+    {\huge\bfseries Documentación de Arquitectura}\\[2cm]
+    
+    \begin{tcolorbox}[colback=brandgray,colframe=brandgray,arc=10pt,left=20pt,right=20pt,top=20pt,bottom=20pt]
+        \centering
+        \color{brandwhite}
+        \Large\textbf{La Solución Integral de Contabilidad Bimonetaria y Asesoría Financiera Impulsada por Inteligencia Artificial}
+    \end{tcolorbox}
+    
+    \vfill
+    {\Large \textbf{Elaborado por: FlasheyEstudi}}\\[0.5cm]
+    {\Large \today}
+\end{titlepage}
+
+% El color de fondo y de texto continúan siendo oscuros para el resto del documento
+
+% =========================================================================
+% ÍNDICE
+% =========================================================================
+\tableofcontents
+\newpage
+
+% =========================================================================
+% CAPÍTULO 1: INTRODUCCIÓN
+% =========================================================================
+\chapter{Introducción a Ganesha ERP}
+
+\section{Propósito del Sistema}
+Ganesha ERP nace con la visión de transformar la complejidad de la contabilidad empresarial en un proceso intuitivo, automatizado y estratégico. Diseñado específicamente para el entorno corporativo moderno, el sistema integra más de 20 modelos relacionales robustos que abarcan desde Facturación, Cronogramas de Pago (Payment Schedules) y Presupuestos (Budgets), hasta la conciliación bancaria y la depreciación automática de Activos Fijos.
+
+\section{El Enfoque Bimonetario}
+Una de las características más fuertes de Ganesha ERP es su capacidad nativa para manejar entornos bimonetarios. Toda transacción, ya sea un ingreso, un gasto o una transferencia bancaria, se registra con su equivalente en la moneda principal y secundaria, aplicando las tasas de cambio históricas correspondientes.
+
+\section{¿Para quién es este manual?}
+Este documento exhaustivo está dirigido a:
+\begin{itemize}
+    \item \textbf{Directores Generales (CEOs):} Para comprender las capacidades analíticas y la visión estratégica proporcionada por la IA.
+    \item \textbf{Directores Financieros (CFOs) y Contadores:} Para dominar la generación de reportes oficiales, estados financieros y cierres de mes.
+    \item \textbf{Personal Operativo:} Para aprender los flujos de trabajo de facturación, registro de gastos y cobros.
+\end{itemize}
+
+% =========================================================================
+% CAPÍTULO 2: SEGURIDAD Y AUDITORÍA
+% =========================================================================
+\chapter{Seguridad, Roles y Arquitectura de Datos}
+
+En la versión 2.5, Ganesha ERP ha implementado una arquitectura de seguridad de nivel bancario.
+
+\section{Control de Acceso Basado en Roles (RBAC)}
+El sistema protege la integridad de los datos financieros restringiendo el acceso según el rol del usuario en la organización.
+\begin{itemize}
+    \item \textbf{Rol Propietario (OWNER):} Control total sobre la jerarquía de empresas, suscripciones y máxima autoridad en el esquema multi-empresa.
+    \item \textbf{Rol Administrador (ADMIN):} Control absoluto sobre la configuración de la empresa, creación de años fiscales, gestión de usuarios, catálogos de cuentas y permisos globales.
+    \item \textbf{Rol Contador (ACCOUNTANT):} Posee acceso completo a la creación de asientos contables (Journal Entries), cierres de período, configuración de impuestos y generación de estados financieros completos.
+    \item \textbf{Rol Gerente (MANAGER):} Visibilidad y control sobre módulos operativos, presupuestos y centros de costo. Ideal para tomas de decisión departamentales.
+    \item \textbf{Rol Visualizador (VIEWER):} Acceso estrictamente de solo lectura a métricas y reportes básicos, sin capacidad de alterar la base de datos.
+\end{itemize}
+
+\section{Protección Criptográfica}
+Las contraseñas y credenciales de acceso no se almacenan en texto plano. Ganesha ERP utiliza \textbf{Bcrypt}, un algoritmo de hashing con "salting" integrado, lo que hace que los datos de autenticación sean invulnerables a ataques de fuerza bruta o robo de base de datos.
+
+\section{Sistema de Auditoría (Audit Log)}
+Cada modificación, creación o eliminación dentro del ERP deja un rastro imborrable.
+\begin{notainfo}[Trazabilidad Absoluta]
+El Registro de Auditoría guarda silenciosamente:
+\begin{itemize}
+    \item \textbf{Acción Específica:} \texttt{CREATE, UPDATE, DELETE, POST, CLOSE, LOGIN, LOGOUT, EXPORT, IMPORT}.
+    \item \textbf{Actor:} Quién realizó la acción (ID del Usuario).
+    \item \textbf{Contexto:} Cuándo se realizó (Timestamp exacto) y desde dónde (IP Address / User Agent).
+    \item \textbf{Trazabilidad de Datos:} Qué cambió exactamente (JSON con \texttt{oldValues} y \texttt{newValues}).
+\end{itemize}
+Esto es fundamental para auditorías fiscales externas y controles internos contra fraudes.
+\end{notainfo}
+
+% =========================================================================
+% CAPÍTULO 3: GANESHA AI - LA CFO VIRTUAL
+% =========================================================================
+\chapter{Inteligencia Artificial: Ganesha AI}
+
+Ganesha ERP no solo registra números; los entiende. La integración del modelo \textbf{LLaMA 3.2} (ejecutado de forma local y privada vía Ollama) proporciona a cada empresa un Asesor Financiero Virtual.
+
+\section{Identidad y Misión}
+Ganesha AI asume el rol de Directora Financiera (CFO) y Auditora Forense de su empresa. A diferencia de un chatbot tradicional, Ganesha AI tiene acceso directo (de lectura) a sus bases de datos en tiempo real.
+
+\section{Capacidades Analíticas}
+\begin{itemize}
+    \item \textbf{Detección de Tendencias:} Puede cruzar los gastos del mes actual con los meses anteriores y alertar sobre desviaciones o fugas de capital.
+    \item \textbf{Análisis de Cartera (Aging):} Evalúa las cuentas por cobrar, calculando el riesgo de iliquidez basándose en las facturas vencidas a más de 30, 60 y 90 días.
+    \item \textbf{Explicación de Discrepancias:} Si el Balance General no cuadra visualmente para el usuario, Ganesha puede auditar las últimas pólizas registradas y señalar el error de partida doble.
+\end{itemize}
+
+\section{Generación de Gráficos y Reportes Dinámicos}
+\begin{notainfo}[Exportación Directa]
+Si usted le pide a Ganesha: \textit{"Muéstrame la tendencia de ingresos del último trimestre"}, la IA no solo le responderá con texto, sino que generará una tabla de datos que el sistema renderizará automáticamente como un \textbf{Gráfico Profesional Exportable}. Además, puede solicitar exportaciones en PDF o Excel directamente desde la interfaz de chat.
+\end{notainfo}
+
+% =========================================================================
+% CAPÍTULO 4: FACTURACIÓN Y CARTERA
+% =========================================================================
+\chapter{Módulos de Facturación y Cuentas por Cobrar/Pagar}
+
+\section{Ciclo de Ingresos y Egresos (InvoiceType: SALE / PURCHASE)}
+El módulo de Facturación (\textit{Invoices}) está diseñado para automatizar la contabilidad. Cuando se emite una factura:
+\begin{enumerate}
+    \item Se registra el documento comercial contra un Tercero (\textit{ThirdParty}).
+    \item El sistema genera inmediatamente el asiento contable (\textit{JournalEntry}).
+    \item La deuda o cuenta por cobrar/pagar se incrementa de forma automática.
+    \item Se afecta la cuenta de Ingresos o Gastos correspondiente en el Estado de Resultados.
+\end{enumerate}
+
+\section{Cuentas por Cobrar y por Pagar}
+Las facturas que no han sido marcadas como pagadas (estado \textit{PENDING} o \textit{PARTIAL}) alimentan directamente el módulo de Cartera (\textit{PaymentSchedules}). El ERP clasifica automáticamente la deuda en bloques de antigüedad, lo que facilita las gestiones de cobranza.
+
+% =========================================================================
+% CAPÍTULO 5: CONTABILIDAD CENTRAL
+% =========================================================================
+\chapter{Contabilidad (Journal, Ledger y Períodos)}
+
+\section{Catálogo de Cuentas (Chart of Accounts)}
+El esqueleto financiero de la empresa. Ganesha permite una estructura jerárquica multinivel (Clase, Grupo, Cuenta, Subcuenta). 
+
+\section{Libro Diario y Partida Doble}
+El módulo \textit{Journal Entries} es el motor del ERP. El sistema valida matemáticamente que la suma de Débitos sea exactamente igual a la suma de Créditos antes de permitir que una póliza sea contabilizada (\textit{POSTED}).
+
+\section{Gestión de Períodos Contables}
+Los meses fiscales deben abrirse y cerrarse ordenadamente.
+\begin{itemize}
+    \item \textbf{Estado ABIERTO:} Permite el registro y edición de asientos.
+    \item \textbf{Estado CERRADO:} Bloquea matemáticamente cualquier alteración al pasado. Si se requiere un ajuste en un mes cerrado, se debe generar una póliza en el mes abierto actual que revierta o ajuste el valor.
+\end{itemize}
+
+% =========================================================================
+% CAPÍTULO 6: TESORERÍA Y ACTIVOS
+% =========================================================================
+\chapter{Bancos, Tesorería y Activos Fijos}
+
+\section{Conciliación Bancaria}
+El módulo de Bancos permite reflejar la realidad del flujo de efectivo. Los pagos aplicados a facturas ingresan a la cuenta transitoria o directa del banco, permitiendo la marcación (\textit{clearing}) contra los estados de cuenta reales emitidos por la institución financiera.
+
+\section{Depreciación de Activos Fijos}
+El control patrimonial se automatiza en Ganesha ERP.
+\begin{enumerate}
+    \item Se registra el activo (Ej. Vehículo, Maquinaria, Equipo de Cómputo).
+    \item Se asigna su valor de rescate, vida útil (en meses) y método de depreciación (Línea Recta por defecto).
+    \item Mes a mes, el sistema genera de forma autónoma el asiento de depreciación, reduciendo el valor en libros del activo y aumentando el gasto por depreciación.
+\end{enumerate}
+
+% =========================================================================
+% CAPÍTULO 7: REPORTES OFICIALES
+% =========================================================================
+\chapter{Reportes Financieros y Análisis}
+
+La generación de reportes en Ganesha es en tiempo real, sin requerir procesos nocturnos de consolidación gracias a su arquitectura optimizada de base de datos.
+
+\section{Balanza de Comprobación (Trial Balance)}
+Muestra los saldos iniciales, movimientos del debe y haber, y saldos finales de todas las cuentas. Ganesha utiliza un algoritmo de propagación jerárquica para calcular los totales de las cuentas "grupo" a partir de las cuentas "detalle" en milisegundos.
+
+\section{Estados Financieros Principales}
+\begin{itemize}
+    \item \textbf{Balance General:} Fotografía de Activos, Pasivos y Patrimonio en una fecha de corte.
+    \item \textbf{Estado de Resultados (P\&L):} Detalle de la rentabilidad (Ingresos menos Gastos y Costos) durante un período específico.
+    \item \textbf{Flujo de Efectivo (Cash Flow):} Análisis de liquidez operativa, inversiones y financiamiento.
+\end{itemize}
+
+\vspace{2cm}
+\begin{center}
+    \Large \textbf{Fin del Manual de Usuario}
+\end{center}
+
+
+
+% === CONTENIDO DE resumen_ejecutivo_ganesha.tex ===
+\chapter{Visión General}
+Ganesha ERP no es simplemente otro software de contabilidad; es un ecosistema financiero completo que integra inteligencia artificial para transformar datos crudos en decisiones estratégicas. Nuestra misión es democratizar la tecnología de alto nivel para empresas que buscan orden, transparencia y crecimiento acelerado.
+
+\chapter{El Problema del Mercado}
+Las pequeñas y medianas empresas (PYMES) enfrentan hoy tres barreras críticas:
+\begin{enumerate}
+    \item \textbf{Fragmentación}: Usan múltiples herramientas que no se comunican entre sí.
+    \item \textbf{Errores Manuales}: La carga de datos manual provoca inconsistencias financieras.
+    \item \textbf{Ceguera de Datos}: Los reportes tardan días o semanas en generarse, impidiendo reacciones rápidas al mercado.
+\end{enumerate}
+
+\chapter{Nuestra Solución: La Ventaja Ganesha}
+Hemos construido una plataforma que elimina estas barreras mediante:
+\chapter{Automatización Total}
+Desde que se emite una factura hasta que se refleja en el Balance General, el flujo de información es automático. Esto reduce el error humano en un 95\%.
+
+\chapter{Inteligencia Artificial Nativa}
+Nuestro asistente IA permite que cualquier ejecutivo consulte el estado de su empresa usando lenguaje natural. No hace falta ser contador para entender las finanzas.
+
+\chapter{Arquitectura On-Premise y Nube}
+Ganesha está diseñado para funcionar tanto en la nube como en servidores locales de empresas, garantizando la **soberanía de los datos** y la privacidad total.
+
+\chapter{Módulos Clave de Valor}
+\begin{itemize}
+    \item \textbf{Núcleo Contable Inteligente}: Cumplimiento fiscal y partida doble garantizada.
+    \item \textbf{Gestión de Tesorería}: Control de bancos, flujo de caja y conciliaciones.
+    \item \textbf{Activos y Patrimonio}: Control de activos fijos con depreciación automática.
+    \item \textbf{Auditoría Digital}: Cada clic queda registrado, eliminando fugas de capital y fraudes.
+\end{itemize}
+
+\chapter{Diferenciación Técnica (Simplificada)}
+Nuestra tecnología permite despegues rápidos ("Standalone") que no requieren infraestructuras costosas. El sistema es ligero, rápido y extremadamente seguro, optimizado para procesar grandes volúmenes de datos con una fracción del costo de la competencia.
+
+\chapter{Conclusión}
+Ganesha ERP representa la convergencia entre la contabilidad tradicional y la inteligencia artificial moderna. Es una herramienta robusta, escalable y lista para dominar el mercado de soluciones empresariales.
+
+% === CONTENIDO DE ensayo_contexto.tex ===
+
+
+\chapter*{Resumen Ejecutivo}
+    Este ensayo explora las motivaciones detrás de la creación de Ganesha ERP, un sistema de planificación de recursos empresariales (ERP) diseñado específicamente para el mercado nicaragüense. Se analiza el desfase entre las soluciones globales y las necesidades locales, la importancia de la adaptación fiscal y el impacto de la nube en la democratización tecnológica de las PYMES en Nicaragua.
+
+
+\chapter{Introducción}
+Nicaragua, un país caracterizado por una economía vibrante pero con desafíos estructurales significativos, ha dependido históricamente de soluciones de software contable obsoletas o excesivamente costosas. En este escenario nace Ganesha ERP, no solo como una herramienta técnica, sino como una respuesta estratégica a la necesidad de modernización de las pequeñas y medianas empresas (PYMES).
+
+\chapter{El Problema: Software de ''Escritorio'' y Costos Exorbitantes}
+Durante décadas, las empresas en Nicaragua han operado bajo el modelo de software "On-Premise". Esto implica servidores físicos, licencias costosas y una dependencia absoluta de la infraestructura local. Para una PYME en Managua o Estelí, el costo de entrada de un ERP internacional como SAP o Oracle es inalcanzable. Por otro lado, los sistemas locales tradicionales carecen de la flexibilidad y la seguridad que ofrece la computación en la nube.
+
+\chapter{Contexto Fiscal y la ''Dolarización de Facto''}
+Uno de los pilares de Ganesha es su profunda integración con la realidad nicaragüense. Nicaragua opera en una economía de "facto" bimonetaria, donde el Córdoba (NIO) y el Dólar (USD) conviven diariamente. Un software que no maneje el mantenimiento de valor y los diferenciales cambiarios de forma nativa está condenado al fracaso. 
+
+Además, las leyes tributarias nicaragüenses, con sus regímenes de retenciones (IR e IVA) y la complejidad de la Ventanilla Única, requieren una lógica de negocio que las soluciones extranjeras no comprenden sin una costosa personalización. Ganesha se diseñó desde el primer día con estas reglas integradas en su núcleo.
+
+\chapter{La Nube como Democratizador}
+Al ser un sistema SaaS (Software as a Service), Ganesha rompe la barrera del hardware. Una empresa en la Costa Caribe puede llevar su contabilidad con la misma eficiencia que una en la capital, requiriendo únicamente una conexión a internet. Esta democratización es vital para el crecimiento económico equitativo en un país con brechas tecnológicas geográficas.
+
+\chapter{Conclusión}
+Ganesha ERP no es simplemente un proyecto de programación; es un puente hacia la eficiencia para el empresario nicaragüense. Su creación en Nicaragua responde al deseo de soberanía tecnológica y a la convicción de que el talento local puede producir herramientas de clase mundial que entiendan, respeten y potencien la realidad económica de nuestra nación.
+
+\vfill
+\begin{center}
+    \textit{"El software debe hablar el idioma de quien lo opera, y Ganesha habla nicaragüense."}
+\end{center}
+
+% === CONTENIDO DE propuesta_valor_ia.tex ===
+\chapter{El Desafío: ¿Por qué falla la IA tradicional?}
+La mayoría de los sistemas de IA en la nube intentan "leer" toda la información de una empresa a la vez. Esto es costoso, lento y, a menudo, la IA se "confunde" con el volumen de datos (saturación).
+
+\chapter{Nuestra Solución: ''Inteligencia Directa''}
+En Ganesha ERP, hemos rediseñado el cerebro del sistema (Backend) para que la IA no tenga que buscar a ciegas.
+
+\begin{tcolorbox}[title=Innovación Clave: Canales de Datos Optimizados, colback=successgreen!5, colframe=successgreen]
+    En lugar de darle a la IA miles de facturas sueltas, hemos creado \textbf{"resúmenes inteligentes"} automáticos. El servidor hace el trabajo pesado y le entrega a la IA la respuesta ya procesada.
+\end{tcolorbox}
+
+\chapter{Beneficios Estratégicos}
+\begin{itemize}
+    \item \textbf{Velocidad Extrema}: Las respuestas son casi instantáneas porque la IA no pierde tiempo analizando datos irrelevantes.
+    \item \textbf{Reducción de Costos}: Al procesar los datos localmente en nuestro backend optimizado, no dependemos de costosos servicios externos de procesamiento por volumen.
+    \item \textbf{Precisión del 100\%}: Al usar cálculos matemáticos directos del motor contable, eliminamos las "alucinaciones" típicas de la IA. Los números siempre cuadran.
+\end{itemize}
+
+\chapter{Escalabilidad y Futuro}
+Nuestra arquitectura permite que el sistema crezca de 10 a 10,000 usuarios sin degradar la experiencia. Hemos optimizado la base de datos para que sea "amigable con la IA", permitiendo capturar tendencias y KPIs de forma fluida y sin saturar los recursos de la empresa cliente.
+
+\chapter{Conclusión}
+Ganesha ERP no es solo un software con un chat añadido; es una plataforma financiera diseñada desde su núcleo para ser operada por Inteligencia Artificial de forma eficiente, económica y segura.
+
+% === CONTENIDO DE arquitectura_ia.tex ===
+\chapter{Introducción}
+Ganesha ERP utiliza una arquitectura híbrida para su asistente de Inteligencia Artificial, basada en el modelo de lenguaje \textbf{Ollama (Llama 3.2)}. El desafío principal de cualquier IA aplicada a ERPs es procesar miles de registros contables sin saturar la ventana de contexto del modelo ni degradar el rendimiento del servidor.
+
+\chapter{Estrategia de Acceso a Datos: Tool Calling}
+A diferencia de otros sistemas que envían archivos planos o dumps de bases de datos a la IA, Ganesha utiliza un patrón de \textbf{Invocación de Herramientas (Tool Calling)}.
+
+\begin{tcolorbox}[title=Ventajas del Modelo TAG (Tool-Augmented Generation), colback=blue!5, colframe=ganeshaaccent]
+    \begin{itemize}
+        \item \textbf{Cero Saturación}: La IA solo recibe los datos que necesita para responder la pregunta actual.
+        \item \textbf{Veracidad Contable}: Los datos no son "inventados" por el modelo, sino calculados por servicios financieros determinísticos en el Backend.
+        \item \textbf{Seguridad de Multi-tenencia}: El sistema inyecta el \texttt{companyId} de forma invisible, garantizando que un usuario nunca acceda a datos de otra empresa.
+    \end{itemize}
+\end{tcolorbox}
+
+\chapter{Flujo de Ejecución}
+
+\begin{center}
+\begin{tikzpicture}[node distance=2cm]
+\tikzstyle{startstop} = [rectangle, rounded corners, minimum width=3cm, minimum height=1cm,text centered, draw=black, fill=red!30]
+\tikzstyle{process} = [rectangle, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=blue!30]
+\tikzstyle{decision} = [diamond, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=green!30]
+
+\node (start) [startstop] {Pregunta Usuario};
+\node (pro1) [process, below of=start] {Analizador de Intención (LLM)};
+\node (dec1) [decision, below of=pro1, yshift=-0.5cm] {¿Necesita Datos?};
+\node (pro2) [process, right of=dec1, xshift=3cm] {Ejecutor de Herramientas};
+\node (pro3) [process, below of=pro2] {Servicios Financieros (SQL)};
+\node (pro4) [process, below of=dec1, yshift=-1.5cm] {Generador de Respuesta};
+
+\draw [arrow] (start) -- (pro1);
+\draw [arrow] (pro1) -- (dec1);
+\draw [arrow] (dec1) -- node[anchor=south] {SÍ} (pro2);
+\draw [arrow] (pro2) -- (pro3);
+\draw [arrow] (pro3) -| (pro4);
+\draw [arrow] (dec1) -- node[anchor=east] {NO} (pro4);
+\end{tikzpicture}
+\end{center}
+
+\chapter{Optimización de Recursos}
+Para evitar "ponerle todo el peso" a la IA, el sistema pre-procesa la información en el \textbf{Financial Report Service}.
+\begin{itemize}
+    \item \textbf{Agregación en DB}: El Backend realiza las sumas y agrupaciones (KPIs) usando SQL puro, que es infinitamente más rápido que el procesamiento de texto.
+    \item \textbf{JSON Estructurado}: La IA recibe solo los resultados finales (ej: "Total Ingresos: 50,000") en lugar de 5,000 líneas de movimientos individuales.
+\end{itemize}
+
+\chapter{Seguridad y Privacidad}
+Cada petición al ejecutor de herramientas requiere una validación de sesión. Si el token de usuario no coincide con los permisos de la empresa solicitada, el sistema retorna un error antes de que la IA siquiera procese la información.
+
+% === CONTENIDO DE documentacion_tecnica.tex ===
+
+
+
+\chapter{Arquitectura del Sistema}
+
+\section{Stack Tecnológico}
+Ganesha ERP está construido sobre un stack de JavaScript moderno enfocado en la seguridad de tipos y el rendimiento.
+\begin{itemize}
+    \item \textbf{Runtime:} Node.js / Bun.
+    \item \textbf{Framework:} Next.js 15 (App Router).
+    \item \textbf{Persistencia:} Prisma ORM con SQLite (opcionalmente escalable a PostgreSQL).
+    \item \textbf{Estilos:} Tailwind CSS y Shadcn/UI.
+    \item \textbf{Validación:} Zod (esquemas compartidos).
+    \item \textbf{Estado:} Zustand (en el Frontend).
+\end{itemize}
+
+\section{Estructura de Directorios}
+El proyecto se divide en dos grandes contenedores:
+\begin{description}
+    \item[Backend/:] Provee la API RESTful, manejo de base de datos y auditoría.
+    \item[Frontend/:] Interfaz de usuario SPA modularizada por carpetas de funciones.
+\end{description}
+
+\chapter{Modelo de Datos y API}
+
+\section{Esquema Prisma}
+El corazón del sistema es la multi-tenencia. Cada registro está aislado por un \texttt{companyId}.
+\begin{tcolorbox}[colback=white, colframe=DevBlue, title=Entidades Principales]
+    \begin{itemize}
+        \item \textbf{Company:} Entidad raíz.
+        \item \textbf{User / UserCompany:} Seguridad y permisos.
+        \item \textbf{JournalEntry:} Pólizas contables con integridad referencial.
+        \item \textbf{Invoice:} Documentación de ingresos y egresos.
+    \end{itemize}
+\end{tcolorbox}
+
+\section{Diseño de la API}
+La API sigue principios REST. Ejemplo de validación con Zod:
+\begin{lstlisting}[language=bash]
+// Ejemplo de esquema de Póliza
+export const journalEntrySchema = z.object({
+  companyId: z.string().cuid(),
+  periodId: z.string().cuid(),
+  description: z.string().min(5),
+  lines: z.array(journalLineSchema).min(2),
+});
+\end{lstlisting}
+
+\chapter{Despliegue y Mantenimiento}
+
+\section{Proxy Inverso (Caddy)}
+El sistema utiliza Caddy para el manejo de certificados SSL automáticos y balanceo de carga. La configuración redirige el tráfico al puerto \texttt{3000} (por defecto de Next.js).
+
+\section{Auditoría de Acciones}
+Cada petición que muta el estado del sistema pasa por un servicio de auditoría (\texttt{logAuditTx}) que guarda el estado previo y posterior del registro afectado, permitiendo un "Time Travel" de la información si es necesario.
+
+\chapter{Conclusión Técnica}
+Ganesha ERP está diseñado para ser ligero pero robusto, aprovechando las ventajas de SQLite para despliegues rápidos en entornos con recursos limitados, pero manteniendo una arquitectura desacoplada que permite el crecimiento horizontal.
+
+% === CONTENIDO DE manual_usuario.tex ===
+% --- Portada ---
+
+
+
+
+% ==========================================
+\chapter{Primeros 15 Minutos: Inicio Rápido}
+% ==========================================
+
+Si es tu primera vez en Ganesha, sigue este camino para tener el sistema listo en minutos:
+
+\begin{pasos}{Configuración Relámpago}
+    \begin{enumerate}
+        \item \textbf{Crea tu Empresa:} En el menú lateral, ve a \textbf{Empresas}. Pon tu RUC, Nombre y Moneda.
+        \item \textbf{Verifica tu Catálogo:} Ve a \textbf{Cuentas}. El sistema ya trae un catálogo base. Ajusta solo lo necesario.
+        \item \textbf{Abre el Mes:} En \textbf{Períodos}, asegúrate de que el mes actual esté en estado "ABIERTO".
+        \item \textbf{¡Listo!:} Ya puedes registrar tu primera factura o movimiento.
+    \end{enumerate}
+\end{pasos}
+
+% ==========================================
+\chapter{Diccionario: Del ''Sistemas'' al ''Español''}
+% ==========================================
+
+Para que nos entendamos, aquí tienes qué significa cada cosa técnica que podrías ver:
+\begin{description}
+    \item[Dashboard:] Tu tablero de control con gráficas.
+    \item[Third Party (Tercero):] Cualquier persona de afuera (Cliente o Proveedor).
+    \item[Journal Entry (Póliza):] Un registro contable (quién le dio a quién).
+    \item[Audit Log:] El historial de quién tocó qué.
+    \item[Asset (Activo):] Algo que compraste y que dura mucho (una laptop, un carro).
+\end{description}
+
+% ==========================================
+\chapter{Explicación Detallada de los Módulos}
+% ==========================================
+
+\section{Módulo: Facturación (Ventas y Compras)}
+\textbf{¿Para qué sirve?}: Para anotar lo que vendes y lo que compras.
+\begin{itemize}
+    \item \textbf{Acción}: Creas una factura a un cliente.
+    \item \textbf{Repercusión Real}: El sistema le "avisa" al módulo de \textbf{Cuentas por Cobrar} que ese cliente te debe dinero. También le avisa al \textbf{Dashboard} para que suba tu gráfica de ingresos.
+\end{itemize}
+
+\section{Módulo: Bancos y Caja}
+\textbf{¿Para qué sirve?}: Para que tu saldo en el sistema coincida con tu estado de cuenta real.
+\begin{itemize}
+    \item \textbf{Acción}: Registras que el cliente te pagó la factura.
+    \item \textbf{Repercusión Real}: El dinero entra a tu cuenta de banco en el sistema y "limpia" la deuda del cliente en el módulo de Facturación.
+\end{itemize}
+
+\section{Módulo: Activos Fijos (Tus Bienes)}
+\textbf{¿Para qué sirve?}: Para que no pierdas de vista cuánto valen tus cosas con el tiempo.
+\begin{itemize}
+    \item \textbf{Acción}: Registras una nueva camioneta.
+    \item \textbf{Repercusión Real}: Cada mes, el sistema calculará cuánto valor perdió (depreciación) y lo enviará al módulo de \textbf{Gastos} automáticamente.
+\end{itemize}
+
+% ==========================================
+\chapter{Casos de la Vida Real (Survival Guide)}
+% ==========================================
+
+\begin{escenario}{"Compré una computadora para la oficina"}
+    \begin{enumerate}
+        \item Ve al módulo de \textbf{Facturación} y registra la compra al proveedor.
+        \item Al guardar, el sistema genera la deuda al proveedor.
+        \item Ve al módulo de \textbf{Activos Fijos} y registra la computadora para que empiece a depreciarse cada mes.
+        \item Cuando le pagues al proveedor, usa el módulo de \textbf{Bancos} para "matar" esa deuda.
+    \end{enumerate}
+\end{escenario}
+
+\begin{escenario}{"Quiero saber si estoy ganando dinero"}
+    \begin{enumerate}
+        \item Mira tu \textbf{Dashboard}. Ahí ves la gráfica de Ingresos vs Egresos.
+        \item Si quieres el detalle oficial, ve al módulo de \textbf{Reportes} y saca un "Estado de Resultados".
+        \item Si tienes dudas de un número, pregúntale a la \textbf{IA (Ganesha AI)}: "¿Por qué gasté tanto en papelería este mes?".
+    \end{enumerate}
+\end{escenario}
+
+% ==========================================
+\chapter{Matriz de Interacción: El Camino del Dato}
+% ==========================================
+
+Para los que quieren entender el "cableado" interno:
+
+\begin{center}
+\begin{tikzpicture}[node distance=1.5cm]
+    \node (entry) [draw, fill=blue!10, rounded corners] {\textbf{Tú ingresas un dato (Factura/Banco)}};
+    \node (logic) [draw, fill=orange!10, below=of entry] {\textbf{El Sistema aplica reglas (Impuestos/IVA)}};
+    \node (cont) [draw, fill=green!10, below=of logic] {\textbf{Se crea una Póliza Automática (Contabilidad)}};
+    \node (rep) [draw, fill=purple!10, below=of cont] {\textbf{Tus Reportes y Gráficas se actualizan}};
+    
+    \draw[->, thick] (entry) -- (logic);
+    \draw[->, thick] (logic) -- (cont);
+    \draw[->, thick] (cont) -- (rep);
+\end{tikzpicture}
+\end{center}
+
+\vfill
+\begin{center}
+    \color{gray} \textit{Este manual fue diseñado para que tú te enfoques en tu negocio, mientras Ganesha se encarga de los números.}
+\end{center}
+\chapter{Referencia Completa de la API}
+La siguiente sección contiene la documentación técnica exhaustiva de todos los endpoints, modelos y rutas de Ganesha ERP.
+
+\begin{lstlisting}
+# 📒 ERP Contable Enterprise — Referencia de API Completa
+
+> **Base de datos:** SQLite (Prisma ORM) — `db/custom.db`  
+> **Entidades:** 18 modelos  
+> **Endpoints:** 100 rutas API  
+> **Servidor:** Next.js 16 App Router en puerto **3000**  
+> **Proxy:** Caddy reverse proxy en puerto **81**  
+> **Stack:** TypeScript 5, Tailwind CSS 4, shadcn/ui  
+
+---
+
+## Formato de Respuesta
+
+Todas las APIs responden en este formato:
+
+```jsonc
+// ✅ Éxito
+{ "success": true, "data": { ... } }
+
+// ✅ Éxito con paginación
+{ "success": true, "data": { "data": [...], "pagination": { "page": 1, "limit": 20, "total": 100, "totalPages": 5, "hasNext": true, "hasPrev": false } } }
+
+// ❌ Error
+{ "success": false, "error": "Descripción del error" }
+```
+
+**Paginación estándar (GET listas):** `?page=1&limit=20&sortBy=createdAt&sortOrder=desc`  
+**Filtros de búsqueda:** `?search=banco` (busca por campos de texto)  
+**Aislamiento por empresa:** casi todas las rutas requieren `?companyId=ID`
+
+---
+
+## Entidades de BD (18)
+
+| # | Modelo | Descripción | Relaciones principales |
+|---|--------|-------------|----------------------|
+| 1 | **Company** | Empresa / Tenant | → Periods, Accounts, Entries, ThirdParties, Invoices, Banks, Users, etc. |
+| 2 | **AccountingPeriod** | Período contable (mes/año) | → Company, JournalEntries, DepreciationEntries |
+| 3 | **Account** | Cuenta contable (árbol) | → Company, Parent↔Children (auto-ref), JournalLines, FixedAssets, Budgets |
+| 4 | **CostCenter** | Centro de costo (árbol) | → Company, Parent↔Children, JournalLines, Budgets |
+| 5 | **JournalEntry** | Póliza / Asiento contable | → Company, Period, Lines, Invoices, DepreciationEntries |
+| 6 | **JournalEntryLine** | Partida de la póliza | → JournalEntry (cascade), Account, CostCenter |
+| 7 | **ThirdParty** | Cliente / Proveedor | → Company, Invoices |
+| 8 | **Invoice** | Factura (CxC / CxP) | → Company, ThirdParty, JournalEntry |
+| 9 | **BankAccount** | Cuenta bancaria | → Company, BankMovements |
+| 10 | **BankMovement** | Movimiento bancario | → BankAccount |
+| 11 | **User** | Usuario del sistema | → Company, AuditLogs |
+| 12 | **AuditLog** | Bitácora de auditoría | → Company, User |
+| 13 | **ExchangeRate** | Tipo de cambio moneda | → Company |
+| 14 | **FixedAsset** | Activo fijo | → Company, Account, DepreciationEntries |
+| 15 | **DepreciationEntry** | Entrada de depreciación | → Company, FixedAsset, Period, JournalEntry |
+| 16 | **Budget** | Presupuesto | → Company, Account, CostCenter |
+| 17 | **Notification** | Notificación | → Company, User |
+| 18 | **FileAttachment** | Archivo adjunto | → Company |
+
+---
+
+## Reglas de Negocio Críticas
+
+1. **Partida doble estricta:** `SUM(debit) === SUM(credit)` en toda póliza. Se valida antes de persistir.
+2. **Período cerrado = inmutable:** Períodos con status `CLOSED` o `LOCKED` no aceptan nuevas pólizas.
+3. **Solo cuentas hoja en partidas:** `is_group=false` obligatorio en `JournalEntryLine.accountId`.
+4. **Pólizas POSTED son inmutables:** No se pueden modificar ni eliminar después de publicar.
+5. **Transacciones atómicas:** Toda escritura multi-entidad usa `db.$transaction()`.
+6. **Secuencia de póliza:** Auto-generada por período (`0001`, `0002`, …).
+7. **Unicidad por empresa:** Códigos de cuenta, números de factura, y combos empresa+período son únicos.
+
+---
+
+## Flujo de Trabajo Contable
+
+```
+1. SETUP
+   POST /api/companies          → Crear empresa
+   POST /api/periods/batch      → Crear 12 períodos del año
+   POST /api/accounts           → Crear plan de cuentas (padres primero)
+   POST /api/cost-centers       → Crear centros de costo
+   POST /api/bank-accounts      → Registrar cuentas bancarias
+   POST /api/third-parties      → Registrar clientes/proveedores
+
+2. OPERACIÓN DIARIA
+   POST /api/journal-entries    → Crear póliza (valida partida doble)
+   POST /api/journal-entries/[id]/post → Publicar (afecta saldos)
+   POST /api/invoices           → Registrar facturas
+   POST /api/invoices/[id]/pay  → Registrar pagos
+   POST /api/bank-movements     → Cargar movimientos bancarios
+
+3. CIERRE DE PERÍODO
+   POST /api/fixed-assets/bulk-depreciate → Depreciar activos
+   POST /api/periods/[id]/close → Cerrar período
+
+4. REPORTES Y ANÁLISIS
+   GET /api/reports/trial-balance     → Balanza de comprobación
+   GET /api/reports/balance-sheet     → Balance general
+   GET /api/reports/income-statement  → Estado de resultados
+   GET /api/reports/cash-flow         → Flujo de efectivo
+   GET /api/dashboard/kpis            → KPIs del dashboard
+```
+
+---
+
+## Configuración de IA Local (Ollama + Llama 3.2:1b)
+
+La IA funciona en modo **fallback** por defecto (respuestas basadas en keywords). Para IA real:
+
+```bash
+# 1. Instalar Ollama en tu Linux
+curl -fsSL https://ollama.com/install.sh | sh
+
+# 2. Descargar el modelo
+ollama pull llama3.2:1b
+
+# 3. Iniciar el servicio (corre en http://localhost:11434)
+ollama serve
+
+# 4. Configurar en .env
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2:1b
+
+# 5. Verificar
+curl http://localhost:3000/api/ai/status
+```
+
+---
+
+## 1. 🏢 Empresas (`/api/companies`) — 5 endpoints
+
+| # | Method | Path | Descripción |
+|---|--------|------|-------------|
+| 1 | `POST` | `/api/companies` | Crear nueva empresa |
+| 2 | `GET` | `/api/companies` | Listar empresas (paginación, búsqueda) |
+| 3 | `GET` | `/api/companies/[id]` | Obtener empresa por ID |
+| 4 | `PUT` | `/api/companies/[id]` | Actualizar empresa |
+| 5 | `DELETE` | `/api/companies/[id]` | Eliminar empresa |
+
+**POST /api/companies**
+```json
+{ "name": "Mi Empresa S.A.", "taxId": "MIE200101ABC", "currency": "MXN", "email": "info@miempresa.com", "address": "Av. Principal 123" }
+```
+**GET params:** `?page=1&limit=20&search=empresa`
+
+---
+
+## 2. 📅 Períodos Contables (`/api/periods`) — 7 endpoints
+
+| # | Method | Path | Descripción |
+|---|--------|------|-------------|
+| 1 | `POST` | `/api/periods` | Crear período |
+| 2 | `GET` | `/api/periods` | Listar períodos |
+| 3 | `GET` | `/api/periods/[id]` | Obtener período |
+| 4 | `PUT` | `/api/periods/[id]` | Actualizar período (cambiar status) |
+| 5 | `DELETE` | `/api/periods/[id]` | Eliminar (solo OPEN sin pólizas) |
+| 6 | `POST` | `/api/periods/[id]/close` | Cerrar período (no admite DRAFTs) |
+| 7 | `POST` | `/api/periods/batch` | Crear año completo (12 meses) |
+
+**POST /api/periods**
+```json
+{ "companyId": "ID", "year": 2024, "month": 1 }
+```
+**POST /api/periods/batch**
+```json
+{ "companyId": "ID", "year": 2024 }
+```
+**GET params:** `?companyId=ID&status=OPEN&year=2024`
+
+---
+
+## 3. 📋 Plan de Cuentas (`/api/accounts`) — 7 endpoints
+
+| # | Method | Path | Descripción |
+|---|--------|------|-------------|
+| 1 | `POST` | `/api/accounts` | Crear cuenta |
+| 2 | `GET` | `/api/accounts` | Listar cuentas (con hijos) |
+| 3 | `GET` | `/api/accounts/tree` | Árbol completo |
+| 4 | `GET` | `/api/accounts/search` | Autocompletar búsqueda |
+| 5 | `GET` | `/api/accounts/[id]` | Obtener cuenta con hijos |
+| 6 | `PUT` | `/api/accounts/[id]` | Actualizar (solo nombre/isActive) |
+| 7 | `DELETE` | `/api/accounts/[id]` | Eliminar (sin partidas ni hijos) |
+
+**POST /api/accounts**
+```json
+{ "companyId": "ID", "code": "1.1.01", "name": "Bancos", "parentId": "PARENT_ID", "accountType": "ASSET", "nature": "DEBITOR", "isGroup": false }
+```
+> `accountType`: ASSET, LIABILITY, EQUITY, INCOME, EXPENSE  
+> `nature`: DEBITOR (activo/gasto), ACREEDOR (pasivo/patrimonio/ingreso)  
+> `isGroup`: true = título/padre, false = hoja/movimiento
+
+---
+
+## 4. 🏷️ Centros de Costo (`/api/cost-centers`) — 6 endpoints
+
+| # | Method | Path | Descripción |
+|---|--------|------|-------------|
+| 1 | `POST` | `/api/cost-centers` | Crear centro |
+| 2 | `GET` | `/api/cost-centers` | Listar centros |
+| 3 | `GET` | `/api/cost-centers/tree` | Árbol completo |
+| 4 | `GET` | `/api/cost-centers/[id]` | Obtener con hijos |
+| 5 | `PUT` | `/api/cost-centers/[id]` | Actualizar |
+| 6 | `DELETE` | `/api/cost-centers/[id]` | Eliminar |
+
+**POST /api/cost-centers**
+```json
+{ "companyId": "ID", "code": "ADM01", "name": "Dirección General", "parentId": "PARENT_ID" }
+```
+
+---
+
+## 5. 📝 Pólizas / Libro Diario (`/api/journal-entries`) — 11 endpoints
+
+| # | Method | Path | Descripción |
+|---|--------|------|-------------|
+| 1 | `POST` | `/api/journal-entries` | Crear póliza con partidas |
+| 2 | `GET` | `/api/journal-entries` | Listar pólizas |
+| 3 | `GET` | `/api/journal-entries/[id]` | Obtener con partidas |
+| 4 | `PUT` | `/api/journal-entries/[id]` | Actualizar (solo DRAFT) |
+| 5 | `DELETE` | `/api/journal-entries/[id]` | Eliminar (solo DRAFT) |
+| 6 | `POST` | `/api/journal-entries/[id]/post` | Publicar póliza (DRAFT→POSTED) |
+| 7 | `GET` | `/api/journal-entries/[id]/lines` | Obtener partidas |
+| 8 | `POST` | `/api/journal-entries/[id]/lines` | Agregar partida |
+| 9 | `PUT` | `/api/journal-entries/[id]/lines` | Actualizar partidas (bulk) |
+| 10 | `DELETE` | `/api/journal-entries/[id]/lines/[lineId]` | Eliminar partida |
+| 11 | `POST` | `/api/journal-entries/validate` | Validar sin guardar |
+
+**POST /api/journal-entries** (el más crítico)
+```json
+{
+  "companyId": "ID",
+  "periodId": "PERIOD_ID",
+  "description": "Venta de mercancía al contado",
+  "entryDate": "2024-01-15",
+  "entryType": "DIARIO",
+  "lines": [
+    { "accountId": "BANCO_ID", "costCenterId": null, "description": "Pago en BBVA", "debit": 118750, "credit": 0 },
+    { "accountId": "VENTA_ID", "costCenterId": null, "description": "Venta contado", "debit": 0, "credit": 100000 },
+    { "accountId": "IVA_ID", "costCenterId": null, "description": "IVA trasladado", "debit": 0, "credit": 18750 }
+  ]
+}
+```
+> Validaciones: período OPEN, cuentas hoja, partida doble cuadra, mínimo 2 partidas.  
+> `entryType`: DIARIO, EGRESO, INGRESO, TRASPASO
+
+**POST /api/journal-entries/validate** (dry-run)
+```json
+{ "companyId": "ID", "periodId": "ID", "lines": [...] }
+```
+→ Retorna `{ valid, errors, totalDebit, totalCredit, difference }`
+
+**GET params:** `?companyId=ID&periodId=ID&status=POSTED&entryType=DIARIO&dateFrom=2024-01-01&dateTo=2024-01-31`
+
+---
+
+## 6. 👥 Terceros (`/api/third-parties`) — 5 endpoints
+
+| # | Method | Path | Descripción |
+|---|--------|------|-------------|
+| 1 | `POST` | `/api/third-parties` | Crear tercero |
+| 2 | `GET` | `/api/third-parties` | Listar terceros |
+| 3 | `GET` | `/api/third-parties/search` | Autocompletar |
+| 4 | `GET` | `/api/third-parties/[id]` | Obtener con resumen de facturas |
+| 5 | `PUT` | `/api/third-parties/[id]` | Actualizar |
+| 6 | `DELETE` | `/api/third-parties/[id]` | Eliminar |
+
+**POST /api/third-parties**
+```json
+{ "companyId": "ID", "type": "CUSTOMER", "name": "Cliente S.A.", "taxId": "CLS200101ABC", "email": "ventas@cliente.com" }
+```
+> `type`: CUSTOMER, SUPPLIER, BOTH
+
+---
+
+## 7. 🧾 Facturas (`/api/invoices`) — 8 endpoints
+
+| # | Method | Path | Descripción |
+|---|--------|------|-------------|
+| 1 | `POST` | `/api/invoices` | Crear factura |
+| 2 | `GET` | `/api/invoices` | Listar facturas (con días morosos) |
+| 3 | `GET` | `/api/invoices/[id]` | Obtener factura |
+| 4 | `PUT` | `/api/invoices/[id]` | Actualizar estado/saldo |
+| 5 | `DELETE` | `/api/invoices/[id]` | Eliminar (solo PENDING) |
+| 6 | `POST` | `/api/invoices/[id]/pay` | Registrar pago |
+| 7 | `GET` | `/api/invoices/aging` | Antigüedad de saldos (4 buckets) |
+| 8 | `GET` | `/api/invoices/summary` | Resumen por estado |
+
+**POST /api/invoices**
+```json
+{ "companyId": "ID", "thirdPartyId": "ID", "invoiceType": "SALE", "number": "FC-2024-0001", "issueDate": "2024-01-15", "dueDate": "2024-02-15", "totalAmount": 100000 }
+```
+> `invoiceType`: SALE (CxC), PURCHASE (CxP)  
+> `balanceDue` se inicializa igual a `totalAmount`  
+> `status`: PENDING → PARTIAL → PAID (se actualiza automáticamente al registrar pagos)
+
+**GET /api/invoices/aging?companyId=ID&invoiceType=SALE&asOfDate=2024-06-30**
+```json
+{ "buckets": { "current": {"count":2, "total":405000}, "overdue_31_60": {...}, "overdue_61_90": {...}, "overdue_90_plus": {...} }, "totalOutstanding": 757000, "details": [...] }
+```
+
+---
+
+## 8. 🏦 Bancos y Conciliación (`/api/bank-accounts` + `/api/bank-movements`) — 7 endpoints
+
+| # | Method | Path | Descripción |
+|---|--------|------|-------------|
+| 1 | `POST` | `/api/bank-accounts` | Crear cuenta bancaria |
+| 2 | `GET` | `/api/bank-accounts` | Listar (con conteo de movimientos) |
+| 3 | `GET` | `/api/bank-accounts/[id]` | Obtener cuenta |
+| 4 | `PUT` | `/api/bank-accounts/[id]` | Actualizar |
+| 5 | `DELETE` | `/api/bank-accounts/[id]` | Eliminar |
+| 6 | `POST` | `/api/bank-movements` | Crear movimiento bancario |
+| 7 | `GET` | `/api/bank-movements` | Listar movimientos |
+| 8 | `GET` | `/api/bank-movements/[id]` | Obtener movimiento |
+| 9 | `PUT` | `/api/bank-movements/[id]` | Cambiar estado (RECONCILED) |
+| 10 | `POST` | `/api/bank-movements/reconcile` | Conciliar automáticamente |
+
+**POST /api/bank-movements/reconcile**
+```json
+{ "bankAccountId": "ID" }
+```
+→ Cruza movimientos PENDING con partidas contables por monto y fecha (±3 días).
+
+---
+
+## 9. 📊 Reportes Financieros (`/api/reports`) — 3 endpoints
+
+| # | Method | Path | ¿Para qué sirve? |
+|---|--------|------|-----------------|
+| 1 | `GET` | `/api/reports/trial-balance` | Balanza de comprobación (saldos por cuenta) |
+| 2 | `GET` | `/api/reports/balance-sheet` | Balance general (activo=pasivo+patrimonio) |
+| 3 | `GET` | `/api/reports/income-statement` | Estado de resultados (ingresos - gastos) |
+
+**Params comunes:** `?companyId=ID&year=2024&month=1` (o `&periodId=ID`)
+
+**GET /api/reports/trial-balance** → Saldos deudores/acreedores por cuenta (solo POSTED).  
+**GET /api/reports/balance-sheet** → Total assets, liabilities, equity.  
+**GET /api/reports/income-statement** → Total income, expenses, net income, gross margin %.
+
+---
+
+## 10. 📈 Reportes Avanzados (`/api/reports/*`) — 6 endpoints
+
+| # | Method | Path | ¿Para qué sirve? |
+|---|--------|------|-----------------|
+| 1 | `GET` | `/api/reports/cash-flow` | Estado de flujo de efectivo |
+| 2 | `GET` | `/api/reports/changes-equity` | Estado de cambios en patrimonio |
+| 3 | `GET` | `/api/reports/general-ledger` | Libro mayor (movimientos de una cuenta) |
+| 4 | `GET` | `/api/reports/subsidiary-ledger` | Mayor auxiliar (movimientos de un tercero) |
+| 5 | `GET` | `/api/reports/comparative` | Comparativo entre dos períodos |
+| 6 | `GET` | `/api/reports/account-movements` | Todos los movimientos de una cuenta |
+
+**GET /api/reports/general-ledger?companyId=ID&accountId=ID&year=2024&month=1**
+
+---
+
+## 11. 📉 Dashboard (`/api/dashboard`) — 2 endpoints
+
+| # | Method | Path | ¿Para qué sirve? |
+|---|--------|------|-----------------|
+| 1 | `GET` | `/api/dashboard/kpis` | KPIs: ingresos, egresos, utilidad, capital de trabajo, gráficos 6 meses |
+| 2 | `GET` | `/api/dashboard/recent-movements` | Últimas 5 pólizas POSTED |
+
+---
+
+## 12. 📉 Dashboard Avanzado (`/api/dashboard/*`) — 8 endpoints
+
+| # | Method | Path | ¿Para qué sirve? |
+|---|--------|------|-----------------|
+| 1 | `GET` | `/api/dashboard/cash-positions` | Posición de efectivo en bancos |
+| 2 | `GET` | `/api/dashboard/top-customers` | Top N clientes por ventas |
+| 3 | `GET` | `/api/dashboard/top-suppliers` | Top N proveedores por compras |
+| 4 | `GET` | `/api/dashboard/expense-trends` | Tendencias mensuales de gastos |
+| 5 | `GET` | `/api/dashboard/receivables-summary` | Resumen CxC: total, vencido, buckets |
+| 6 | `GET` | `/api/dashboard/payables-summary` | Resumen CxP: total, vencido, buckets |
+| 7 | `GET` | `/api/dashboard/tax-summary` | IVA e ISR del período |
+| 8 | `GET` | `/api/dashboard/period-overview` | Vista general: KPIs + alertas + pendientes |
+
+---
+
+## 13. 🏗️ Activos Fijos (`/api/fixed-assets`) — 9 endpoints
+
+| # | Method | Path | ¿Para qué sirve? |
+|---|--------|------|-----------------|
+| 1 | `POST` | `/api/fixed-assets` | Registrar activo fijo |
+| 2 | `GET` | `/api/fixed-assets` | Listar activos |
+| 3 | `GET` | `/api/fixed-assets/[id]` | Obtener activo |
+| 4 | `PUT` | `/api/fixed-assets/[id]` | Actualizar / dar de baja |
+| 5 | `DELETE` | `/api/fixed-assets/[id]` | Eliminar |
+| 6 | `POST` | `/api/fixed-assets/[id]/depreciate` | Depreciar un activo |
+| 7 | `POST` | `/api/fixed-assets/bulk-depreciate` | Depreciar TODOS los activos |
+| 8 | `GET` | `/api/fixed-assets/summary` | Resumen: total, valor en libros, depreciación acumulada |
+| 9 | `GET` | `/api/fixed-assets/[id]/history` | Historial de depreciación |
+
+**POST /api/fixed-assets**
+```json
+{ "companyId": "ID", "code": "EQ-001", "name": "Servidor Principal", "assetType": "COMPUTER", "purchaseDate": "2024-01-01", "purchaseAmount": 80000, "salvageValue": 5000, "usefulLifeMonths": 60, "accountId": "ACCOUNT_ID" }
+```
+> `assetType`: BUILDING, FURNITURE, COMPUTER, VEHICLE, MACHINERY, OTHER
+
+---
+
+## 14. 💰 Presupuestos (`/api/budgets`) — 5 endpoints
+
+| # | Method | Path | ¿Para qué sirve? |
+|---|--------|------|-----------------|
+| 1 | `POST` | `/api/budgets` | Crear presupuesto |
+| 2 | `GET` | `/api/budgets` | Listar presupuestos |
+| 3 | `GET` | `/api/budgets/[id]` | Obtener |
+| 4 | `PUT` | `/api/budgets/[id]` | Actualizar |
+| 5 | `DELETE` | `/api/budgets/[id]` | Eliminar |
+| 6 | `POST` | `/api/budgets/bulk` | Crear masivamente |
+| 7 | `GET` | `/api/budgets/report` | Presupuesto vs real |
+| 8 | `GET` | `/api/budgets/variance` | Mayores variaciones |
+
+---
+
+## 15. 💱 Tipos de Cambio (`/api/exchange-rates`) — 4 endpoints
+
+| # | Method | Path | ¿Para qué sirve? |
+|---|--------|------|-----------------|
+| 1 | `POST` | `/api/exchange-rates` | Registrar tipo de cambio |
+| 2 | `GET` | `/api/exchange-rates` | Listar (por moneda y fecha) |
+| 3 | `GET` | `/api/exchange-rates/[id]` | Obtener |
+| 4 | `PUT` | `/api/exchange-rates/[id]` | Actualizar |
+| 5 | `DELETE` | `/api/exchange-rates/[id]` | Eliminar |
+| 6 | `GET` | `/api/exchange-rates/latest` | Último tipo (USD→MXN) |
+| 7 | `GET` | `/api/exchange-rates/convert` | Convertir monto entre monedas |
+
+**GET /api/exchange-rates/convert?companyId=ID&from=USD&to=MXN&amount=1000&date=2024-01-15**
+
+---
+
+## 16. 👤 Usuarios (`/api/users`) — 7 endpoints
+
+| # | Method | Path | ¿Para qué sirve? |
+|---|--------|------|-----------------|
+| 1 | `POST` | `/api/users` | Crear usuario |
+| 2 | `GET` | `/api/users` | Listar usuarios |
+| 3 | `GET` | `/api/users/[id]` | Obtener usuario |
+| 4 | `PUT` | `/api/users/[id]` | Actualizar |
+| 5 | `DELETE` | `/api/users/[id]` | Eliminar |
+| 6 | `POST` | `/api/users/login` | Iniciar sesión |
+| 7 | `GET` | `/api/users/stats` | Estadísticas (total, por rol) |
+| 8 | `GET` | `/api/users/[id]/activity` | Actividad reciente (audit log) |
+| 9 | `POST` | `/api/users/[id]/change-password` | Cambiar contraseña |
+| 10 | `POST` | `/api/users/[id]/reset-password` | Reset contraseña (admin) |
+
+**POST /api/users**
+```json
+{ "companyId": "ID", "email": "admin@empresa.com", "name": "Admin", "password": "hashed", "role": "ADMIN" }
+```
+> `role`: ADMIN, ACCOUNTANT, MANAGER, VIEWER
+
+---
+
+## 17. 🔍 Auditoría (`/api/audit`) — 4 endpoints
+
+| # | Method | Path | ¿Para qué sirve? |
+|---|--------|------|-----------------|
+| 1 | `GET` | `/api/audit` | Listar bitácora |
+| 2 | `GET` | `/api/audit/[id]` | Ver entrada completa |
+| 3 | `GET` | `/api/audit/stats` | Estadísticas (acciones por tipo/usuario/día) |
+| 4 | `GET` | `/api/audit/export` | Exportar a JSON |
+
+**GET params:** `?companyId=ID&action=CREATE&entityType=JournalEntry&dateFrom=2024-01-01`
+
+---
+
+## 18. 🔔 Notificaciones (`/api/notifications`) — 5 endpoints
+
+| # | Method | Path | ¿Para qué sirve? |
+|---|--------|------|-----------------|
+| 1 | `GET` | `/api/notifications` | Listar notificaciones |
+| 2 | `POST` | `/api/notifications` | Crear notificación |
+| 3 | `GET` | `/api/notifications/[id]` | Ver notificación |
+| 4 | `PUT` | `/api/notifications/[id]` | Actualizar |
+| 5 | `POST` | `/api/notifications/[id]/read` | Marcar como leída |
+| 6 | `POST` | `/api/notifications/mark-all-read` | Marcar todas |
+| 7 | `GET` | `/api/notifications/unread-count` | Cantidad no leídas |
+
+> `type`: OVERDUE_INVOICE, PERIOD_CLOSE, BALANCE_MISMATCH, LOW_CASH, TASK_ASSIGNED, SYSTEM  
+> `priority`: LOW, NORMAL, HIGH, URGENT
+
+---
+
+## 19. 📎 Adjuntos (`/api/attachments`) — 3 endpoints
+
+| # | Method | Path | ¿Para qué sirve? |
+|---|--------|------|-----------------|
+| 1 | `GET` | `/api/attachments` | Listar adjuntos |
+| 2 | `POST` | `/api/attachments` | Crear registro de adjunto |
+| 3 | `GET` | `/api/attachments/[id]` | Ver adjunto |
+| 4 | `DELETE` | `/api/attachments/[id]` | Eliminar |
+| 5 | `GET` | `/api/attachments/by-entity` | Adjuntos de una entidad |
+
+**GET /api/attachments/by-entity?companyId=ID&entityType=Invoice&entityId=ID**
+
+---
+
+## 20. 🔎 Búsqueda (`/api/search`) — 2 endpoints
+
+| # | Method | Path | ¿Para qué sirve? |
+|---|--------|------|-----------------|
+| 1 | `GET` | `/api/search/global` | Búsqueda global (mín 3 chars) |
+| 2 | `POST` | `/api/search/advanced` | Búsqueda avanzada multi-criterio |
+
+**GET /api/search/global?companyId=ID&q=banco**
+→ Busca en cuentas, terceros, pólizas, facturas simultáneamente.
+
+---
+
+## 21. 📤 Import/Export (`/api/data`) — 3 endpoints
+
+| # | Method | Path | ¿Para qué sirve? |
+|---|--------|------|-----------------|
+| 1 | `POST` | `/api/data/export` | Exportar datos a JSON |
+| 2 | `POST` | `/api/data/import` | Importar datos desde JSON |
+| 3 | `GET` | `/api/data/export-csv` | Exportar a CSV |
+
+---
+
+## 22. ⚙️ Sistema (`/api/system`) — 4 endpoints
+
+| # | Method | Path | ¿Para qué sirve? |
+|---|--------|------|-----------------|
+| 1 | `GET` | `/api/system/health` | Health check (DB connection + conteos) |
+| 2 | `GET` | `/api/system/stats` | Estadísticas globales |
+| 3 | `POST` | `/api/system/validate-integrity` | Validar integridad (partidas cuadran, sin huérfanos) |
+| 4 | `POST` | `/api/system/cleanup` | Limpiar registros huérfanos |
+
+---
+
+## 23. 🤖 IA / Ollama (`/api/ai`) — 4 endpoints
+
+| # | Method | Path | ¿Para qué sirve? |
+|---|--------|------|-----------------|
+| 1 | `POST` | `/api/ai/chat` | Chat con IA contable (Ollama o fallback) |
+| 2 | `GET` | `/api/ai/status` | Estado de conexión Ollama |
+| 3 | `GET` | `/api/ai/models` | Modelos disponibles en Ollama |
+| 4 | `GET` | `/api/ai/tools` | Herramientas (function calling) disponibles |
+
+**POST /api/ai/chat**
+```json
+{ "message": "Dame el balance de enero", "companyId": "ID", "history": [] }
+```
+→ Retorna `{ response, toolCalls?, usedFallback, ollamaAvailable }`  
+→ Si Ollama no corre, devuelve respuestas fallback con guía de APIs.
+
+**GET /api/ai/status** → `{ ollamaAvailable, model, url, loadedModels }`
+
+---
+
+## 24. 🗃️ Seed (`/api/seed`) — 1 endpoint
+
+| # | Method | Path | ¿Para qué sirve? |
+|---|--------|------|-----------------|
+| 1 | `POST` | `/api/seed` | Poblar BD con datos de prueba |
+
+```bash
+curl -X POST http://localhost:3000/api/seed
+```
+→ Crea: 1 empresa, 6 períodos, ~85 cuentas, 13 centros de costo, 10 terceros, 25 pólizas, 15 facturas, 2 cuentas bancarias, 20 movimientos, 3 usuarios, 5 audit logs, 6 tipos de cambio, 4 activos fijos, 5 presupuestos, 3 notificaciones, 2 adjuntos.
+
+---
+
+## Resumen Total: 100 Endpoints
+
+| Módulo | Endpoints |
+|--------|-----------|
+| Empresas | 5 |
+| Períodos | 7 |
+| Plan de Cuentas | 7 |
+| Centros de Costo | 6 |
+| Pólizas / Libro Diario | 11 |
+| Terceros | 5 |
+| Facturas | 8 |
+| Bancos | 7 |
+| Reportes Financieros | 3 |
+| Reportes Avanzados | 6 |
+| Dashboard | 2 |
+| Dashboard Avanzado | 8 |
+| Activos Fijos | 9 |
+| Presupuestos | 5 |
+| Tipos de Cambio | 4 |
+| Usuarios | 7 |
+| Auditoría | 4 |
+| Notificaciones | 5 |
+| Adjuntos | 3 |
+| Búsqueda | 2 |
+| Import/Export | 3 |
+| Sistema | 4 |
+| IA / Ollama | 4 |
+| Seed | 1 |
+| **TOTAL** | **100** |
+
+\end{lstlisting}
+
+
+\end{document}

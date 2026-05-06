@@ -203,7 +203,7 @@ export function ConfirmDialog({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px]" onClick={onClose} />
       <motion.div
         className="relative bg-card dark:bg-zinc-900 rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl border border-vintage-200 dark:border-zinc-800"
         initial={{ scale: 0.95, opacity: 0 }}
@@ -224,11 +224,12 @@ export function ConfirmDialog({
           <button
             onClick={onConfirm}
             disabled={loading}
-            className={`px-4 py-2 text-sm rounded-xl text-white transition-all flex items-center gap-2 ${
+            className={cn(
+              "px-4 py-2 text-sm rounded-xl transition-all flex items-center gap-2 font-medium shadow-sm",
               variant === 'destructive'
-                ? 'bg-error hover:bg-error/80 disabled:bg-error/50'
-                : 'bg-vintage-400 hover:bg-vintage-500 disabled:bg-vintage-300'
-            }`}
+                ? "bg-error hover:bg-error/90 text-white disabled:bg-error/50"
+                : "bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
+            )}
           >
             {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             {confirmLabel}

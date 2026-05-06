@@ -7,14 +7,23 @@ import { VintageCard } from '@/components/ui/vintage-card';
 import { StatusBadge } from '@/components/ui/vintage-ui';
 import { PastelButton } from '@/components/ui/pastel-button';
 import { useSystem } from '../hooks/useSystem';
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
 
 interface SystemCheck { name: string; status: 'ok' | 'warning' | 'error'; detail: string; }
 interface SystemStat { label: string; value: number; icon: React.ReactNode; }
 
 export function SystemView() {
-  const { stats, health, isLoading, refresh } = useSystem();
+  const { stats, health, isLoading: hookLoading, refresh } = useSystem();
+  const [loading, setLoading] = useState(true);
 
-  if (isLoading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-vintage-200 border-t-vintage-400 rounded-full animate-spin" /></div>;
+  useEffect(() => {
+    if (!hookLoading) {
+      const timer = setTimeout(() => setLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [hookLoading]);
+
+  if (loading) return <GaneshaLoader variant="compact" message="Verificando integridad del sistema..." />;
 
   const currentStats = [
     { label: 'Pólizas', value: stats?.entities?.journalEntries || 0, icon: <Server className="w-4 h-4 text-primary" /> },

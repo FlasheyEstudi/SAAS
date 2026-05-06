@@ -77,103 +77,122 @@ export function AIChatView() {
   };
 
   const handleDownloadResponse = async (content: string, index: number) => {
-    toast.info('Generando reporte ejecutivo con gráficas...');
+    toast.info('Generando reporte ejecutivo premium...');
     try {
       const companyName = currentCompany?.name || 'Empresa';
       const { jsPDF } = await import('jspdf');
       const autoTable = (await import('jspdf-autotable')).default;
       const doc = new jsPDF();
       
-      // Encabezado
+      const pageHeight = doc.internal.pageSize.height;
+      const pageWidth = doc.internal.pageSize.width;
+      const margin = 20;
+      let y = 30;
+
+      // --- Helper para manejar saltos de página ---
+      const checkPageBreak = (heightNeeded: number) => {
+        if (y + heightNeeded > pageHeight - 20) {
+          doc.addPage();
+          addFooter(doc, doc.getNumberOfPages());
+          y = 25;
+          return true;
+        }
+        return false;
+      };
+
+      // --- Helper para Pie de Página ---
+      const addFooter = (pdf: any, pageNum: number) => {
+        pdf.setFontSize(8);
+        pdf.setTextColor(150);
+        pdf.text(`Ganesha ERP - Reporte de Inteligencia Artificial | Generado el ${new Date().toLocaleDateString()}`, margin, pageHeight - 10);
+        pdf.text(`Página ${pageNum}`, pageWidth - 30, pageHeight - 10);
+      };
+
+      // Encabezado Principal
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(22);
-      doc.setTextColor(249, 115, 22);
-      doc.text("REPORTE FINANCIERO GANESHA", 20, 25);
+      doc.setFontSize(20);
+      doc.setTextColor(30, 58, 138); // Azul Investor
+      doc.text("REPORTE EJECUTIVO GANESHA AI", margin, y);
+      y += 10;
       
       doc.setFontSize(10);
       doc.setTextColor(100);
       doc.setFont("helvetica", "normal");
-      doc.text(`Entidad: ${companyName}`, 20, 35);
-      doc.text(`Fecha de Emisión: ${new Date().toLocaleString()}`, 20, 40);
-      doc.line(20, 45, 190, 45);
-      
-      let y = 55;
-      const lines = content.split('\n');
-      let currentText = '';
+      doc.text(`Entidad: ${companyName.toUpperCase()}`, margin, y);
+      doc.text(`ID de Transacción: AI-${Math.random().toString(36).substr(2, 9).toUpperCase()}`, pageWidth - 80, y);
+      y += 5;
+      doc.setDrawColor(200);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 15;
 
-      // --- Buscar y capturar la gráfica (Restauración de Visibilidad) ---
+      // --- Captura de Gráfica (Prioridad Alta) ---
       const chartElement = document.getElementById(`chart-${index}`);
       if (chartElement) {
         try {
-          const html2canvas = (await import('html2canvas')).default;
-          
-          await new Promise(resolve => setTimeout(resolve, 1500)); // Un poco más de tiempo para renderizado
-          
-          const canvas = await html2canvas(chartElement, {
-            backgroundColor: '#ffffff',
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            logging: false,
-            onclone: (clonedDoc) => {
-              // 1. Limpieza selectiva de estilos para evitar error oklab
-              const styleTags = clonedDoc.getElementsByTagName('style');
-              for (let style of styleTags) {
-                if (style.innerHTML.includes('okl')) {
-                  style.innerHTML = style.innerHTML.replace(/okl[ab|ch]\(.*?\)/g, '#f97316');
+          // Técnica Vectorial: Capturar el SVG directamente (.recharts-surface)
+          const svgElement = chartElement.querySelector('.recharts-surface');
+          if (svgElement) {
+            const svgData = new XMLSerializer().serializeToString(svgElement);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            // Alta resolución para el PDF
+            const svgSize = svgElement.getBoundingClientRect();
+            canvas.width = svgSize.width * 4;
+            canvas.height = svgSize.height * 4;
+
+            await new Promise((resolve, reject) => {
+              img.onload = () => {
+                if (ctx) {
+                  ctx.fillStyle = 'white';
+                  ctx.fillRect(0, 0, canvas.width, canvas.height);
+                  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                  const imgData = canvas.toDataURL('image/png');
+                  const imgWidth = pageWidth - (margin * 2);
+                  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                  
+                  checkPageBreak(imgHeight);
+                  doc.addImage(imgData, 'PNG', margin, y, imgWidth, imgHeight);
+                  y += imgHeight + 15;
+                  resolve(true);
                 }
-              }
-              
-              // 2. FORZAR ESTILOS DE LA GRÁFICA EN EL CLON
-              const el = clonedDoc.getElementById(`chart-${index}`);
-              if (el) {
-                el.style.display = 'block';
-                el.style.visibility = 'visible';
-                el.style.opacity = '1';
-                el.style.background = 'white';
-                el.style.padding = '40px';
-                el.style.width = '100%';
-                
-                // Asegurar que los SVG interiores se vean
-                const svgs = el.getElementsByTagName('svg');
-                for (let svg of svgs) {
-                  svg.style.display = 'block';
-                  svg.style.visibility = 'visible';
-                  svg.style.opacity = '1';
-                  svg.setAttribute('width', '800');
-                  svg.setAttribute('height', '400');
-                }
-              }
-            }
-          });
-          
-          const imgData = canvas.toDataURL('image/png');
-          doc.addImage(imgData, 'PNG', 20, y, 170, 85, undefined, 'FAST');
-          y += 95;
-        } catch {
-          doc.setFontSize(10);
-          doc.setTextColor(249, 115, 22);
-          doc.text("[ Gráfica disponible en versión digital ]", 20, y);
-          y += 10;
+              };
+              img.onerror = reject;
+              img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+            });
+          }
+        } catch (e) {
+          console.error('Error capturando gráfica vectorial para PDF:', e);
         }
       }
+
+      // --- Procesamiento de Contenido (Texto y Tablas) ---
+      const lines = content.split('\n');
+      let currentTextBlock = '';
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         
+        // Detectar Tabla Markdown
         if (line.startsWith('|') && line.includes('|') && !line.includes('---')) {
-          if (currentText.trim()) {
+          // Imprimir bloque de texto acumulado antes de la tabla
+          if (currentTextBlock.trim()) {
             doc.setFont("helvetica", "normal");
             doc.setFontSize(11);
             doc.setTextColor(40);
-            const splitMsg = doc.splitTextToSize(currentText.replace(/\*\*/g, '').trim(), 170);
-            doc.text(splitMsg, 20, y);
-            y += (splitMsg.length * 6) + 5;
-            currentText = '';
+            const splitMsg = doc.splitTextToSize(currentTextBlock.replace(/\*\*/g, '').trim(), pageWidth - (margin * 2));
+            for (const textLine of splitMsg) {
+              checkPageBreak(6);
+              doc.text(textLine, margin, y);
+              y += 6;
+            }
+            y += 4;
+            currentTextBlock = '';
           }
 
           const tableRows: string[][] = [];
-          while (i < lines.length && lines[i].trim().includes('|')) {
+          while (i < lines.length && lines[i].trim().startsWith('|')) {
             if (!lines[i].includes('---')) {
               tableRows.push(lines[i].split('|').filter(c => c.trim() !== '').map(c => c.trim()));
             }
@@ -181,33 +200,61 @@ export function AIChatView() {
           }
 
           if (tableRows.length > 0) {
+            checkPageBreak(20); // Espacio mínimo para iniciar tabla
             autoTable(doc, {
               startY: y,
               head: [tableRows[0]] as any[][],
               body: tableRows.slice(1) as any[][],
-              theme: 'striped',
-              headStyles: { fillColor: [249, 115, 22], textColor: 255, fontStyle: 'bold' },
-              styles: { fontSize: 9, cellPadding: 3 },
-              margin: { left: 20, right: 20 }
+              theme: 'grid',
+              headStyles: { fillColor: [30, 58, 138], textColor: 255, fontStyle: 'bold' },
+              styles: { fontSize: 9, cellPadding: 3, halign: 'center' },
+              margin: { left: margin, right: margin },
+              didDrawPage: (data) => {
+                addFooter(doc, doc.getNumberOfPages());
+              }
             });
             // @ts-ignore
             y = doc.lastAutoTable.finalY + 10;
           }
           i--;
-        } else {
-          currentText += line + '\n';
+        } else if (line !== '') {
+          // Es texto normal
+          currentTextBlock += line + ' ';
+        } else if (currentTextBlock.trim() !== '') {
+          // Salto de párrafo
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(11);
+          doc.setTextColor(40);
+          const splitMsg = doc.splitTextToSize(currentTextBlock.replace(/\*\*/g, '').trim(), pageWidth - (margin * 2));
+          for (const textLine of splitMsg) {
+            checkPageBreak(6);
+            doc.text(textLine, margin, y);
+            y += 6;
+          }
+          y += 4;
+          currentTextBlock = '';
         }
       }
 
-      if (currentText.trim()) {
-        const splitMsg = doc.splitTextToSize(currentText.replace(/\*\*/g, '').trim(), 170);
-        doc.text(splitMsg, 20, y);
+      // Imprimir último bloque de texto si existe
+      if (currentTextBlock.trim()) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        doc.setTextColor(40);
+        const splitMsg = doc.splitTextToSize(currentTextBlock.replace(/\*\*/g, '').trim(), pageWidth - (margin * 2));
+        for (const textLine of splitMsg) {
+          checkPageBreak(6);
+          doc.text(textLine, margin, y);
+          y += 6;
+        }
       }
-      
-      doc.save(`Reporte_Ganesha_${companyName}.pdf`);
-      toast.success('Reporte con gráficas descargado');
+
+      addFooter(doc, doc.getNumberOfPages());
+      doc.save(`Reporte_IA_Ganesha_${companyName}_${new Date().getTime()}.pdf`);
+      toast.success('Reporte ejecutivo generado con éxito');
     } catch (error) {
-      toast.error('Error al generar reporte pro');
+      console.error('Error PDF Pro:', error);
+      toast.error('Error al generar reporte premium');
     }
   };
 
@@ -274,34 +321,46 @@ export function AIChatView() {
     let chartData: ChartData | null = null;
     let cleanContent = content;
 
+    let tableData: string[][] | null = null;
+
     if (chartMatch) {
       try {
         chartData = JSON.parse(chartMatch[1]);
         cleanContent = content.replace(chartMatch[0], '');
       } catch {}
     } 
-    else if (content.includes('|') && content.includes('---')) {
+    
+    // Motor de Tablas Manual (Rescate de Markdown mal formado)
+    if (content.includes('|')) {
       const lines = content.split('\n');
-      const tableLines = lines.filter(l => l.includes('|'));
-      if (tableLines.length >= 3) {
+      const tableLines = lines.filter(l => l.includes('|') && l.trim().length > 3);
+      
+      if (tableLines.length >= 2) {
         try {
-          const rows = tableLines.slice(2)
-            .map(line => line.split('|').filter(cell => cell.trim() !== ''))
-            .filter(cells => cells.length >= 2);
-          
-          if (rows.length >= 2) {
-            const data = rows.map(row => ({
-              label: row[0].trim(),
-              value: parseFloat(row[1].trim().replace(/[^0-9.-]/g, ''))
-            })).filter(d => !isNaN(d.value));
+          const rows = tableLines
+            .filter(l => !l.includes('---'))
+            .map(line => line.split('|').map(c => c.trim()).filter(c => c !== ''))
+            .filter(cells => cells.length >= 1);
 
-            if (data.length >= 2) {
-              chartData = {
-                type: content.toLowerCase().includes('olas') || content.toLowerCase().includes('area') ? 'area' : 'bar',
-                title: "Gráfico Detectado",
-                data: data
-              };
+          if (rows.length >= 2) {
+            tableData = rows;
+            // Generar gráfica automática si no hay una definida
+            if (!chartData) {
+              const data = rows.slice(1).map(row => ({
+                label: row[0],
+                value: parseFloat(row[1]?.replace(/[^0-9.-]/g, '') || '0')
+              })).filter(d => !isNaN(d.value) && d.value !== 0);
+
+              if (data.length >= 2) {
+                chartData = {
+                  type: 'bar',
+                  title: rows[0][0] || "Resumen Financiero",
+                  data: data
+                };
+              }
             }
+            // Limpiar el contenido original para evitar duplicados feos
+            cleanContent = lines.filter(l => !l.includes('|')).join('\n');
           }
         } catch (e) {}
       }
@@ -309,16 +368,105 @@ export function AIChatView() {
 
     return (
       <div className="space-y-4">
-        <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-800">
+        <div className="prose prose-sm dark:prose-invert max-w-none 
+          prose-p:leading-relaxed prose-p:text-zinc-600 dark:prose-p:text-zinc-400
+          prose-strong:text-orange-600 dark:prose-strong:text-orange-400 prose-strong:font-bold
+          prose-ul:list-disc prose-ul:pl-4 prose-ul:space-y-1 prose-ul:text-zinc-500
+          prose-ol:list-decimal prose-ol:pl-4 prose-ol:space-y-1 prose-ol:text-zinc-500
+          prose-li:marker:text-orange-500
+          prose-blockquote:border-l-4 prose-blockquote:border-orange-500/30 prose-blockquote:bg-orange-50/30 dark:prose-blockquote:bg-orange-950/10 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:rounded-r-xl prose-blockquote:italic
+          prose-table:border prose-table:border-vintage-200 dark:prose-table:border-white/5 
+          prose-table:rounded-xl prose-table:overflow-hidden prose-table:my-4
+          prose-th:bg-vintage-100/50 dark:prose-th:bg-white/5 prose-th:px-4 prose-th:py-2 prose-th:text-xs prose-th:uppercase prose-th:tracking-wider
+          prose-td:px-4 prose-td:py-2 prose-td:border-t prose-td:border-vintage-200 dark:prose-td:border-white/5
+          prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-800 prose-pre:rounded-2xl prose-pre:shadow-2xl">
           <ReactMarkdown>{cleanContent}</ReactMarkdown>
         </div>
+        
+        {tableData && (
+          <div className="my-4 overflow-hidden rounded-2xl border border-vintage-200 dark:border-white/10 shadow-sm bg-white dark:bg-zinc-900/50">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-vintage-100/50 dark:bg-white/5">
+                  {tableData[0].map((header, i) => (
+                    <th key={i} className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-vintage-600 dark:text-zinc-400 border-b border-vintage-200 dark:border-white/10">
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {tableData.slice(1).map((row, i) => (
+                  <tr key={i} className="hover:bg-vintage-50/50 dark:hover:bg-white/5 transition-colors">
+                    {row.map((cell, j) => (
+                      <td key={j} className={cn(
+                        "px-4 py-2.5 text-xs border-b border-vintage-100 dark:border-white/5 text-vintage-800 dark:text-zinc-300",
+                        j > 0 ? "font-mono font-medium text-orange-600 dark:text-orange-400" : ""
+                      )}>
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
         {chartData && (
           <motion.div 
             id={`chart-${index}`}
             initial={{ opacity: 0, y: 20 }} 
             animate={{ opacity: 1, y: 0 }} 
-            className="mt-4 bg-white/50 dark:bg-zinc-900/50 p-4 rounded-3xl border border-vintage-200 dark:border-white/5 shadow-inner"
+            className="mt-6 bg-white dark:bg-zinc-900/80 p-6 rounded-[2rem] border border-vintage-200 dark:border-white/10 shadow-xl shadow-orange-500/5 group/chart"
           >
+            <div className="flex items-center justify-between mb-4 border-b border-vintage-100 dark:border-white/5 pb-4">
+              <h4 className="text-sm font-playfair font-bold text-vintage-800 dark:text-white flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                {chartData.title}
+              </h4>
+              <button 
+                onClick={async () => {
+                  const chartBox = document.getElementById(`chart-${index}`);
+                  // Selector específico para evitar capturar los iconos de Lucide
+                  const svgElement = chartBox?.querySelector('.recharts-surface');
+                  if (svgElement) {
+                    try {
+                      const svgData = new XMLSerializer().serializeToString(svgElement);
+                      const canvas = document.createElement('canvas');
+                      const ctx = canvas.getContext('2d');
+                      const img = new Image();
+                      
+                      const svgSize = svgElement.getBoundingClientRect();
+                      canvas.width = svgSize.width * 2;
+                      canvas.height = svgSize.height * 2;
+                      
+                      img.onload = () => {
+                        if (ctx) {
+                          ctx.fillStyle = 'white';
+                          ctx.fillRect(0, 0, canvas.width, canvas.height);
+                          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                          const link = document.createElement('a');
+                          link.download = `grafica-ganesha-${Date.now()}.png`;
+                          link.href = canvas.toDataURL('image/png');
+                          link.click();
+                          toast.success('Gráfica capturada correctamente');
+                        }
+                      };
+                      
+                      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+                    } catch (err) {
+                      console.error('Error en captura:', err);
+                      toast.error('Error al procesar gráfica');
+                    }
+                  }
+                }}
+                className="p-2 bg-orange-50 dark:bg-orange-950/30 text-orange-600 rounded-xl opacity-0 group-hover/chart:opacity-100 transition-all hover:scale-110 active:scale-95 flex items-center gap-2 text-[10px] font-bold uppercase tracking-tighter"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Guardar Imagen
+              </button>
+            </div>
             <AIChart type={chartData.type} data={chartData.data} title={chartData.title} />
           </motion.div>
         )}

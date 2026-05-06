@@ -1,0 +1,92 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{tcolorbox}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows}
+
+% Configuración de colores premium
+\definecolor{ganeshaprue}{HTML}{0F172A}
+\definecolor{ganeshaaccent}{HTML}{3B82F6}
+\definecolor{ganeshagray}{HTML}{64748B}
+
+\geometry{margin=2.5cm}
+
+\titleformat{\section}{\color{ganeshaprue}\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\color{ganeshaaccent}\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    {\Huge\bfseries\color{ganeshaprue} Arquitectura de Inteligencia Artificial}\\[0.5cm]
+    {\Large\color{ganeshaaccent} Gestión de Datos de Alto Rendimiento en Ganesha ERP}\\[2cm]
+    
+    \begin{tcolorbox}[colback=ganeshaprue,colframe=ganeshaprue,arc=5pt,left=20pt,right=20pt,top=20pt,bottom=20pt]
+        \centering
+        \color{white}
+        \textbf{Documentación Técnica sobre el Acceso a Datos y Optimización de LLM}
+    \end{tcolorbox}
+    
+    \vfill
+    {\large \today}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Introducción}
+Ganesha ERP utiliza una arquitectura híbrida para su asistente de Inteligencia Artificial, basada en el modelo de lenguaje \textbf{Ollama (Llama 3.2)}. El desafío principal de cualquier IA aplicada a ERPs es procesar miles de registros contables sin saturar la ventana de contexto del modelo ni degradar el rendimiento del servidor.
+
+\section{Estrategia de Acceso a Datos: Tool Calling}
+A diferencia de otros sistemas que envían archivos planos o dumps de bases de datos a la IA, Ganesha utiliza un patrón de \textbf{Invocación de Herramientas (Tool Calling)}.
+
+\begin{tcolorbox}[title=Ventajas del Modelo TAG (Tool-Augmented Generation), colback=blue!5, colframe=ganeshaaccent]
+    \begin{itemize}
+        \item \textbf{Cero Saturación}: La IA solo recibe los datos que necesita para responder la pregunta actual.
+        \item \textbf{Veracidad Contable}: Los datos no son "inventados" por el modelo, sino calculados por servicios financieros determinísticos en el Backend.
+        \item \textbf{Seguridad de Multi-tenencia}: El sistema inyecta el \texttt{companyId} de forma invisible, garantizando que un usuario nunca acceda a datos de otra empresa.
+    \end{itemize}
+\end{tcolorbox}
+
+\section{Flujo de Ejecución}
+
+\begin{center}
+\begin{tikzpicture}[node distance=2cm]
+\tikzstyle{startstop} = [rectangle, rounded corners, minimum width=3cm, minimum height=1cm,text centered, draw=black, fill=red!30]
+\tikzstyle{process} = [rectangle, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=blue!30]
+\tikzstyle{decision} = [diamond, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=green!30]
+
+\node (start) [startstop] {Pregunta Usuario};
+\node (pro1) [process, below of=start] {Analizador de Intención (LLM)};
+\node (dec1) [decision, below of=pro1, yshift=-0.5cm] {¿Necesita Datos?};
+\node (pro2) [process, right of=dec1, xshift=3cm] {Ejecutor de Herramientas};
+\node (pro3) [process, below of=pro2] {Servicios Financieros (SQL)};
+\node (pro4) [process, below of=dec1, yshift=-1.5cm] {Generador de Respuesta};
+
+\draw [arrow] (start) -- (pro1);
+\draw [arrow] (pro1) -- (dec1);
+\draw [arrow] (dec1) -- node[anchor=south] {SÍ} (pro2);
+\draw [arrow] (pro2) -- (pro3);
+\draw [arrow] (pro3) -| (pro4);
+\draw [arrow] (dec1) -- node[anchor=east] {NO} (pro4);
+\end{tikzpicture}
+\end{center}
+
+\section{Optimización de Recursos}
+Para evitar "ponerle todo el peso" a la IA, el sistema pre-procesa la información en el \textbf{Financial Report Service}.
+\begin{itemize}
+    \item \textbf{Agregación en DB}: El Backend realiza las sumas y agrupaciones (KPIs) usando SQL puro, que es infinitamente más rápido que el procesamiento de texto.
+    \item \textbf{JSON Estructurado}: La IA recibe solo los resultados finales (ej: "Total Ingresos: 50,000") en lugar de 5,000 líneas de movimientos individuales.
+\end{itemize}
+
+\section{Seguridad y Privacidad}
+Cada petición al ejecutor de herramientas requiere una validación de sesión. Si el token de usuario no coincide con los permisos de la empresa solicitada, el sistema retorna un error antes de que la IA siquiera procese la información.
+
+\end{document}

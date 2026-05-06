@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { apiClient } from '@/lib/api/client';
 import { AI } from '@/lib/api/endpoints';
 import { toast } from 'sonner';
@@ -52,6 +52,16 @@ export function useAI() {
     return [];
   });
 
+  // Ref para tener acceso al historial más reciente sin recrear sendMessage
+  const historyRef = useRef<ChatMessage[]>(messages);
+
+  useEffect(() => {
+    historyRef.current = messages;
+    if (storageKey) {
+      localStorage.setItem(storageKey, JSON.stringify(messages));
+    }
+  }, [messages, storageKey]);
+
   useEffect(() => {
     if (!storageKey) {
       setMessages([]);
@@ -69,43 +79,33 @@ export function useAI() {
     }
   }, [storageKey]);
 
-  useEffect(() => {
-    if (storageKey) {
-      localStorage.setItem(storageKey, JSON.stringify(messages));
-    }
-  }, [messages, storageKey]);
-
   const [models, setModels] = useState<AIModel[]>([]);
   const [tools, setTools] = useState<AITools | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [status, setStatus] = useState<'online' | 'offline' | 'busy'>('offline');
 
   const sendMessage = useCallback(async (content: string) => {
-    if (!content.trim()) return null;
-    if (!companyId) {
-      toast.error('Selecciona una empresa antes de usar la IA');
-      return null;
-    }
-    if (status !== 'online') {
-      toast.error('La IA no está disponible. Verifica la conexión con Ollama.');
+    if (!content.trim() || !companyId || status !== 'online') {
+      if (!companyId) toast.error('Selecciona una empresa');
+      if (status !== 'online') toast.error('IA Offline');
       return null;
     }
 
+    setIsTyping(true);
+    const userMsg: ChatMessage = { role: 'user', content, timestamp: new Date() };
+    const assistantMsg: ChatMessage = { role: 'assistant', content: '', timestamp: new Date() };
+    
+    // Capturar historial para la API (Filtrando solo mensajes con contenido y excluyendo el actual)
+    const historyPayload = historyRef.current
+      .filter(m => m.content.trim() !== '')
+      .map(m => ({ role: m.role, content: m.content }))
+      .slice(-6); // Mantener solo las últimas 3 interacciones para máxima velocidad
+    
+    // Actualizar UI inmediatamente con los nuevos mensajes
+    setMessages(prev => [...prev, userMsg, assistantMsg]);
+
+    let streamContent = '';
     try {
-      setIsTyping(true);
-      const userMessage: ChatMessage = { role: 'user', content, timestamp: new Date() };
-      setMessages(prev => [...prev, userMessage]);
-
-      const historyPayload = messages.map(({ role, content }) => ({ role, content }));
-
-      // Creamos un mensaje vacío para el asistente que iremos llenando
-      const aiMessage: ChatMessage = {
-        role: 'assistant',
-        content: '',
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, aiMessage]);
-
       const reader = await apiClient.postStream(AI.chat, {
         message: content,
         history: historyPayload,
@@ -113,49 +113,48 @@ export function useAI() {
       });
 
       const decoder = new TextDecoder();
-      let fullContent = '';
-      let buffer = ''; // Acumulador para fragmentos incompletos
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        
-        const lines = buffer.split('\n');
-        // El último elemento podría estar incompleto, lo dejamos en el buffer
-        buffer = lines.pop() || '';
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
 
         for (const line of lines) {
           if (!line.trim()) continue;
           try {
             const json = JSON.parse(line);
-            if (json.message?.content) {
-              fullContent += json.message.content;
+            const delta = json.message?.content || '';
+            if (delta) {
+              streamContent += delta;
               setMessages(prev => {
-                const newMessages = [...prev];
-                const lastMessage = newMessages[newMessages.length - 1];
-                if (lastMessage && lastMessage.role === 'assistant') {
-                  lastMessage.content = fullContent;
+                const updated = [...prev];
+                for (let i = updated.length - 1; i >= 0; i--) {
+                  if (updated[i].role === 'assistant') {
+                    updated[i].content = streamContent;
+                    break;
+                  }
                 }
-                return newMessages;
+                return updated;
               });
             }
-          } catch (e) {
-            // Si falla, lo re-agregamos al inicio del buffer para el siguiente intento
-            buffer = line + buffer;
-          }
+          } catch (e) { }
         }
       }
       
-      return aiMessage;
+      return { role: 'assistant', content: streamContent };
     } catch (error) {
-      toast.error('No se pudo obtener respuesta en tiempo real');
+      // Solo mostrar error si no tenemos nada de contenido (fallo real de inicio)
+      if (!streamContent) {
+        console.error('[useAI] Stream Error:', error);
+        toast.error('Error al iniciar comunicación con la IA');
+      }
       return null;
     } finally {
       setIsTyping(false);
     }
-  }, [messages, companyId, status]);
+  }, [companyId, status]);
 
   const fetchModels = useCallback(async () => {
     try {

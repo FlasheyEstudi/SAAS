@@ -46,26 +46,26 @@ export interface AiContext {
   financialSnapshot?: string;
 }
 
-const SYSTEM_PROMPT_TEMPLATE = `[DIRECTIVA DE SISTEMA NIVEL 5 - CRÍTICA]
-ERES GANESHA AI, LA DIRECTORA FINANCIERA DE {{COMPANY_NAME}}.
-TU ÚNICO MEDIO DE VISUALIZACIÓN ES LA TABLA DE MARKDOWN.
+const SYSTEM_PROMPT_TEMPLATE = `[SISTEMA DE ANÁLISIS FINANCIERO AVANZADO - MODO AUDITORÍA]
+- IDENTIDAD: GANESHA, Directora Financiera y Auditora de Discrepancias.
+- ORGANIZACIÓN: {{COMPANY_NAME}}.
+- AUTORIDAD: {{USER_NAME}}.
 
-[PROHIBICIÓN ABSOLUTA]
-1. PROHIBIDO DAR CÓDIGO PYTHON.
-2. PROHIBIDO DECIR QUE "NO PUEDES" GENERAR GRÁFICOS.
-3. SIEMPRE QUE ANALICES DATOS NUMÉRICOS (Ventas, Gastos, Impuestos, Clientes, Deudas), GENERA UNA TABLA DE MARKDOWN para que el sistema la grafique.
+[REGLAS DE FORMATO CRÍTICAS]
+1. TABLAS: Usa saltos de línea reales. NO pongas todo en una línea.
+Ejemplo exacto:
+| Categoría | Monto |
+| :--- | :--- |
+| Ingresos | $100.00 |
 
-[EJEMPLO DE TABLA UNIVERSAL]
-| Categoría | Valor |
-|---|---|
-| Dato A | 100 |
-| Dato B | 200 |
+2. VISUALIZACIÓN: Si hay números, usa [CHART: ...] después de la tabla.
+3. PROHIBICIÓN: No uses "Lo siento" o "No puedo".
 
-[DATOS REALES DE LA EMPRESA]
-{{FINANCIAL_SNAPSHOT}}
+[MENSAJE INICIAL]
+"Hola {{USER_NAME}}, soy Ganesha. Iniciando auditoría forense para {{COMPANY_NAME}}."
 
-[REGLA DE ORO]
-Puedes graficar CUALQUIER COSA de tus datos. Si analizas los 3 gastos más grandes, ponlos en una tabla. Si analizas deudas, ponlas en una tabla. El usuario quiere VER sus datos en gráficas SIEMPRE.`;
+[DATOS PARA ANÁLISIS]
+{{FINANCIAL_SNAPSHOT}}`;
 
 export const AI_TOOLS: OllamaTool[] = [
   {
@@ -125,12 +125,18 @@ export async function listModels(): Promise<string[]> {
 
 async function callOllamaStreaming(systemPrompt: string, chatHistory: OllamaMessage[]): Promise<ReadableStream> {
   try {
+    // Filtrar mensajes previos para que no haya múltiples prompts de sistema
+    const filteredHistory = chatHistory
+      .filter(m => m.role !== 'system')
+      .slice(-4); // Reducimos a 4 mensajes para CPUs más lentos
 
-    // El historial debe terminar en un mensaje de usuario para que Ollama responda
     const messages: any[] = [
       { role: 'system', content: systemPrompt },
-      ...chatHistory.slice(-5)
+      ...filteredHistory
     ];
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutos de espera para CPUs viejos
 
     const res = await fetch(`${OLLAMA_URL}/api/chat`, {
       method: 'POST',
@@ -140,22 +146,26 @@ async function callOllamaStreaming(systemPrompt: string, chatHistory: OllamaMess
         messages,
         stream: true,
         options: {
-          temperature: 0.2,
+          temperature: 0.1,
           num_predict: 2048,
         }
       }),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     if (!res.ok) {
       const errorText = await res.text();
-      console.error('[Ollama] Error en respuesta de streaming:', res.status, errorText);
-      throw new Error(`Ollama error: ${res.status} ${errorText}`);
+      throw new Error(`Ollama respondio con error ${res.status}: ${errorText}`);
     }
-
 
     return res.body!;
   } catch (err: any) {
-    console.error('[Ollama] Error FATAL en callOllamaStreaming:', err);
+    if (err.name === 'AbortError') {
+      throw new Error('La IA tardó demasiado en responder (Tiempo de espera agotado)');
+    }
+    console.error('[Ollama] Error en callOllamaStreaming:', err);
     throw err;
   }
 }
@@ -191,14 +201,14 @@ export async function chatWithOllamaStream(
 ): Promise<ReadableStream> {
   const dynamicPrompt = SYSTEM_PROMPT_TEMPLATE
     .replace(/\{\{COMPANY_NAME\}\}/g, context?.companyName || 'Empresa')
+    .replace(/\{\{USER_NAME\}\}/g, context?.userName || 'Usuario')
     .replace(/\{\{FINANCIAL_SNAPSHOT\}\}/g, context?.financialSnapshot || 'Sin datos.');
 
   const messages: OllamaMessage[] = [
     { role: 'system', content: dynamicPrompt },
-    ...chatHistory.slice(-5),
+    ...chatHistory.slice(-4),
     { role: 'user', content: userMessage },
   ];
-
 
   return callOllamaStreaming(dynamicPrompt, [...chatHistory, { role: 'user', content: userMessage }]);
 }

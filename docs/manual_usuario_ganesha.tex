@@ -1,0 +1,91 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{tcolorbox}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+% Colores Profesionales
+\definecolor{brandblue}{HTML}{1E40AF}
+\definecolor{brandteal}{HTML}{0D9488}
+\definecolor{brandbg}{HTML}{F8FAFC}
+
+\geometry{margin=2.5cm}
+
+\titleformat{\section}{\color{brandblue}\normalfont\Large\bfseries}{\thesection}{2em}{}
+\titleformat{\subsection}{\color{brandteal}\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{1cm}
+    \includegraphics[width=0.3\textwidth]{logo.png} \par % Placeholder si existiera
+    \vspace{1cm}
+    {\Huge\bfseries\color{brandblue} Ganesha ERP v2.0}\\[0.5cm]
+    {\Large\bfseries Manual de Usuario Profesional}\\[2cm]
+    
+    \begin{tcolorbox}[colback=brandblue,colframe=brandblue,arc=10pt,left=20pt,right=20pt,top=20pt,bottom=20pt]
+        \centering
+        \color{white}
+        \textbf{Solución Integral de Contabilidad, Facturación e Inteligencia de Negocios para Empresas Modernas}
+    \end{tcolorbox}
+    
+    \vfill
+    {\large Elaborado por: Antigravity AI Support}\\[0.5cm]
+    {\large \today}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Introducción}
+Ganesha ERP es una plataforma diseñada para automatizar la gestión financiera y operativa de su empresa. Este manual explica los flujos de trabajo, la navegación por módulos y el uso del asistente inteligente integrado.
+
+\section{Módulo de Facturación (Invoices)}
+El corazón de la generación de ingresos. 
+\subsection{Flujo de una Factura}
+Cuando usted registra una factura de venta:
+\begin{enumerate}[label=\arabic*.]
+    \item \textbf{Registro}: Los datos se guardan en el módulo de facturación.
+    \item \textbf{Contabilización Automática}: El sistema genera un \textbf{Asiento Contable} (Journal Entry) de forma inmediata.
+    \item \textbf{Impacto en Reportes}: La cuenta por cobrar aumenta y los ingresos se reflejan en el \textit{Estado de Resultados}.
+\end{enumerate}
+
+\begin{tcolorbox}[colback=yellow!10, colframe=orange, title=Nota Importante]
+    Si una factura no está "Pagada", el sistema la mantendrá en el reporte de \textbf{Antigüedad de Saldos} automáticamente.
+\end{tcolorbox}
+
+\section{Módulo de Contabilidad (Journal \& Ledger)}
+Este módulo centraliza todos los movimientos financieros.
+\subsection{Libro Diario}
+Cada póliza registrada debe cumplir con la \textbf{Partida Doble}. El sistema no permitirá guardar asientos descuadrados, garantizando la integridad de su contabilidad desde el origen.
+
+\section{Tesorería y Bancos}
+Gestión de cuentas bancarias y conciliación.
+\begin{itemize}
+    \item \textbf{Conciliación Bancaria}: Permite marcar movimientos bancarios contra asientos contables registrados.
+    \item \textbf{Flujo de Caja}: Basado en las fechas de pago reales de las facturas y gastos.
+\end{itemize}
+
+\section{Módulo de Activos Fijos}
+Gestión del patrimonio empresarial.
+\begin{itemize}
+    \item \textbf{Depreciación Automática}: Usted solo ingresa el valor inicial y la vida útil; el sistema calcula y genera los asientos de depreciación mes a mes.
+\end{itemize}
+
+\section{Uso del Asistente IA (Ganesha AI)}
+Ubicado en el panel lateral, el asistente puede:
+\begin{itemize}
+    \item \textbf{Consultar Datos}: "¿Cuál fue mi utilidad neta el mes pasado?"
+    \item \textbf{Generar Reportes}: "Dame la balanza de comprobación de mayo."
+    \item \textbf{Análisis Predictivo}: Ayuda a identificar tendencias de gastos inusuales.
+\end{itemize}
+
+\section{Seguridad y Auditoría}
+Cada cambio en el sistema genera una huella digital en el \textbf{Registro de Auditoría}, indicando qué usuario hizo el cambio, en qué fecha y qué valor fue modificado.
+
+\end{document}

@@ -529,58 +529,77 @@ export async function getFinancialSnapshot(companyId: string) {
     const period = await resolvePeriod(companyId);
     if (!period) return 'No hay períodos contables configurados.';
 
-    // Obtener tendencia de los últimos 3 meses de forma ultra-rápida
+    // Obtener los últimos 3 meses
     const last3Periods = await db.accountingPeriod.findMany({
       where: { companyId },
       orderBy: [{ year: 'desc' }, { month: 'desc' }],
-      take: 3
+      take: 3,
+      select: { id: true, year: true, month: true }
     });
 
-    const trendData = await Promise.all(last3Periods.reverse().map(async (p) => {
-      try {
-        const journalEntries = await db.journalEntry.findMany({
-          where: { periodId: p.id, status: { in: ['POSTED', 'DRAFT'] } },
-          select: { id: true }
-        });
-        
-        const entryIds = journalEntries.map(e => e.id);
-        if (entryIds.length === 0) return { label: `${p.month}/${p.year}`, ingresos: 0, gastos: 0 };
+    const periodIds = last3Periods.map(p => p.id);
+    
+    // Consulta optimizada: Una sola pasada para todos los periodos
+    const aggregates = await db.journalEntryLine.groupBy({
+      by: ['journalEntryId', 'accountId'],
+      where: {
+        journalEntry: { 
+          periodId: { in: periodIds },
+          status: 'POSTED'
+        },
+        account: { accountType: { in: ['INCOME', 'EXPENSE'] } }
+      },
+      _sum: { debit: true, credit: true }
+    });
 
-        const lines = await db.journalEntryLine.findMany({
-          where: {
-            journalEntryId: { in: entryIds },
-            account: { accountType: { in: ['INCOME', 'EXPENSE'] } }
-          },
-          select: { debit: true, credit: true, account: { select: { accountType: true } } }
-        });
+    // Mapear resultados a periodos (Simplificado para velocidad)
+    const trendMap: Record<string, { ingresos: number, gastos: number }> = {};
+    last3Periods.forEach(p => {
+      trendMap[p.id] = { ingresos: 0, gastos: 0 };
+    });
 
-        let ingresos = 0;
-        let gastos = 0;
+    // Nota: Para máxima velocidad en SQLite, procesamos el resultado del groupBy
+    // En una implementación real más compleja usaríamos joins, pero esto es mucho más rápido que antes.
+    const entries = await db.journalEntry.findMany({
+      where: { id: { in: aggregates.map(a => a.journalEntryId) } },
+      select: { id: true, periodId: true }
+    });
+    
+    const entryToPeriod: Record<string, string> = {};
+    entries.forEach(e => entryToPeriod[e.id] = e.periodId);
 
-        for (const line of lines) {
-          if (line.account.accountType === 'INCOME') ingresos += Number(line.credit || 0) - Number(line.debit || 0);
-          else gastos += Number(line.debit || 0) - Number(line.credit || 0);
-        }
-        
-        return { 
-          label: `${p.month}/${p.year}`, 
-          ingresos: roundTwo(ingresos), 
-          gastos: roundTwo(gastos) 
-        };
-      } catch (err) {
-        return { label: `${p.month}/${p.year}`, ingresos: 0, gastos: 0 };
-      }
-    }));
+    const accounts = await db.account.findMany({
+      where: { id: { in: aggregates.map(a => a.accountId) } },
+      select: { id: true, accountType: true }
+    });
+    const accountTypes: Record<string, string> = {};
+    accounts.forEach(a => accountTypes[a.id] = a.accountType);
 
-    const trendTable = trendData.map(d => `| ${d.label} | ${d.ingresos} | ${d.gastos} |`).join('\n');
+    for (const agg of aggregates) {
+      const pId = entryToPeriod[agg.journalEntryId];
+      const type = accountTypes[agg.accountId];
+      if (!pId || !type) continue;
+
+      const debit = Number(agg._sum.debit || 0);
+      const credit = Number(agg._sum.credit || 0);
+
+      if (type === 'INCOME') trendMap[pId].ingresos += (credit - debit);
+      else trendMap[pId].gastos += (debit - credit);
+    }
+
+    const trendTable = last3Periods.reverse().map(p => {
+      const data = trendMap[p.id];
+      return `| ${p.month}/${p.year} | ${roundTwo(data.ingresos)} | ${roundTwo(data.gastos)} |`;
+    }).join('\n');
 
     return `
-DATOS REALES CARGADOS:
+ESTADO FINANCIERO ACTUAL:
 | Mes | Ingresos | Gastos |
 | --- | --- | --- |
 ${trendTable}
 `.trim();
   } catch (err) {
-    return 'Error al obtener el snapshot financiero.';
+    console.error('Error en Snapshot:', err);
+    return 'Error al obtener resumen financiero.';
   }
 }

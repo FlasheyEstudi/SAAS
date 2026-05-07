@@ -130,59 +130,72 @@ class ApiClient {
       }
     }
 
-    const response = await fetch(fullUrl, {
-      ...options,
-      body,
-      headers,
-      credentials: 'include', // Support HTTP-Only Cookies
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
-    // Handle 401 - redirect to login
-    if (response.status === 401) {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('current_company_id');
-        localStorage.removeItem('user');
-        window.dispatchEvent(new CustomEvent('auth:logout'));
+    try {
+      const response = await fetch(fullUrl, {
+        ...options,
+        body,
+        headers,
+        credentials: 'include',
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      // Handle 401 - redirect to login
+      if (response.status === 401) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('current_company_id');
+          localStorage.removeItem('user');
+          window.dispatchEvent(new CustomEvent('auth:logout'));
+        }
+        throw new ApiError('Sesión expirada', 'UNAUTHORIZED');
       }
-      throw new ApiError('Sesión expirada', 'UNAUTHORIZED');
-    }
 
-    // Handle 403
-    if (response.status === 403) {
-      toast.error('No tienes permisos para esta acción');
-      throw new ApiError('Acceso denegado', 'FORBIDDEN');
-    }
-
-    // Handle 404
-    if (response.status === 404) {
-      throw new ApiError('Recurso no encontrado', 'NOT_FOUND');
-    }
-
-    // Handle other errors
-    if (!response.ok) {
-      let errorMessage = 'Error desconocido';
-      let errorData: any = null;
-      try {
-        errorData = await response.json();
-        errorMessage = errorData.error || errorData.message || errorMessage;
-      } catch {
-        // Use default error message
+      // Handle 403
+      if (response.status === 403) {
+        toast.error('No tienes permisos para esta acción');
+        throw new ApiError('Acceso denegado', 'FORBIDDEN');
       }
-      throw new ApiError(errorMessage, String(response.status), errorData);
-    }
 
-    // Handle empty responses (204)
-    if (response.status === 204) {
-      return {} as T;
-    }
+      // Handle 404
+      if (response.status === 404) {
+        throw new ApiError('Recurso no encontrado', 'NOT_FOUND');
+      }
 
-    const result = await response.json();
-    if (result.success && result.data !== undefined) {
-      return result.data as T;
-    }
+      // Handle other errors
+      if (!response.ok) {
+        let errorMessage = 'Error desconocido';
+        let errorData: any = null;
+        try {
+          errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch {
+          // Use default error message
+        }
+        throw new ApiError(errorMessage, String(response.status), errorData);
+      }
 
-    return result;
+      // Handle empty responses (204)
+      if (response.status === 204) {
+        return {} as T;
+      }
+
+      const result = await response.json();
+      if (result.success && result.data !== undefined) {
+        return result.data as T;
+      }
+
+      return result;
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        throw new ApiError('Tiempo de espera agotado. Revisa tu conexión.', 'TIMEOUT');
+      }
+      throw err;
+    }
 
   }
 

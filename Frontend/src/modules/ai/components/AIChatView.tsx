@@ -40,6 +40,7 @@ export function AIChatView() {
   const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
   const [interaction, setInteraction] = useState<{ type: 'select_report' | 'select_format' | 'none', data?: any }>({ type: 'none' });
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [showWelcome, setShowWelcome] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const currentCompany = useAppStore(state => state.currentCompany);
 
@@ -60,6 +61,7 @@ export function AIChatView() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isTyping) return;
+    setShowWelcome(false);
 
     const userMsg = input.trim();
     setInput('');
@@ -74,6 +76,100 @@ export function AIChatView() {
     }
 
     await sendMessage(userMsg);
+  };
+
+  const handleExportFullChat = async () => {
+    toast.loading('Generando historial de chat premium...', { id: 'export-full' });
+    try {
+      const { jsPDF } = await import('jspdf');
+      const html2canvas = (await import('html2canvas')).default;
+      const doc = new jsPDF();
+      const companyName = currentCompany?.name || 'Empresa';
+      const pageWidth = doc.internal.pageSize.width;
+      const pageHeight = doc.internal.pageSize.height;
+      const margin = 20;
+      let y = 30;
+
+      // Header
+      doc.setFillColor(30, 58, 138); // Blue
+      doc.rect(0, 0, pageWidth, 25, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('GANESHA AI - HISTORIAL DE CONSULTORÍA', margin, 15);
+      doc.setFontSize(8);
+      doc.text(`Empresa: ${companyName.toUpperCase()} | Fecha: ${new Date().toLocaleString()}`, margin, 20);
+
+      const allMsgs = [...messages, ...localMessages];
+      
+      for (let i = 0; i < allMsgs.length; i++) {
+        const msg = allMsgs[i];
+        
+        if (y > pageHeight - 40) {
+          doc.addPage();
+          y = 20;
+        }
+
+        // Role Indicator
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.setFont('helvetica', 'bold');
+        doc.text(msg.role === 'user' ? 'CLIENTE:' : 'GANESHA AI:', margin, y);
+        y += 5;
+
+        // Content
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(30, 41, 59);
+        const splitText = doc.splitTextToSize(msg.content.replace(/\[CHART:.*?\]/g, '[Gráfica Generada]'), pageWidth - (margin * 2));
+        doc.text(splitText, margin, y);
+        y += (splitText.length * 5) + 10;
+
+        // If message has charts, try to capture them
+        if (msg.content.includes('[CHART')) {
+          const chartBlocks = Array.from(msg.content.matchAll(/\[CHART:?[\s\S]*?\]/g));
+          for (let j = 0; j < chartBlocks.length; j++) {
+            const chartEl = document.getElementById(`chart-${i}-${j}`);
+            if (chartEl) {
+              try {
+                // Add a small delay to ensure chart is rendered
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                const { toPng } = await import('html-to-image');
+                const imgData = await toPng(chartEl, { 
+                  quality: 0.95,
+                  backgroundColor: '#ffffff',
+                  pixelRatio: 2,
+                  cacheBust: true,
+                });
+                
+                const imgWidth = pageWidth - (margin * 2);
+                const imgHeight = (chartEl.offsetHeight * imgWidth) / chartEl.offsetWidth;
+
+                if (y + imgHeight > pageHeight - 20) {
+                  doc.addPage();
+                  y = 20;
+                }
+
+                doc.addImage(imgData, 'PNG', margin, y, imgWidth, imgHeight);
+                y += imgHeight + 10;
+              } catch (err) {
+                console.error('Error capturando gráfica en exportación total:', err);
+              }
+            }
+          }
+          y += 5;
+        }
+      }
+
+      const fileName = `Reporte_GaneshaAI_${Date.now()}.pdf`;
+      // Use native save() instead of Blob/saveAs to avoid "klob" issues
+      doc.save(fileName);
+      
+      toast.success('Historial exportado con éxito', { id: 'export-full' });
+    } catch (err) {
+      console.error(err);
+      toast.error('Error al exportar historial', { id: 'export-full' });
+    }
   };
 
   const handleDownloadResponse = async (content: string, index: number) => {
@@ -125,45 +221,44 @@ export function AIChatView() {
       doc.line(margin, y, pageWidth - margin, y);
       y += 15;
 
-      // --- Captura de Gráfica (Prioridad Alta) ---
-      const chartElement = document.getElementById(`chart-${index}`);
-      if (chartElement) {
-        try {
-          // Técnica Vectorial: Capturar el SVG directamente (.recharts-surface)
-          const svgElement = chartElement.querySelector('.recharts-surface');
-          if (svgElement) {
-            const svgData = new XMLSerializer().serializeToString(svgElement);
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const img = new Image();
+      // --- Captura de Gráficas (Soporte para Gráficas Explícitas y Auto-generadas) ---
+      for (let j = 0; j < 3; j++) {
+        const chartId = `chart-${index}-${j}`;
+        const chartEl = document.getElementById(chartId);
+        
+        if (chartEl) {
+          try {
+            // Espera mayor para móviles
+            await new Promise(resolve => setTimeout(resolve, 600));
             
-            // Alta resolución para el PDF
-            const svgSize = svgElement.getBoundingClientRect();
-            canvas.width = svgSize.width * 4;
-            canvas.height = svgSize.height * 4;
-
-            await new Promise((resolve, reject) => {
-              img.onload = () => {
-                if (ctx) {
-                  ctx.fillStyle = 'white';
-                  ctx.fillRect(0, 0, canvas.width, canvas.height);
-                  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                  const imgData = canvas.toDataURL('image/png');
-                  const imgWidth = pageWidth - (margin * 2);
-                  const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                  
-                  checkPageBreak(imgHeight);
-                  doc.addImage(imgData, 'PNG', margin, y, imgWidth, imgHeight);
-                  y += imgHeight + 15;
-                  resolve(true);
-                }
-              };
-              img.onerror = reject;
-              img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+            const { toCanvas } = await import('html-to-image');
+            // Capturamos con toCanvas que es más estable en dispositivos móviles
+            const canvas = await toCanvas(chartEl, { 
+              backgroundColor: '#ffffff',
+              pixelRatio: 1.5, // Balance entre calidad y memoria en móvil
+              filter: (node) => {
+                const tagName = node.tagName ? node.tagName.toLowerCase() : '';
+                // Filtramos botones y decoraciones para una imagen limpia
+                return tagName !== 'button' && !node.classList?.contains('animate-pulse');
+              },
             });
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.9);
+            
+            // Tamaño optimizado: Máximo 140mm de ancho para que no se vea "gigante"
+            const maxImgWidth = 140;
+            let imgWidth = pageWidth - (margin * 2);
+            if (imgWidth > maxImgWidth) imgWidth = maxImgWidth;
+            
+            const imgHeight = (chartEl.offsetHeight * imgWidth) / chartEl.offsetWidth;
+            const xOffset = (pageWidth - imgWidth) / 2; // Centrado horizontal
+
+            checkPageBreak(imgHeight + 10);
+            doc.addImage(imgData, 'JPEG', xOffset, y, imgWidth, imgHeight);
+            y += imgHeight + 15;
+          } catch (err) {
+            console.error(`Error capturando gráfica ${chartId}:`, err);
           }
-        } catch (e) {
-          console.error('Error capturando gráfica vectorial para PDF:', e);
         }
       }
 
@@ -250,8 +345,12 @@ export function AIChatView() {
       }
 
       addFooter(doc, doc.getNumberOfPages());
-      doc.save(`Reporte_IA_Ganesha_${companyName}_${new Date().getTime()}.pdf`);
-      toast.success('Reporte ejecutivo generado con éxito', { id: 'export-loading' });
+      
+      const fileName = `Analisis_GaneshaAI_${Date.now()}.pdf`;
+      // Use native save() to avoid "klob" issues
+      doc.save(fileName);
+
+      toast.success('Análisis exportado con éxito', { id: 'export-loading' });
     } catch (error) {
       console.error('Error PDF Pro:', error);
       toast.error('Error al generar reporte premium', { id: 'export-loading' });
@@ -348,18 +447,47 @@ export function AIChatView() {
   };
 
   const renderMessageContent = (content: string, index: number) => {
-    const chartMatch = content.match(/\[CHART:\s*(\{.*?\})\]/);
-    let chartData: ChartData | null = null;
+    let chartDatas: ChartData[] = [];
     let cleanContent = content;
 
-    let tableData: string[][] | null = null;
+    // Extracción robusta de bloques [CHART ... ]
+    let pos = 0;
+    const startTag = "[CHART";
+    while ((pos = cleanContent.indexOf(startTag, pos)) !== -1) {
+      let bracketCount = 0;
+      let endPos = -1;
+      
+      for (let i = pos; i < cleanContent.length; i++) {
+        if (cleanContent[i] === '[') bracketCount++;
+        else if (cleanContent[i] === ']') {
+          bracketCount--;
+          if (bracketCount === 0) {
+            endPos = i;
+            break;
+          }
+        }
+      }
 
-    if (chartMatch) {
-      try {
-        chartData = JSON.parse(chartMatch[1]);
-        cleanContent = content.replace(chartMatch[0], '');
-      } catch {}
-    } 
+      if (endPos !== -1) {
+        const fullTag = cleanContent.substring(pos, endPos + 1);
+        const innerContent = fullTag.replace(/^\[CHART:?\s*/, '').replace(/\]$/, '').trim();
+        
+        try {
+          const data = JSON.parse(innerContent);
+          if (data && (data.type as string) === 'circle') data.type = 'pie';
+          chartDatas.push(data);
+          cleanContent = cleanContent.replace(fullTag, '');
+          // No incrementamos pos porque acabamos de recortar el string
+        } catch (e) {
+          console.error('[AIChat] Error parsing chart JSON. Inner:', innerContent, e);
+          pos = endPos + 1;
+        }
+      } else {
+        pos += startTag.length;
+      }
+    }
+
+    let tableData: string[][] | null = null;
     
     // Motor de Tablas Manual (Rescate de Markdown mal formado)
     if (content.includes('|')) {
@@ -376,18 +504,18 @@ export function AIChatView() {
           if (rows.length >= 2) {
             tableData = rows;
             // Generar gráfica automática si no hay una definida
-            if (!chartData) {
+            if (chartDatas.length === 0) {
               const data = rows.slice(1).map(row => ({
                 label: row[0],
                 value: parseFloat(row[1]?.replace(/[^0-9.-]/g, '') || '0')
               })).filter(d => !isNaN(d.value) && d.value !== 0);
 
               if (data.length >= 2) {
-                chartData = {
+                chartDatas.push({
                   type: 'bar',
                   title: rows[0][0] || "Resumen Financiero",
                   data: data
-                };
+                });
               }
             }
             // Limpiar el contenido original para evitar duplicados feos
@@ -400,27 +528,27 @@ export function AIChatView() {
     return (
       <div className="space-y-4">
         <div className="prose prose-sm dark:prose-invert max-w-none 
-          prose-p:leading-relaxed prose-p:text-zinc-600 dark:prose-p:text-zinc-400
-          prose-strong:text-orange-600 dark:prose-strong:text-orange-400 prose-strong:font-bold
-          prose-ul:list-disc prose-ul:pl-4 prose-ul:space-y-1 prose-ul:text-zinc-500
-          prose-ol:list-decimal prose-ol:pl-4 prose-ol:space-y-1 prose-ol:text-zinc-500
-          prose-li:marker:text-orange-500
-          prose-blockquote:border-l-4 prose-blockquote:border-orange-500/30 prose-blockquote:bg-orange-50/30 dark:prose-blockquote:bg-orange-950/10 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:rounded-r-xl prose-blockquote:italic
-          prose-table:border prose-table:border-vintage-200 dark:prose-table:border-white/5 
+          prose-p:leading-relaxed prose-p:text-muted-foreground
+          prose-strong:text-primary prose-strong:font-bold
+          prose-ul:list-disc prose-ul:pl-4 prose-ul:space-y-1 prose-ul:text-muted-foreground/80
+          prose-ol:list-decimal prose-ol:pl-4 prose-ol:space-y-1 prose-ol:text-muted-foreground/80
+          prose-li:marker:text-primary
+          prose-blockquote:border-l-4 prose-blockquote:border-primary/30 prose-blockquote:bg-primary/5 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:rounded-r-xl prose-blockquote:italic
+          prose-table:border prose-table:border-border/50 
           prose-table:rounded-xl prose-table:overflow-hidden prose-table:my-4
-          prose-th:bg-vintage-100/50 dark:prose-th:bg-white/5 prose-th:px-4 prose-th:py-2 prose-th:text-xs prose-th:uppercase prose-th:tracking-wider
-          prose-td:px-4 prose-td:py-2 prose-td:border-t prose-td:border-vintage-200 dark:prose-td:border-white/5
-          prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-800 prose-pre:rounded-2xl prose-pre:shadow-2xl">
+          prose-th:bg-muted dark:prose-th:bg-white/5 prose-th:px-4 prose-th:py-2 prose-th:text-xs prose-th:uppercase prose-th:tracking-wider
+          prose-td:px-4 prose-td:py-2 prose-td:border-t prose-td:border-border/50
+          prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-2xl prose-pre:shadow-2xl">
           <ReactMarkdown>{cleanContent}</ReactMarkdown>
         </div>
         
         {tableData && (
-          <div className="my-4 overflow-hidden rounded-2xl border border-vintage-200 dark:border-white/10 shadow-sm bg-white dark:bg-zinc-900/50">
+          <div className="my-4 overflow-hidden rounded-2xl border border-border shadow-sm bg-card/50">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-vintage-100/50 dark:bg-white/5">
+                <tr className="bg-muted">
                   {tableData[0].map((header, i) => (
-                    <th key={i} className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-vintage-600 dark:text-zinc-400 border-b border-vintage-200 dark:border-white/10">
+                    <th key={i} className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b border-border">
                       {header}
                     </th>
                   ))}
@@ -428,11 +556,11 @@ export function AIChatView() {
               </thead>
               <tbody>
                 {tableData.slice(1).map((row, i) => (
-                  <tr key={i} className="hover:bg-vintage-50/50 dark:hover:bg-white/5 transition-colors">
+                  <tr key={i} className="hover:bg-primary/5 transition-colors">
                     {row.map((cell, j) => (
                       <td key={j} className={cn(
-                        "px-4 py-2.5 text-xs border-b border-vintage-100 dark:border-white/5 text-vintage-800 dark:text-zinc-300",
-                        j > 0 ? "font-mono font-medium text-orange-600 dark:text-orange-400" : ""
+                        "px-4 py-2.5 text-xs border-b border-border/50 text-foreground",
+                        j > 0 ? "font-mono font-medium text-primary" : ""
                       )}>
                         {cell}
                       </td>
@@ -444,156 +572,227 @@ export function AIChatView() {
           </div>
         )}
 
-        {chartData && (
+        {chartDatas.map((chart, chartIdx) => (
           <motion.div 
-            id={`chart-${index}`}
+            key={chartIdx}
+            id={`chart-${index}-${chartIdx}`}
             initial={{ opacity: 0, y: 20 }} 
             animate={{ opacity: 1, y: 0 }} 
-            className="mt-6 bg-white dark:bg-zinc-900/80 p-6 rounded-[2rem] border border-vintage-200 dark:border-white/10 shadow-xl shadow-orange-500/5 group/chart"
+            className="mt-6 bg-card p-6 rounded-[2rem] border border-border shadow-xl shadow-primary/5 group/chart"
           >
-            <div className="flex items-center justify-between mb-4 border-b border-vintage-100 dark:border-white/5 pb-4">
-              <h4 className="text-sm font-playfair font-bold text-vintage-800 dark:text-white flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                {chartData.title}
+            <div className="flex items-center justify-between mb-4 border-b border-border/50 pb-4">
+              <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                {chart.title}
               </h4>
               <button 
                 onClick={async () => {
-                  const chartBox = document.getElementById(`chart-${index}`);
-                  // Selector específico para evitar capturar los iconos de Lucide
-                  const svgElement = chartBox?.querySelector('.recharts-surface');
-                  if (svgElement) {
+                  const chartBox = document.getElementById(`chart-${index}-${chartIdx}`);
+                  if (chartBox) {
                     try {
-                      const svgData = new XMLSerializer().serializeToString(svgElement);
-                      const canvas = document.createElement('canvas');
-                      const ctx = canvas.getContext('2d');
-                      const img = new Image();
+                      toast.loading('Preparando imagen...', { id: 'chart-snap' });
+                      const { toPng } = await import('html-to-image');
                       
-                      const svgSize = svgElement.getBoundingClientRect();
-                      canvas.width = svgSize.width * 2;
-                      canvas.height = svgSize.height * 2;
+                      const dataUrl = await toPng(chartBox, { 
+                        quality: 1,
+                        backgroundColor: '#ffffff',
+                        pixelRatio: 4
+                      });
                       
-                      img.onload = () => {
-                        if (ctx) {
-                          ctx.fillStyle = 'white';
-                          ctx.fillRect(0, 0, canvas.width, canvas.height);
-                          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                          const link = document.createElement('a');
-                          link.download = `grafica-ganesha-${Date.now()}.png`;
-                          link.href = canvas.toDataURL('image/png');
-                          link.click();
-                          toast.success('Gráfica capturada correctamente');
-                        }
-                      };
-                      
-                      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+                      const link = document.createElement('a');
+                      link.download = `ganesha-analisis-${chart.title?.toLowerCase().replace(/\s+/g, '-') || 'grafica'}.png`;
+                      link.href = dataUrl;
+                      link.click();
+                      toast.success('Gráfica descargada', { id: 'chart-snap' });
                     } catch (err) {
-                      console.error('Error en captura:', err);
-                      toast.error('Error al procesar gráfica');
+                      console.error('Capture Error:', err);
+                      toast.error('Error al generar imagen', { id: 'chart-snap' });
                     }
                   }
                 }}
-                className="p-2 bg-orange-50 dark:bg-orange-950/30 text-orange-600 rounded-xl opacity-0 group-hover/chart:opacity-100 transition-all hover:scale-110 active:scale-95 flex items-center gap-2 text-[10px] font-bold uppercase tracking-tighter"
+                className="p-2 bg-primary/10 text-primary rounded-xl opacity-0 group-hover/chart:opacity-100 transition-all hover:scale-110 active:scale-95 flex items-center gap-2 text-[10px] font-bold uppercase tracking-tighter"
               >
                 <Download className="w-3.5 h-3.5" />
                 Guardar Imagen
               </button>
             </div>
-            <AIChart type={chartData.type} data={chartData.data} title={chartData.title} />
+            <AIChart type={chart.type} data={chart.data} title={chart.title} />
           </motion.div>
-        )}
+        ))}
       </div>
     );
   };
 
-  const allMessages = [...messages, ...localMessages];
-
   return (
-    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 h-[calc(100vh-130px)] sm:h-[calc(100vh-145px)] w-full max-w-7xl mx-auto">
-      <div className="flex flex-col flex-1 min-w-0">
-        <VintageCard variant="glass" className="mb-4 flex-shrink-0 border-orange-500/10 shadow-lg shadow-orange-500/5" hover={false}>
+    <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-140px)] max-w-7xl mx-auto px-4 sm:px-6 relative">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/5 rounded-full blur-3xl opacity-50" />
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-accent/5 rounded-full blur-3xl opacity-50" />
+      </div>
+
+      {/* Main Chat Area */}
+      <div className="flex flex-col flex-1 min-w-0 bg-card/40 backdrop-blur-xl rounded-[2rem] border border-border/50 shadow-2xl overflow-hidden ring-1 ring-white/10">
+        {/* Chat Header */}
+        <div className="p-4 border-b border-border/50 flex items-center justify-between bg-card/60 backdrop-blur-md">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
-              <Bot className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+              <Bot className="w-6 h-6 text-primary-foreground" />
             </div>
-            <div className="flex-1 text-left">
-              <h3 className="font-playfair text-lg font-bold text-vintage-800 dark:text-white flex items-center gap-2">
-                GANESHA AI
-                <span className="text-[9px] bg-orange-100 dark:bg-orange-950/30 text-orange-600 px-1.5 py-0.5 rounded-full uppercase tracking-widest font-black">Expert</span>
+            <div>
+              <h3 className="font-bold text-foreground flex items-center gap-2">
+                Asistente Ganesha AI
+                <span className={cn(
+                  "flex h-2 w-2 rounded-full",
+                  status === 'online' ? "bg-green-500 animate-pulse" : "bg-red-500"
+                )} />
               </h3>
-              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-widest">Consultoría Financiera Inteligente</p>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card/50 border border-border">
-              <span className={cn("w-2 h-2 rounded-full", status === 'online' ? 'bg-success animate-pulse' : 'bg-warning')} />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{status === 'online' ? 'Online' : 'Offline'}</span>
-              <button onClick={checkStatus} className="p-1 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-950/30 text-orange-600 ml-1 transition-colors"><RefreshCw className="w-3 h-3" /></button>
+              <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
+                {status === 'online' ? 'Inteligencia Financiera Elite' : 'Reconectando con Ganesha...'}
+              </p>
             </div>
           </div>
-        </VintageCard>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handleExportFullChat}
+              className="p-2 hover:bg-muted rounded-lg transition-colors text-primary flex items-center gap-2 text-xs font-bold"
+              title="Exportar Todo el Chat"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Exportar PDF</span>
+            </button>
+            <button 
+              onClick={clearConversation}
+              className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground"
+              title="Limpiar conversación"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto rounded-3xl bg-vintage-50/30 dark:bg-zinc-950/20 border border-vintage-200/50 dark:border-white/5 p-4 sm:p-6 space-y-6 min-h-0 no-scrollbar">
-          <AnimatePresence mode="popLayout">
-            {allMessages.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                <Bot className="w-12 h-12 text-orange-500/20 mb-4" />
-                <h3 className="text-xl font-playfair font-bold text-vintage-800 dark:text-white mb-2">GANESHA AI</h3>
-                <p className="text-sm text-vintage-500 dark:text-zinc-500 max-w-sm">Tu consultora financiera 24/7. Analizo datos y genero reportes al instante.</p>
+        {/* Messages Area */}
+        <div 
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scroll-smooth no-scrollbar"
+        >
+          {showWelcome && messages.length === 0 && localMessages.length === 0 && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="max-w-2xl mx-auto py-12 text-center"
+            >
+              <div className="w-20 h-20 rounded-2xl bg-muted mx-auto mb-6 flex items-center justify-center shadow-inner">
+                <Sparkles className="w-10 h-10 text-primary" />
               </div>
-            )}
+              <h2 className="text-3xl font-bold text-foreground mb-2 font-playfair">¡Bienvenido a Ganesha AI!</h2>
+              <p className="text-muted-foreground mb-8 max-w-sm mx-auto">Tu consultor financiero personal. ¿En qué puedo apoyarte hoy?</p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
+                {[
+                  "¿Cuál es mi utilidad neta este mes?",
+                  "Dime mis 5 gastos principales",
+                  "¿Cómo está mi balance de bancos?",
+                  "Genera un reporte de situación financiera"
+                ].map((q, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setInput(q);
+                      handleSubmit({ preventDefault: () => {} } as any);
+                    }}
+                    className="p-4 text-xs font-bold text-left bg-card/80 border border-border rounded-2xl hover:border-primary transition-all hover:shadow-xl group backdrop-blur-sm"
+                  >
+                    <span className="text-primary/40 group-hover:text-primary mr-2">✦</span>
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
-            {allMessages.map((msg: any, i: number) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={cn("flex group", msg.role === 'user' ? 'justify-end' : 'justify-start')}>
-                {msg.role === 'assistant' && (
-                  <div className="w-10 h-10 rounded-2xl bg-white dark:bg-zinc-900 border border-orange-200 flex items-center justify-center mr-3 flex-shrink-0 shadow-sm">
-                    <Bot className="w-5 h-5 text-orange-500" />
-                  </div>
+          <AnimatePresence initial={false}>
+            {[...messages, ...localMessages].map((msg, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, x: msg.role === 'user' ? 20 : -20, y: 10 }}
+                animate={{ opacity: 1, x: 0, y: 0 }}
+                className={cn(
+                  "flex items-start gap-4",
+                  msg.role === 'user' ? "flex-row-reverse" : ""
                 )}
+              >
                 <div className={cn(
-                  "relative max-w-[85%] sm:max-w-[75%] p-4 rounded-3xl text-sm leading-relaxed",
-                  msg.role === 'user' ? 'bg-zinc-800 text-zinc-100 rounded-br-md' : 'bg-white dark:bg-zinc-900 border border-vintage-200 dark:border-white/5 text-vintage-800 dark:text-zinc-200 rounded-bl-md'
+                  "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-lg",
+                  msg.role === 'user' ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground"
                 )}>
-                  {msg.role === 'assistant' && (
-                    <div className="absolute top-2 right-2 flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                  {msg.role === 'user' ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
+                </div>
+
+                <div className={cn(
+                  "relative max-w-[85%] sm:max-w-[75%] p-4 rounded-3xl shadow-sm border",
+                  msg.role === 'user' 
+                    ? "bg-primary text-primary-foreground border-primary/20 rounded-tr-none" 
+                    : "bg-card/90 backdrop-blur-md border-border/50 rounded-tl-none text-foreground"
+                )}>
+                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                    {renderMessageContent(msg.content, idx)}
+                  </div>
+
+                  {msg.role === 'assistant' && !isTyping && (
+                    <div className="mt-4 flex items-center gap-4 border-t border-border/50 pt-3">
                       <button 
-                        onClick={() => handleDownloadResponse(msg.content, i)} 
-                        title="Descargar como PDF"
-                        className="p-1 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/30 rounded-lg transition-colors"
+                        onClick={() => handleDownloadResponse(msg.content, idx)}
+                        className="text-[10px] uppercase tracking-widest font-black text-muted-foreground hover:text-primary flex items-center gap-2 transition-colors"
                       >
                         <Download className="w-3.5 h-3.5" />
+                        PDF Pro
                       </button>
                       <button 
-                        onClick={() => handleCopy(msg.content, i)} 
-                        title="Copiar texto"
-                        className="p-1 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/30 rounded-lg transition-colors"
+                        onClick={() => { navigator.clipboard.writeText(msg.content); toast.success('Copiado'); }}
+                        className="text-[10px] uppercase tracking-widest font-black text-muted-foreground hover:text-primary flex items-center gap-2 transition-colors"
                       >
-                        {copiedId === i ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <Copy className="w-3.5 h-3.5" />
+                        Copiar
                       </button>
-                    </div>
-                  )}
-                  {renderMessageContent(msg.content, i)}
-                  {msg.downloadConfig && (
-                    <div className="mt-4 p-3 rounded-xl bg-success/5 border border-success/20 flex items-center gap-3">
-                      <FileText className="w-5 h-5 text-error" />
-                      <div className="flex-1 text-xs font-bold text-vintage-800 dark:text-white">{msg.downloadConfig.label}</div>
-                      <Check className="w-4 h-4 text-success" />
                     </div>
                   )}
                 </div>
-                {msg.role === 'user' && (
-                  <div className="w-10 h-10 rounded-2xl bg-zinc-800 flex items-center justify-center ml-3 flex-shrink-0 shadow-sm">
-                    <User className="w-5 h-5 text-white/50" />
-                  </div>
-                )}
               </motion.div>
             ))}
 
+            {isTyping && (
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }}
+                className="flex items-center gap-4"
+              >
+                <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shadow-inner">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                </div>
+                <div className="px-5 py-3 bg-muted/50 backdrop-blur-sm rounded-2xl rounded-tl-none border border-border/50">
+                  <div className="flex gap-1.5">
+                    <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce" />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             {interaction.type === 'select_report' && (
-              <div className="flex justify-start">
-                <div className="w-10 h-10 rounded-2xl bg-white border border-orange-200 flex items-center justify-center mr-3"><Bot className="w-5 h-5 text-orange-500" /></div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full max-w-lg">
+              <div className="flex justify-start pl-14">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg">
                   {REPORT_OPTIONS.map(r => (
-                    <button key={r.id} onClick={() => handleSelectReport(r.id, r.label)} className="flex flex-col items-center gap-2 p-4 bg-white border border-orange-200 rounded-2xl hover:border-orange-500 transition-all">
-                      <r.icon className="w-6 h-6 text-orange-500" />
-                      <span className="text-[10px] font-bold text-center">{r.label}</span>
+                    <button 
+                      key={r.id} 
+                      onClick={() => handleSelectReport(r.id, r.label)} 
+                      className="flex items-center gap-3 p-4 bg-card/80 border border-border rounded-2xl hover:border-primary hover:shadow-xl transition-all text-left backdrop-blur-sm group"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                        <r.icon className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-bold text-foreground">{r.label}</span>
                     </button>
                   ))}
                 </div>
@@ -601,75 +800,84 @@ export function AIChatView() {
             )}
 
             {interaction.type === 'select_format' && (
-              <div className="flex justify-start">
-                <div className="w-10 h-10 rounded-2xl bg-white border border-orange-200 flex items-center justify-center mr-3"><Bot className="w-5 h-5 text-orange-500" /></div>
-                <div className="flex gap-2">
-                  <PastelButton onClick={() => handleSelectFormat('pdf')} className="gap-2"><FileText className="w-4 h-4" /> PDF</PastelButton>
-                  <PastelButton onClick={() => handleSelectFormat('excel')} className="gap-2"><FileSpreadsheet className="w-4 h-4" /> Excel</PastelButton>
+              <div className="flex justify-start pl-14">
+                <div className="flex gap-3">
+                  <PastelButton onClick={() => handleSelectFormat('pdf')} className="gap-2 h-12 px-6 rounded-2xl shadow-lg hover:scale-105 bg-primary text-primary-foreground border-none"><FileText className="w-4 h-4" /> PDF Ejecutivo</PastelButton>
+                  <PastelButton onClick={() => handleSelectFormat('excel')} className="gap-2 h-12 px-6 rounded-2xl shadow-lg hover:scale-105 bg-accent text-accent-foreground border-none"><FileSpreadsheet className="w-4 h-4" /> Excel Profesional</PastelButton>
                 </div>
               </div>
             )}
           </AnimatePresence>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-4 relative group">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Analiza mis gastos..."
-            className="w-full bg-white dark:bg-zinc-900 border border-vintage-200 dark:border-white/5 rounded-2xl py-4 pl-6 pr-14 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all shadow-lg"
-          />
-          <button type="submit" disabled={isTyping} className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-orange-500 text-white rounded-xl shadow-lg hover:bg-orange-600 disabled:bg-zinc-400 transition-all">
-            {isTyping ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-          </button>
-        </form>
+        {/* Input Area */}
+        <div className="p-4 sm:p-6 bg-card/60 backdrop-blur-md border-t border-border/50">
+          <form onSubmit={handleSubmit} className="relative group max-w-3xl mx-auto">
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Pregunta a la IA sobre tus finanzas..."
+              className="w-full bg-background border border-input rounded-[1.5rem] py-5 pl-7 pr-16 text-sm focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all shadow-xl placeholder:text-muted-foreground/50"
+            />
+            <button 
+              type="submit" 
+              disabled={isTyping} 
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-3 bg-primary text-primary-foreground rounded-2xl shadow-lg hover:scale-105 disabled:bg-muted transition-all"
+            >
+              {isTyping ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+            </button>
+          </form>
+          <p className="text-center text-[10px] text-muted-foreground mt-3 uppercase tracking-widest font-bold">Potenciado por Ganesha Enterprise AI Engine</p>
+        </div>
       </div>
 
-      <div className="hidden lg:block lg:w-80 space-y-6 text-left">
-        <VintageCard variant="glass" hover={false}>
+      {/* Right Sidebar - Desktop Only */}
+      <div className="hidden lg:flex flex-col w-80 space-y-6">
+        <div className="bg-card/40 backdrop-blur-xl border border-border/50 rounded-3xl p-6 shadow-xl">
           <div className="flex items-center gap-2 mb-4">
-            <History className="w-5 h-5 text-orange-500" />
-            <h4 className="font-playfair font-bold text-vintage-800 dark:text-zinc-100">Memoria de IA</h4>
+            <History className="w-5 h-5 text-primary" />
+            <h4 className="font-bold text-foreground">Memoria de IA</h4>
           </div>
-          <p className="text-[10px] text-zinc-500 leading-relaxed mb-4">GANESHA recuerda tu conversación para darte contexto y progreso. Si la empresa cambia o cierras sesión, el contexto se limpiará para mayor seguridad.</p>
+          <p className="text-[10px] text-muted-foreground leading-relaxed mb-4">La IA mantiene el contexto de tu empresa actual para darte respuestas personalizadas y profundas.</p>
+          <div className="p-3 bg-muted rounded-xl border border-border mb-4">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-foreground">
+              <Landmark className="w-3.5 h-3.5" /> {currentCompany?.name}
+            </div>
+          </div>
           <button 
             onClick={() => { clearConversation(); setLocalMessages([]); toast.success('Memoria limpiada'); }}
-            className="w-full py-2 flex items-center justify-center gap-2 text-[10px] font-bold text-orange-600 bg-orange-50 dark:bg-orange-950/20 rounded-xl hover:bg-orange-100 transition-all uppercase tracking-widest border border-orange-200/50"
+            className="w-full py-3 flex items-center justify-center gap-2 text-[10px] font-black text-primary bg-background border border-primary/20 rounded-xl hover:bg-muted transition-all uppercase tracking-widest"
           >
-            <RotateCcw className="w-3 h-3" /> Resetear Contexto
+            <RotateCcw className="w-3 h-3" /> Resetear Memoria
           </button>
-        </VintageCard>
+        </div>
 
-        <VintageCard variant="glass" hover={false} className="border-amber-500/20 shadow-lg shadow-amber-500/5">
+        <div className="bg-primary text-primary-foreground rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
+          <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-amber-500" />
-            <h4 className="font-playfair font-bold text-vintage-800 dark:text-zinc-100">Acciones Ejecutivas</h4>
+            <Sparkles className="w-5 h-5 text-accent-foreground" />
+            <h4 className="font-bold">Acciones CFO Pro</h4>
           </div>
+          <p className="text-[10px] text-primary-foreground/70 mb-4 leading-relaxed">Activa análisis profundos de rentabilidad y proyecciones de flujo de caja automáticas.</p>
           <button 
             onClick={() => sendMessage("Activa el MODO DIRECTOR FINANCIERO. Analiza mi rentabilidad, mis gastos más grandes y dame un plan de acción para este mes.")}
-            className="w-full py-3 mb-4 flex items-center justify-center gap-3 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-amber-500/20 uppercase tracking-widest"
+            className="w-full py-4 mb-4 flex items-center justify-center gap-3 text-xs font-black text-primary bg-background rounded-xl hover:scale-105 transition-all shadow-lg uppercase tracking-widest"
           >
-            <Landmark className="w-4 h-4" /> Activar Modo CFO
+            Modo CFO Pro
           </button>
-          <div className="space-y-4">
-            <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0"><BarChart3 className="w-4 h-4 text-blue-500" /></div>
-              <div><p className="text-xs font-bold text-vintage-800 dark:text-zinc-200">Gráficos en Vivo</p><p className="text-[10px] text-zinc-600 dark:text-zinc-400">Convierte tablas en gráficas al instante.</p></div>
-            </div>
-            <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0"><FileSpreadsheet className="w-4 h-4 text-emerald-500" /></div>
-              <div><p className="text-xs font-bold text-vintage-800 dark:text-zinc-200">Reportes Pro</p><p className="text-[10px] text-zinc-600 dark:text-zinc-400">Exporta balances oficiales.</p></div>
-            </div>
-            <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center flex-shrink-0"><Receipt className="w-4 h-4 text-purple-500" /></div>
-              <div><p className="text-xs font-bold text-vintage-800 dark:text-zinc-200">Investigación</p><p className="text-[10px] text-zinc-600 dark:text-zinc-400">Análisis automático de libros.</p></div>
-            </div>
-            <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center flex-shrink-0"><Landmark className="w-4 h-4 text-orange-500" /></div>
-              <div><p className="text-xs font-bold text-vintage-800 dark:text-zinc-200">Asesoría de Caja</p><p className="text-[10px] text-zinc-600 dark:text-zinc-400">Predicciones de liquidez.</p></div>
-            </div>
+          <div className="space-y-3 opacity-90">
+            {[
+              { icon: BarChart3, t: "Gráficos", d: "Visualiza tus datos" },
+              { icon: FileSpreadsheet, t: "Reportes", d: "Excel y PDF oficial" },
+              { icon: Receipt, t: "Gastos", d: "Detección de anomalías" }
+            ].map((item, i) => (
+              <div key={i} className="flex gap-3">
+                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center"><item.icon className="w-4 h-4" /></div>
+                <div><p className="text-xs font-bold">{item.t}</p><p className="text-[9px] opacity-60">{item.d}</p></div>
+              </div>
+            ))}
           </div>
-        </VintageCard>
+        </div>
       </div>
     </div>
   );

@@ -58,6 +58,14 @@ export async function POST(request: Request) {
       financialSnapshot
     };
 
+    console.log('[AI-Chat] Financial Snapshot Length:', financialSnapshot.length);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[AI-Chat] Context Ready:', {
+        company: aiContext.companyName,
+        snapshotPreview: financialSnapshot.substring(0, 100) + '...'
+      });
+    }
+
     // Validate history
     let chatHistory: any[] = [];
     if (Array.isArray(history)) {

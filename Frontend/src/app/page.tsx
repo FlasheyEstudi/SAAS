@@ -133,29 +133,52 @@ function ViewRouter() {
 
   const isFullPageView = ['login', 'register', 'landing', 'documentation', 'api-reference', 'user-manual'].includes(currentView);
 
+  if (isFullPageView) {
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentView}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="w-full"
+        >
+          {renderContent()}
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
+
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={currentView}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="w-full"
-      >
-        {isFullPageView ? (
-          renderContent()
-        ) : (
-          <AuthenticatedLayout>
-            <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
-              {renderContent()}
-            </div>
-          </AuthenticatedLayout>
-        )}
-      </motion.div>
-    </AnimatePresence>
+    <AuthenticatedLayout>
+      <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentView}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="w-full"
+          >
+            {renderContent()}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </AuthenticatedLayout>
   );
 }
 
 export default function Home() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <GaneshaLoader variant="full" message="Sincronizando con el Núcleo..." />;
+  }
+
   return <ViewRouter />;
 }

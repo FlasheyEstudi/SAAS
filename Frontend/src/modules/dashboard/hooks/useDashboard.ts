@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
-import { DASHBOARD, JOURNAL, INVOICES } from '@/lib/api/endpoints';
+import { DASHBOARD, JOURNAL, INVOICES, NOTIFICATIONS } from '@/lib/api/endpoints';
 import type { DashboardKPIs, JournalEntry, Invoice } from '@/lib/api/types';
 
 export interface RevenueTrendItem {
@@ -35,6 +35,7 @@ export interface DashboardData {
   recentJournalEntries: JournalEntry[];
   recentInvoices: Invoice[];
   topClients: TopClientItem[];
+  unreadNotifications: any[];
 }
 
 import { useAppStore } from '@/lib/stores/useAppStore';
@@ -108,6 +109,14 @@ export function useDashboard(consolidated = false, year?: number, month?: number
     retry: false,
   });
 
+  // Fetch unread notifications for "Smart Alerts"
+  const { data: notificationsData } = useQuery<any>({
+    queryKey: ['notifications', 'unread', { companyId, isRead: false }],
+    queryFn: () => apiClient.get(NOTIFICATIONS.list, { companyId, isRead: 'false', limit: 3, sortBy: 'createdAt', sortOrder: 'desc' }),
+    enabled: !!companyId,
+    refetchInterval: 60000, 
+  });
+
   const isLoading = kpisLoading || journalLoading || invoicesLoading || periodLoading || cashLoading || receivablesLoading || payablesLoading || customersLoading;
   const error = kpisError;
 
@@ -119,6 +128,7 @@ export function useDashboard(consolidated = false, year?: number, month?: number
     recentJournalEntries: (journalData as any)?.data || [],
     recentInvoices: (invoicesData as any)?.data || [],
     topClients: customersData?.customers || [],
+    unreadNotifications: (notificationsData as any)?.data || [],
   } : undefined;
 
   return {

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { success, error, notFound, serverError, validatePeriodOpen } from '@/lib/api-helpers';
+import { success, error, notFound, serverError, validatePeriodOpen, validateAuth, requireAuth, ensureNotViewer } from '@/lib/api-helpers';
+import { logAudit, logAuditTx } from '@/lib/audit-service';
 
 // ============================================================
 // GET /api/journal-entries/[id] — Obtener póliza con todas sus partidas
@@ -11,6 +12,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
     const { id } = await params;
 
     const entry = await db.journalEntry.findUnique({
@@ -49,6 +54,13 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
+    const roleError = ensureNotViewer(user!);
+    if (roleError) return roleError;
+
     const { description, entryDate, entryType, lines, periodId } = body as {
       description?: string;
       entryDate?: string;
@@ -131,6 +143,18 @@ export async function PUT(
       });
     });
 
+    // Audit Log (Traceability 100/100)
+    await logAudit({
+      companyId: updated.companyId,
+      userId: user!.id,
+      action: 'UPDATE',
+      entityType: 'JournalEntry',
+      entityId: updated.id,
+      entityLabel: `Póliza ${updated.entryNumber}`,
+      oldValues: existing,
+      newValues: updated,
+    });
+
     return success(updated);
   } catch (err) {
     console.error('[PUT /api/journal-entries/[id]]', err);
@@ -149,11 +173,17 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
+    const roleError = ensureNotViewer(user!);
+    if (roleError) return roleError;
 
     // Verificar que la póliza existe
     const existing = await db.journalEntry.findUnique({
       where: { id },
-      select: { id: true, status: true, _count: { select: { lines: true } } },
+      select: { id: true, status: true, companyId: true, _count: { select: { lines: true } } },
     });
 
     if (!existing) return notFound('Póliza no encontrada');
@@ -163,8 +193,17 @@ export async function DELETE(
 
     // Eliminar en transacción (póliza + partidas)
     await db.$transaction(async (tx) => {
-      // Las partidas se eliminan en cascada por el onDelete: Cascade en el schema,
-      // pero lo hacemos explícitamente para seguridad y claridad.
+      // Registrar auditoría ANTES de borrar
+      await logAuditTx(tx, {
+        companyId: existing.companyId || (existing as any).companyId,
+        userId: user!.id,
+        action: 'DELETE',
+        entityType: 'JournalEntry',
+        entityId: existing.id,
+        entityLabel: `Póliza ${id}`,
+        oldValues: existing
+      });
+
       await tx.journalEntryLine.deleteMany({
         where: { journalEntryId: id },
       });

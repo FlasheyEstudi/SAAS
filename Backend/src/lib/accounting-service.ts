@@ -18,35 +18,40 @@ export async function generateInvoiceJournalEntry(tx: Prisma.TransactionClient, 
 
   if (!invoice) throw new Error('Invoice not found');
 
-  // If already has a journal entry, we might want to update it or skip
-  // For simplicity in this "definitive" version, we delete the old one if it exists to regenerate
-  if (invoice.journalEntryId) {
-    // This is optional, but helps keep data clean
-    // await tx.journalEntry.delete({ where: { id: invoice.journalEntryId } });
-  }
+  // Helper for strict rounding
+  const round = (val: number) => Math.round(val * 100) / 100;
 
-  // 2. Determine main accounts based on codes from our definitive seed
-  // Note: In a production app, these should be configurable in Company Settings
+  // 2. Determine main accounts based on dynamic mapping from company metadata
+  const metadata = (invoice.company.metadata as any) || {};
+  const mapping = metadata.accountMapping || {
+    clientes: '1.1.02.01',
+    proveedores: '2.1.01.01',
+    ivaPagar: '2.1.02.01',
+    ivaAcreditable: '1.1.03.01',
+    retIrRecibida: '1.1.03.02',
+    retIrPagar: '2.1.02.02'
+  };
+
   const accounts = await tx.account.findMany({
     where: {
       companyId: invoice.companyId,
-      code: { in: ['1.1.02.01', '2.1.01.01', '2.1.02.01', '1.1.03.01', '1.1.03.02', '2.1.02.02'] }
+      code: { in: Object.values(mapping) as string[] }
     }
   });
 
   const getAccountByCode = (code: string) => accounts.find(a => a.code === code);
 
-  const accClientes = getAccountByCode('1.1.02.01');
-  const accProveedores = getAccountByCode('2.1.01.01');
-  const accIvaPagar = getAccountByCode('2.1.02.01');
-  const accIvaAcreditable = getAccountByCode('1.1.03.01');
-  const accRetIRRecibida = getAccountByCode('1.1.03.02');
-  const accRetIRPagar = getAccountByCode('2.1.02.02');
+  const accClientes = getAccountByCode(mapping.clientes);
+  const accProveedores = getAccountByCode(mapping.proveedores);
+  const accIvaPagar = getAccountByCode(mapping.ivaPagar);
+  const accIvaAcreditable = getAccountByCode(mapping.ivaAcreditable);
+  const accRetIRRecibida = getAccountByCode(mapping.retIrRecibida);
+  const accRetIRPagar = getAccountByCode(mapping.retIrPagar);
 
   const isSale = invoice.invoiceType === 'SALE';
-  const totalAmount = Number(invoice.totalAmount);
-  const subtotal = Number(invoice.subtotal);
-  const taxAmount = Number(invoice.taxAmount);
+  const totalAmount = round(Number(invoice.totalAmount));
+  const subtotal = round(Number(invoice.subtotal));
+  const taxAmount = round(Number(invoice.taxAmount));
 
   // 3. Prepare Journal Entry Lines
   const jeLines: any[] = [];
@@ -54,29 +59,22 @@ export async function generateInvoiceJournalEntry(tx: Prisma.TransactionClient, 
   let currentTotalCredit = 0;
 
   if (isSale) {
-    // VENTAS:
-    // DEBIT: Clientes (Total - Retenciones si se aplican en factura, o Total completo si se aplican en pago)
-    // DEBIT: Anticipo de IR / Retenciones Recibidas (Si hay retenciones en factura)
-    // CREDIT: Ingresos (Subtotal de cada línea)
-    // CREDIT: IVA por Pagar
-    
     let totalRetentions = 0;
     for (const tax of invoice.taxEntries) {
-      const amount = Number(tax.taxAmount);
-      // If it's a retention in a SALE, it's an ASSET for us (someone retained from us)
+      const amount = round(Number(tax.taxAmount));
       if (tax.taxType !== 'IVA') { 
-        totalRetentions += amount;
+        totalRetentions = round(totalRetentions + amount);
         jeLines.push({
-          accountId: accRetIRRecibida?.id || accClientes?.id, // Fallback to Clientes if no specific account
+          accountId: accRetIRRecibida?.id || accClientes?.id,
           description: `Retención ${tax.taxType} Recibida - Factura ${invoice.number}`,
           debit: amount,
           credit: 0,
         });
-        currentTotalDebit += amount;
+        currentTotalDebit = round(currentTotalDebit + amount);
       }
     }
 
-    const netReceivable = totalAmount - totalRetentions;
+    const netReceivable = round(totalAmount - totalRetentions);
     if (accClientes) {
       jeLines.push({
         accountId: accClientes.id,
@@ -84,13 +82,13 @@ export async function generateInvoiceJournalEntry(tx: Prisma.TransactionClient, 
         debit: netReceivable,
         credit: 0,
       });
-      currentTotalDebit += netReceivable;
+      currentTotalDebit = round(currentTotalDebit + netReceivable);
     }
 
     // Lines (Income)
     for (const line of invoice.lines) {
       if (line.accountId) {
-        const amount = Number(line.subtotal);
+        const amount = round(Number(line.subtotal));
         jeLines.push({
           accountId: line.accountId,
           costCenterId: line.costCenterId,
@@ -98,7 +96,7 @@ export async function generateInvoiceJournalEntry(tx: Prisma.TransactionClient, 
           debit: 0,
           credit: amount,
         });
-        currentTotalCredit += amount;
+        currentTotalCredit = round(currentTotalCredit + amount);
       }
     }
 
@@ -110,31 +108,25 @@ export async function generateInvoiceJournalEntry(tx: Prisma.TransactionClient, 
         debit: 0,
         credit: taxAmount,
       });
-      currentTotalCredit += taxAmount;
+      currentTotalCredit = round(currentTotalCredit + taxAmount);
     }
   } else {
-    // COMPRAS:
-    // DEBIT: Gasto/Inventario (Subtotal de cada línea)
-    // DEBIT: IVA Acreditable
-    // CREDIT: Proveedores (Neto a pagar)
-    // CREDIT: Retenciones por Pagar (Lo que retuvimos al proveedor)
-
     let totalRetentions = 0;
     for (const tax of invoice.taxEntries) {
-      const amount = Number(tax.taxAmount);
+      const amount = round(Number(tax.taxAmount));
       if (tax.taxType !== 'IVA') {
-        totalRetentions += amount;
+        totalRetentions = round(totalRetentions + amount);
         jeLines.push({
           accountId: accRetIRPagar?.id || accProveedores?.id,
           description: `Retención ${tax.taxType} Efectuada - Factura ${invoice.number}`,
           debit: 0,
           credit: amount,
         });
-        currentTotalCredit += amount;
+        currentTotalCredit = round(currentTotalCredit + amount);
       }
     }
 
-    const netPayable = totalAmount - totalRetentions;
+    const netPayable = round(totalAmount - totalRetentions);
     if (accProveedores) {
       jeLines.push({
         accountId: accProveedores.id,
@@ -142,13 +134,13 @@ export async function generateInvoiceJournalEntry(tx: Prisma.TransactionClient, 
         debit: 0,
         credit: netPayable,
       });
-      currentTotalCredit += netPayable;
+      currentTotalCredit = round(currentTotalCredit + netPayable);
     }
 
     // Lines (Expense/Inventory)
     for (const line of invoice.lines) {
       if (line.accountId) {
-        const amount = Number(line.subtotal);
+        const amount = round(Number(line.subtotal));
         jeLines.push({
           accountId: line.accountId,
           costCenterId: line.costCenterId,
@@ -156,7 +148,7 @@ export async function generateInvoiceJournalEntry(tx: Prisma.TransactionClient, 
           debit: amount,
           credit: 0,
         });
-        currentTotalDebit += amount;
+        currentTotalDebit = round(currentTotalDebit + amount);
       }
     }
 
@@ -168,7 +160,23 @@ export async function generateInvoiceJournalEntry(tx: Prisma.TransactionClient, 
         debit: taxAmount,
         credit: 0,
       });
-      currentTotalDebit += taxAmount;
+      currentTotalDebit = round(currentTotalDebit + taxAmount);
+    }
+  }
+
+  // Final Balance Adjustment (Asegurar Partida Doble perfecta por centavos)
+  const diff = round(currentTotalDebit - currentTotalCredit);
+  if (diff !== 0 && jeLines.length > 0) {
+    // Ajustar el último movimiento de CxC/CxP por el diferencial de centavos
+    const mainLine = jeLines.find(l => l.accountId === (isSale ? accClientes?.id : accProveedores?.id));
+    if (mainLine) {
+      if (isSale) {
+        mainLine.debit = round(mainLine.debit - diff);
+        currentTotalDebit = round(currentTotalDebit - diff);
+      } else {
+        mainLine.credit = round(mainLine.credit + diff);
+        currentTotalCredit = round(currentTotalCredit + diff);
+      }
     }
   }
 
@@ -183,10 +191,7 @@ export async function generateInvoiceJournalEntry(tx: Prisma.TransactionClient, 
     }
   });
 
-  if (!period) {
-    console.warn(`No se encontró periodo abierto para ${date.getFullYear()}-${date.getMonth()+1}`);
-    return null;
-  }
+  if (!period) return null;
 
   // 5. Create Journal Entry
   const entryNumber = `AS-${invoice.invoiceType === 'SALE' ? 'VTA' : 'COM'}-${invoice.number}`;

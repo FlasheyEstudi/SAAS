@@ -5,6 +5,7 @@ import { apiClient } from '@/lib/api/client';
 import { BUDGETS } from '@/lib/api/endpoints';
 import type { Budget } from '@/lib/api/types';
 import { useAppStore } from '@/lib/stores/useAppStore';
+import { toast } from 'sonner';
 
 export function useBudgets() {
   const queryClient = useQueryClient();

@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { success, created, error, parsePagination, serverError, validateAuth } from '@/lib/api-helpers';
+import { success, created, error, parsePagination, serverError, validateAuth, requireAuth, ensureNotViewer } from '@/lib/api-helpers';
 import type { PaginatedResponse } from '@/lib/api-helpers';
 import { Prisma } from '@prisma/client';
 import { logAudit } from '@/lib/audit-service';
@@ -24,6 +24,10 @@ const ACCOUNT_TYPE_NATURE: Record<string, string> = {
 // ============================================================
 export async function GET(request: Request) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
     const { page, limit, sortBy, sortOrder } = parsePagination(searchParams);
     const companyId = searchParams.get('companyId') || '';
@@ -119,6 +123,11 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
+    const roleError = ensureNotViewer(user!);
+    if (roleError) return roleError;
     const body = await request.json();
     const { companyId, code, name, accountType, nature, parentId, description } = body;
 

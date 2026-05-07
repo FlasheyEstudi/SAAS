@@ -31,7 +31,17 @@ async function main() {
         currency: 'NIO',
         address: 'Centro Corporativo Invercasa, Piso 5, Managua',
         email: 'corporativo@ganesha.ni',
-        phone: '+505 2222-9000'
+        phone: '+505 2222-9000',
+        metadata: {
+          accountMapping: {
+            clientes: '1.1.02.01',
+            proveedores: '2.1.01.01',
+            ivaPagar: '2.1.02.01',
+            ivaAcreditable: '1.1.03.01',
+            retIrRecibida: '1.1.03.02',
+            retIrPagar: '2.1.02.02'
+          }
+        }
       }
     });
     const cid = company.id;

@@ -12,6 +12,7 @@ import {
   Database,
   Calendar,
   AlertCircle,
+  CheckCircle2,
   FileText,
   Trash2,
   Edit2,
@@ -66,8 +67,8 @@ export function AuditView() {
   const [search, setSearch] = useState('');
   const [entityType, setEntityType] = useState('');
   const [loading, setLoading] = useState(true);
+  const [selectedLog, setSelectedLog] = useState<any>(null);
 
-  
   const { logs, pagination, isLoading } = useAudit({
     page,
     limit: 15,
@@ -83,7 +84,6 @@ export function AuditView() {
   }, [isLoading]);
 
   if (loading) return <GaneshaLoader variant="compact" message="Sincronizando Bitácora..." />;
-
 
   const handleExport = async () => {
     if (!logs.length) return;
@@ -167,7 +167,7 @@ export function AuditView() {
           </div>
           <div>
             <p className="text-xs text-vintage-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Total Eventos</p>
-            <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 dark:text-zinc-100 font-bold">{pagination.total}</p>
+            <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 font-bold">{pagination.total}</p>
           </div>
         </VintageCard>
         <VintageCard variant="premium" className="p-4 flex items-center gap-4 border-none">
@@ -176,16 +176,16 @@ export function AuditView() {
           </div>
           <div>
             <p className="text-xs text-vintage-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Entidades</p>
-            <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 dark:text-zinc-100 font-bold">{isLoading ? '...' : '6'}</p>
+            <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 font-bold">{isLoading ? '...' : '6'}</p>
           </div>
         </VintageCard>
         <VintageCard variant="premium" className="p-4 flex items-center gap-4 border-none">
           <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
-            <Clock className="w-5 h-5 text-success" />
+            <CheckCircle2 className="w-5 h-5 text-success" />
           </div>
           <div>
-            <p className="text-xs text-vintage-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Días Historial</p>
-            <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 dark:text-zinc-100 font-bold">{isLoading ? '...' : logs.length > 0 ? Math.ceil((new Date().getTime() - new Date(logs[logs.length-1].createdAt).getTime()) / (1000 * 3600 * 24)) : 0}</p>
+            <p className="text-xs text-vintage-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Estado</p>
+            <p className="text-xl font-playfair text-vintage-800 dark:text-zinc-100 font-bold">Protegido</p>
           </div>
         </VintageCard>
       </motion.div>
@@ -196,6 +196,7 @@ export function AuditView() {
           headers={tableHeaders}
           data={logs}
           isLoading={isLoading}
+          onRowClick={(row) => setSelectedLog(row)}
           keyExtractor={(row) => row.id}
           renderRow={(row) => (
             <>
@@ -231,23 +232,93 @@ export function AuditView() {
                   <div className="flex items-center gap-1 text-[10px] text-vintage-400 uppercase tracking-tighter">
                     <Database className="w-2.5 h-2.5" />
                     {row.entityType}
-                    <ChevronRight className="w-2.5 h-2.5" />
-                    {row.entityId.substring(0, 8)}...
                   </div>
                 </div>
               </td>
               <td className="px-4 py-3 hidden md:table-cell">
                 <p className="text-xs text-vintage-600 line-clamp-2 max-w-[300px]">
-                  {row.action === 'UPDATE' ? 'Modificó valores de la entidad' : 
-                   row.action === 'CREATE' ? 'Creó nueva entrada' : 
-                   row.action === 'DELETE' ? 'Eliminó registro permanently' :
-                   'Acceso al sistema'}
+                  {row.action === 'UPDATE' ? 'Ver cambios detallados (Forensic View)' : 
+                   row.action === 'CREATE' ? 'Creación de registro maestro' : 
+                   row.action === 'DELETE' ? 'Eliminación irreversible' :
+                   'Acceso/Login'}
                 </p>
               </td>
             </>
           )}
         />
       </motion.div>
+
+      {/* Forensic Detail Modal (Elite Proposal) */}
+      <AnimatePresence>
+        {selectedLog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden"
+            >
+              <div className="p-4 border-b border-vintage-100 flex items-center justify-between bg-vintage-50/50">
+                <div className="flex items-center gap-3">
+                  <div className={cn("p-2 rounded-lg", getActionColor(selectedLog.action))}>
+                    {getActionIcon(selectedLog.action)}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-vintage-800">Detalle Forense: {selectedLog.entityLabel || selectedLog.entityType}</h3>
+                    <p className="text-[10px] text-vintage-500 uppercase tracking-widest">{selectedLog.action} · {formatDate(selectedLog.createdAt, 'dd/MM/yyyy HH:mm:ss')}</p>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedLog(null)} className="text-vintage-400 hover:text-vintage-600">
+                  <Trash2 className="w-5 h-5 rotate-45" /> {/* Close icon using trash rotate */}
+                </button>
+              </div>
+
+              <div className="p-6 max-h-[70vh] overflow-y-auto">
+                {selectedLog.action === 'UPDATE' && selectedLog.oldValues ? (
+                  <div className="space-y-4">
+                    <p className="text-xs font-bold text-vintage-400 uppercase tracking-widest mb-2">Comparativa de Cambios (Diff)</p>
+                    {Object.keys(selectedLog.newValues).map(key => {
+                      const oldVal = selectedLog.oldValues[key];
+                      const newVal = selectedLog.newValues[key];
+                      if (JSON.stringify(oldVal) === JSON.stringify(newVal)) return null;
+
+                      return (
+                        <div key={key} className="grid grid-cols-2 gap-4 pb-3 border-b border-vintage-50 last:border-0">
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-vintage-400 uppercase">{key}</span>
+                            <div className="p-2 rounded bg-error/5 text-error text-xs line-clamp-2 strike-through">
+                              {JSON.stringify(oldVal)}
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-vintage-400 uppercase opacity-0">{key}</span>
+                            <div className="p-2 rounded bg-success/5 text-success text-xs line-clamp-2">
+                              {JSON.stringify(newVal)}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="bg-vintage-50/50 p-6 rounded-xl border border-dashed border-vintage-200 text-center">
+                    <Database className="w-8 h-8 text-vintage-300 mx-auto mb-3" />
+                    <p className="text-sm text-vintage-600">
+                      {selectedLog.action === 'CREATE' ? 'Registro inicial completo. No hay historial previo.' : 'Acción de sistema sin cambios en datos estructurados.'}
+                    </p>
+                    <pre className="mt-4 text-[10px] text-left p-3 bg-zinc-900 text-zinc-300 rounded overflow-x-auto">
+                      {JSON.stringify(selectedLog.newValues || selectedLog.metadata || {}, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+              <div className="p-4 bg-vintage-50/50 border-t border-vintage-100 flex justify-end">
+                <PastelButton onClick={() => setSelectedLog(null)} size="sm">Cerrar Detalle</PastelButton>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (

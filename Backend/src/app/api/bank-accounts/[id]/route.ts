@@ -1,13 +1,18 @@
 import { db } from '@/lib/db';
-import { success, notFound, error, serverError } from '@/lib/api-helpers';
+import { success, notFound, error, serverError, validateAuth, requireAuth, ensureNotViewer } from '@/lib/api-helpers';
+import { logAudit } from '@/lib/audit-service';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 // ============================================================
 // GET /api/bank-accounts/[id] - Get bank account with movement summary
 // ============================================================
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
     const { id } = await context.params;
 
     const bankAccount = await db.bankAccount.findUnique({
@@ -57,6 +62,13 @@ export async function GET(_request: Request, context: RouteContext) {
 // ============================================================
 export async function PUT(request: Request, context: RouteContext) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
+    const roleError = ensureNotViewer(user!);
+    if (roleError) return roleError;
+
     const { id } = await context.params;
     const body = await request.json();
     const { bankName, accountNumber, accountType, currency, initialBalance, isActive } = body;
@@ -97,6 +109,18 @@ export async function PUT(request: Request, context: RouteContext) {
       },
     });
 
+    // Audit Log
+    await logAudit({
+      companyId: bankAccount.companyId,
+      userId: user!.id,
+      action: 'UPDATE',
+      entityType: 'BankAccount',
+      entityId: bankAccount.id,
+      entityLabel: `${bankAccount.bankName} - ${bankAccount.accountNumber}`,
+      oldValues: existing,
+      newValues: bankAccount,
+    });
+
     return success(bankAccount);
   } catch (err) {
     console.error('Error updating bank account:', err);
@@ -107,8 +131,15 @@ export async function PUT(request: Request, context: RouteContext) {
 // ============================================================
 // DELETE /api/bank-accounts/[id] - Delete only if no PENDING movements
 // ============================================================
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
+    const roleError = ensureNotViewer(user!);
+    if (roleError) return roleError;
+
     const { id } = await context.params;
 
     const bankAccount = await db.bankAccount.findUnique({
@@ -127,6 +158,17 @@ export async function DELETE(_request: Request, context: RouteContext) {
     if (pendingCount > 0) {
       return error(`No se puede eliminar la cuenta bancaria. Tiene ${pendingCount} movimiento(s) pendiente(s) de conciliar.`);
     }
+
+    // Audit Log
+    await logAudit({
+      companyId: bankAccount.companyId,
+      userId: user!.id,
+      action: 'DELETE',
+      entityType: 'BankAccount',
+      entityId: bankAccount.id,
+      entityLabel: `${bankAccount.bankName} - ${bankAccount.accountNumber}`,
+      oldValues: bankAccount,
+    });
 
     await db.bankAccount.delete({ where: { id } });
 

@@ -13,6 +13,7 @@ import { AUTH } from '@/lib/api/endpoints';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
 
 export function LoginPage() {
   const navigate = useAppStore((s) => s.navigate);
@@ -66,7 +67,7 @@ export function LoginPage() {
          <div className="relative z-10 flex flex-col h-full">
             <div className="flex items-center gap-4 cursor-pointer group" onClick={() => navigate('landing')}>
                <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:scale-110 transition-all shadow-[0_0_30px_rgba(234,88,12,0.15)]">
-                  <img src="/logo_ganesha.png" alt="Logo" className="w-8 h-8" onError={(e) => e.currentTarget.src = "/GaneshaLogo.png"} />
+                  <img src="/GaneshaLogo.png" alt="Logo" className="w-8 h-8" />
                </div>
                <div className="flex flex-col">
                   <span className="text-xl font-black tracking-tighter uppercase leading-none">Ganesha<span className="text-primary">.</span></span>
@@ -79,10 +80,9 @@ export function LoginPage() {
                <motion.img 
                   animate={{ y: [0, -10, 0] }}
                   transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                  src="/mascota.png" 
+                  src="/personaje.png" 
                   alt="Mascota" 
                   className="relative z-10 w-full max-w-md mx-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
-                  onError={(e) => e.currentTarget.src = "/personaje.png"}
                />
             </div>
 
@@ -111,6 +111,10 @@ export function LoginPage() {
           className="w-full max-w-[420px] space-y-12"
         >
           <div className="space-y-4">
+             <button onClick={() => navigate('landing')} className="flex items-center gap-2 text-zinc-500 hover:text-primary mb-8 transition-colors group">
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                <span className="text-[10px] font-black uppercase tracking-[0.4em]">Volver al Inicio</span>
+             </button>
              <div className="w-12 h-1 rounded-full bg-primary/20" />
              <h1 className="text-4xl lg:text-5xl font-black tracking-tighter uppercase leading-none">Acceder al <br/><span className="text-primary italic">Imperio.</span></h1>
              <p className="text-sm text-zinc-500 font-medium">Ingresa tus credenciales maestras para sincronizarte.</p>
@@ -118,12 +122,12 @@ export function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-8">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 ml-1">Protocolo Email</label>
+              <label className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500 ml-1">Protocolo Email</label>
               <div className="relative group">
                 <input
                   type="email"
                   placeholder="admin@ganesha.com"
-                  className="w-full h-16 bg-zinc-900/50 border border-white/5 text-white pl-16 rounded-[1.5rem] focus:border-primary transition-all text-sm font-bold uppercase tracking-widest placeholder:text-zinc-700"
+                  className="w-full h-16 bg-zinc-900/50 border border-white/5 text-white pl-16 rounded-[1.5rem] focus:border-primary transition-all text-sm font-bold tracking-normal placeholder:text-zinc-700"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
@@ -134,7 +138,7 @@ export function LoginPage() {
 
             <div className="space-y-2">
               <div className="flex justify-between items-center px-1">
-                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Llave Criptográfica</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500">Llave Criptográfica</label>
               </div>
               <div className="relative group">
                 <input
@@ -189,35 +193,9 @@ export function LoginPage() {
       {/* --- CINEMATIC LOADER --- */}
       <AnimatePresence>
         {loading && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-zinc-950/90 backdrop-blur-3xl flex flex-col items-center justify-center"
-          >
-             <div className="space-y-12 flex flex-col items-center">
-                <div className="relative">
-                   <motion.div 
-                     animate={{ rotate: 360 }}
-                     transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                     className="w-56 h-56 rounded-full border border-primary/20 border-t-primary"
-                   />
-                   <div className="absolute inset-0 flex items-center justify-center">
-                      <motion.img 
-                        animate={{ scale: [1, 1.1, 1] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                        src="/logo_ganesha.png" 
-                        className="w-24 h-24"
-                        onError={(e) => e.currentTarget.src = "/GaneshaLogo.png"}
-                      />
-                   </div>
-                </div>
-                <div className="text-center space-y-4">
-                   <h2 className="text-2xl font-black uppercase tracking-[0.6em] text-primary">Abriendo Caminos</h2>
-                   <p className="text-[10px] text-zinc-500 uppercase font-black tracking-[0.4em]">Protocolo de Enlace Activo • Núcleo Soberano • Nicaragua</p>
-                </div>
-             </div>
-          </motion.div>
+          <div className="fixed inset-0 z-[200]">
+            <GaneshaLoader message="Sincronizando con el Núcleo..." />
+          </div>
         )}
       </AnimatePresence>
     </div>

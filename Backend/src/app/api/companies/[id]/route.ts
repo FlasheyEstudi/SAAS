@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
-import { success, notFound, error, serverError } from '@/lib/api-helpers';
+import { success, notFound, error, serverError, validateAuth, requireAuth, ensureNotViewer } from '@/lib/api-helpers';
+import { logAudit } from '@/lib/audit-service';
 import { Prisma } from '@prisma/client';
 
 // Helper to extract ID from dynamic route segment
@@ -8,8 +9,12 @@ type RouteContext = { params: Promise<{ id: string }> };
 // ============================================================
 // GET /api/companies/[id] - Get single company by ID
 // ============================================================
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
     const { id } = await context.params;
 
     const company = await db.company.findUnique({
@@ -45,6 +50,13 @@ export async function GET(_request: Request, context: RouteContext) {
 // ============================================================
 export async function PUT(request: Request, context: RouteContext) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
+    const roleError = ensureNotViewer(user!);
+    if (roleError) return roleError;
+
     const { id } = await context.params;
     const body = await request.json();
     const { name, taxId, logoUrl, address, phone, email, currency } = body;
@@ -87,6 +99,18 @@ export async function PUT(request: Request, context: RouteContext) {
       },
     });
 
+    // Audit Log
+    await logAudit({
+      companyId: company.id,
+      userId: user!.id,
+      action: 'UPDATE',
+      entityType: 'Company',
+      entityId: company.id,
+      entityLabel: company.name,
+      oldValues: existing,
+      newValues: company,
+    });
+
     return success(company);
   } catch (err: unknown) {
     console.error('Error updating company:', err);
@@ -102,8 +126,15 @@ export async function PUT(request: Request, context: RouteContext) {
 // ============================================================
 // DELETE /api/companies/[id] - Soft/hard delete company
 // ============================================================
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
+    const roleError = ensureNotViewer(user!);
+    if (roleError) return roleError;
+
     const { id } = await context.params;
 
     const company = await db.company.findUnique({
@@ -146,6 +177,17 @@ export async function DELETE(_request: Request, context: RouteContext) {
         `${counts.costCenters} centros de costo.`
       );
     }
+
+    // Audit Log
+    await logAudit({
+      companyId: company.id,
+      userId: user!.id,
+      action: 'DELETE',
+      entityType: 'Company',
+      entityId: company.id,
+      entityLabel: company.name,
+      oldValues: company,
+    });
 
     await db.company.delete({ where: { id } });
 

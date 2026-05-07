@@ -128,40 +128,42 @@ export function Pagination({
   };
 
   return (
-    <div className="flex items-center justify-between py-3 px-1">
-      <p className="text-sm text-vintage-600 dark:text-zinc-500">
-        Mostrando {start}-{end} de {total}
+    <div className="flex flex-col sm:flex-row items-center justify-between py-4 px-1 gap-4">
+      <p className="text-sm text-vintage-600 dark:text-zinc-500 order-2 sm:order-1">
+        Mostrando <span className="font-bold">{start}-{end}</span> de <span className="font-bold">{total}</span>
       </p>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 order-1 sm:order-2 overflow-x-auto max-w-full pb-2 sm:pb-0">
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="px-3 py-1.5 text-sm rounded-lg border border-vintage-200 dark:border-zinc-800 text-vintage-700 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-4 py-2 text-sm rounded-xl border border-vintage-200 dark:border-zinc-800 text-vintage-700 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
         >
           Anterior
         </button>
-        {getPageNumbers().map((p, i) =>
-          typeof p === 'string' ? (
-            <span key={`dots-${i}`} className="px-2 text-vintage-400">...</span>
-          ) : (
-            <button
-              key={p}
-              onClick={() => onPageChange(p)}
-              className={cn(
-                'px-3 py-1.5 text-sm rounded-lg transition-colors',
-                page === p
-                  ? 'bg-vintage-400 dark:bg-zinc-700 text-white dark:text-zinc-100 font-medium'
-                  : 'text-vintage-700 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800 border border-transparent'
-              )}
-            >
-              {p}
-            </button>
-          )
-        )}
+        <div className="flex items-center gap-1">
+          {getPageNumbers().map((p, i) =>
+            typeof p === 'string' ? (
+              <span key={`dots-${i}`} className="px-2 text-vintage-400">...</span>
+            ) : (
+              <button
+                key={p}
+                onClick={() => onPageChange(p)}
+                className={cn(
+                  'w-9 h-9 flex items-center justify-center text-sm rounded-xl transition-all shrink-0',
+                  page === p
+                    ? 'bg-primary text-white font-bold shadow-lg shadow-primary/20'
+                    : 'text-vintage-700 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800 border border-vintage-100 dark:border-zinc-800/50'
+                )}
+              >
+                {p}
+              </button>
+            )
+          )}
+        </div>
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="px-3 py-1.5 text-sm rounded-lg border border-vintage-200 dark:border-zinc-800 text-vintage-700 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-4 py-2 text-sm rounded-xl border border-vintage-200 dark:border-zinc-800 text-vintage-700 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
         >
           Siguiente
         </button>
@@ -192,7 +194,7 @@ export function FilterBar({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         <div className="relative flex-1">
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-vintage-400"
@@ -210,30 +212,32 @@ export function FilterBar({
             className="w-full pl-10 pr-4 py-3 text-sm bg-card dark:bg-zinc-950 border border-border dark:border-zinc-800/60 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all text-foreground shadow-inner"
           />
         </div>
-        {filters && filters.length > 0 && (
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={cn(
-              'flex items-center gap-2 px-4 py-2.5 text-sm rounded-xl border transition-all',
-              showFilters || (activeFilters && Object.values(activeFilters).some(Boolean))
-                ? 'border-vintage-400 dark:border-zinc-600 bg-vintage-50 dark:bg-zinc-800 text-vintage-800 dark:text-zinc-100'
-                : 'border-vintage-200 dark:border-zinc-800 text-vintage-600 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800'
-            )}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
-            Filtros
-          </button>
-        )}
-        {activeFilters && Object.values(activeFilters).some(Boolean) && onClearFilters && (
-          <button
-            onClick={onClearFilters}
-            className="text-xs text-vintage-500 hover:text-vintage-700 transition-colors"
-          >
-            Limpiar
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {filters && filters.length > 0 && (
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={cn(
+                'flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 text-sm rounded-xl border transition-all',
+                showFilters || (activeFilters && Object.values(activeFilters).some(Boolean))
+                  ? 'border-vintage-400 dark:border-zinc-600 bg-vintage-50 dark:bg-zinc-800 text-vintage-800 dark:text-zinc-100'
+                  : 'border-vintage-200 dark:border-zinc-800 text-vintage-600 dark:text-zinc-400 hover:bg-vintage-50 dark:hover:bg-zinc-800'
+              )}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              Filtros
+            </button>
+          )}
+          {activeFilters && Object.values(activeFilters).some(Boolean) && onClearFilters && (
+            <button
+              onClick={onClearFilters}
+              className="text-xs text-vintage-500 hover:text-vintage-700 transition-colors px-2"
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
       </div>
 
       <AnimatePresence>

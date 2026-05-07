@@ -34,6 +34,7 @@ import {
   CheckCircle2,
   BarChart3,
   Users,
+  ShieldCheck,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -232,11 +233,17 @@ function JournalEntryRow({ entry }: { entry: any }) {
         </span>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-vintage-800 truncate">{entry.description}</p>
-        <p className="text-xs text-vintage-500">{entry.entryNumber}</p>
+        <p className="text-sm font-medium text-vintage-800 dark:text-zinc-100 truncate">{entry.description}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-vintage-500">{entry.entryNumber}</p>
+          <span className="sm:hidden text-[10px] text-vintage-400">· {formatDate(entry.entryDate, 'dd/MM/yy')}</span>
+        </div>
+        <p className="sm:hidden text-xs font-bold text-vintage-700 dark:text-zinc-300 mt-0.5">
+          {formatCurrency(entry.totalDebit, 'NIO', 0)}
+        </p>
       </div>
       <div className="text-right shrink-0 hidden sm:block">
-        <p className="text-sm font-semibold text-vintage-800">
+        <p className="text-sm font-semibold text-vintage-800 dark:text-zinc-100">
           {formatCurrency(entry.totalDebit, 'NIO', 0)}
         </p>
         <p className="text-xs text-vintage-400">{formatDate(entry.entryDate, 'dd/MM/yy')}</p>
@@ -275,13 +282,26 @@ function InvoiceRow({ invoice }: { invoice: any }) {
         </span>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-vintage-800 truncate">{invoice.description}</p>
-        <p className="text-xs text-vintage-500">
-          {invoice.thirdParty?.name || 'N/A'} · {invoice.invoiceNumber}
-        </p>
+        <p className="text-sm font-medium text-vintage-800 dark:text-zinc-100 truncate">{invoice.description}</p>
+        <div className="flex flex-wrap items-center gap-x-2">
+          <p className="text-xs text-vintage-500">
+            {invoice.thirdParty?.name || 'N/A'} · {invoice.invoiceNumber}
+          </p>
+          <span className="sm:hidden text-[10px] text-vintage-400">· {formatDate(invoice.issueDate || invoice.date, 'dd/MM/yy')}</span>
+        </div>
+        <div className="sm:hidden mt-0.5 flex items-center gap-2">
+           <p className="text-xs font-bold text-vintage-700 dark:text-zinc-300">
+            {formatCurrency(invoice.totalAmount, 'NIO', 0)}
+          </p>
+          {invoice.balanceDue > 0 && (
+            <p className="text-[10px] font-bold text-error">
+              Saldo: {formatCurrency(invoice.balanceDue, 'NIO', 0)}
+            </p>
+          )}
+        </div>
       </div>
       <div className="text-right shrink-0 hidden sm:block">
-        <p className="text-sm font-semibold text-vintage-800">
+        <p className="text-sm font-semibold text-vintage-800 dark:text-zinc-100">
           {formatCurrency(invoice.totalAmount, 'NIO', 0)}
         </p>
         {invoice.balanceDue > 0 && (
@@ -377,13 +397,16 @@ export function DashboardView() {
     return <GaneshaLoader variant="compact" message="Sincronizando Dashboard..." />;
   }
 
-  if (error || !data) {
+  if (error && !data?.kpis) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-4">
         <AlertCircle className="w-12 h-12 text-error/60" />
-        <p className="text-vintage-600 text-sm">{error || 'No se pudieron cargar los datos'}</p>
+        <div className="space-y-2">
+          <h2 className="text-xl font-bold text-vintage-800">Error de Sincronización</h2>
+          <p className="text-vintage-500 text-sm max-w-xs">{error || 'El núcleo de datos no respondió a tiempo.'}</p>
+        </div>
         <PastelButton variant="outline" onClick={() => window.location.reload()}>
-          Reintentar
+          Reintentar Conexión
         </PastelButton>
       </div>
     );
@@ -480,6 +503,7 @@ export function DashboardView() {
         </div>
       </motion.div>
 
+
       {/* ─── KPI Cards Row ───────────────────────────────────── */}
       <motion.div
         variants={itemVariants}
@@ -564,7 +588,7 @@ export function DashboardView() {
               Últimos 6 meses
             </span>
           </div>
-          <div className="h-64 sm:h-72">
+          <div className="h-56 sm:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={revenueTrend} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                 <defs>
@@ -612,7 +636,7 @@ export function DashboardView() {
             <Receipt className="w-4 h-4 text-vintage-500" />
             <h3 className="text-sm font-semibold text-vintage-800">Ingresos vs Gastos</h3>
           </div>
-          <div className="h-48 sm:h-52 flex items-center justify-center">
+          <div className="h-44 sm:h-52 flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -652,7 +676,7 @@ export function DashboardView() {
 
       {/* ─── Expense by Category Bar Chart ───────────────────── */}
       <motion.div variants={itemVariants} className="mb-6">
-        <VintageCard>
+        <VintageCard variant="premium" className="border-none">
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="w-4 h-4 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">Gastos por Categoría</h3>
@@ -660,7 +684,7 @@ export function DashboardView() {
               Total: {formatCompactNumber(kpis.totalExpenses)}
             </span>
           </div>
-          <div className="h-52 sm:h-56">
+          <div className="h-48 sm:h-56">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={expenseCategories} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#FFE4E8" className="dark:opacity-10" vertical={false} />
@@ -686,7 +710,7 @@ export function DashboardView() {
       {/* ─── Activity + Top Clients Row ──────────────────────── */}
       <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         {/* Recent Activity Tabs */}
-        <VintageCard className="lg:col-span-2">
+        <VintageCard variant="premium" className="lg:col-span-2 border-none">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-vintage-800">Actividad Reciente</h3>
             <PastelButton
@@ -709,7 +733,7 @@ export function DashboardView() {
             onChange={setActiveTab}
           />
 
-          <div className="mt-4 max-h-80 overflow-y-auto pr-1">
+          <div className="mt-4 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
             {activeTab === 'polizas' ? (
               recentJournalEntries.length > 0 ? (
                 <div>
@@ -738,33 +762,34 @@ export function DashboardView() {
           </div>
         </VintageCard>
 
-        {/* Top Clients Sidebar */}
-        <VintageCard>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-vintage-500" />
-              <h3 className="text-sm font-semibold text-vintage-800">Clientes Principales</h3>
+        {/* Sidebar Column: Clients + Alerts */}
+        <div className="space-y-4">
+          {/* Top Clients Sidebar */}
+          <VintageCard variant="premium" className="border-none">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-vintage-500" />
+                <h3 className="text-sm font-semibold text-vintage-800">Clientes Principales</h3>
+              </div>
+              <PastelButton
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+                onClick={() => navigate('third-parties')}
+              >
+                Ver todo
+              </PastelButton>
             </div>
-            <PastelButton
-              variant="ghost"
-              size="sm"
-              className="text-xs"
-              onClick={() => navigate('third-parties')}
-            >
-              Ver todo
-            </PastelButton>
-          </div>
 
-          <div className="max-h-80 overflow-y-auto pr-1">
-            {topClients.map((client, i) => (
-              <TopClientRow key={client.id} client={client} index={i} />
-            ))}
-          </div>
+            <div className="max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+              {topClients.map((client, i) => (
+                <TopClientRow key={client.id} client={client} index={i} />
+              ))}
+            </div>
 
-          <div className="mt-4 pt-3 border-t border-vintage-100">
-            <div className="flex items-center justify-between text-xs text-vintage-500">
-              <span>Total facturado Top 5</span>
-              <span className="font-semibold text-vintage-800">
+            <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[10px] text-zinc-500">
+              <span className="font-black uppercase tracking-widest">Total Top 5</span>
+              <span className="font-bold text-foreground">
                 {formatCurrency(
                   topClients.reduce((sum, c) => sum + (Number(c.totalFacturado) || 0), 0),
                   'NIO',
@@ -772,8 +797,61 @@ export function DashboardView() {
                 )}
               </span>
             </div>
-          </div>
-        </VintageCard>
+          </VintageCard>
+
+          {/* Smart Alerts Center (Elite Redesign) */}
+          <VintageCard variant="premium" className="border-none relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-primary" />
+                  <h3 className="text-sm font-black uppercase tracking-tighter text-foreground">Protocolos de Alerta</h3>
+                </div>
+                <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-black uppercase">
+                  {data?.unreadNotifications?.length || 0} Activas
+                </span>
+              </div>
+
+              <div className="space-y-4">
+                {data?.unreadNotifications && data.unreadNotifications.length > 0 ? (
+                  data.unreadNotifications.map((notif: any) => (
+                    <div key={notif.id} className="p-3 rounded-xl bg-white/5 border border-white/5 hover:border-primary/20 transition-all group/item">
+                       <div className="flex gap-3">
+                          <div className={cn(
+                            "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-lg",
+                            notif.type === 'WARNING' ? "bg-orange-500/10 text-orange-500" : "bg-primary/10 text-primary"
+                          )}>
+                             {notif.type === 'WARNING' ? <AlertCircle className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                             <p className="text-[10px] font-black uppercase text-primary tracking-widest mb-0.5 opacity-80 group-hover/item:opacity-100 transition-opacity">
+                               {notif.type === 'WARNING' ? 'Crítico' : 'IA Sugerencia'}
+                             </p>
+                             <h4 className="text-xs font-bold text-foreground truncate">{notif.title}</h4>
+                             <p className="text-[10px] text-muted-foreground line-clamp-2 mt-1 leading-relaxed">{notif.message}</p>
+                          </div>
+                       </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-10 text-center space-y-3 opacity-30">
+                     <CheckCircle2 className="w-10 h-10 mx-auto" />
+                     <p className="text-[10px] font-black uppercase tracking-widest">Sistema Íntegro</p>
+                  </div>
+                )}
+              </div>
+              
+              {data?.unreadNotifications && data.unreadNotifications.length > 0 && (
+                <div className="p-2 border-t border-white/5 bg-white/[0.02] relative z-10">
+                    <button onClick={() => navigate('notifications')} className="w-full py-2 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors">
+                      Centro de Inteligencia
+                    </button>
+                </div>
+              )}
+            </div>
+          </VintageCard>
+        </div>
       </motion.div>
 
       {/* ─── Quick Actions ───────────────────────────────────── */}

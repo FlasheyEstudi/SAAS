@@ -267,6 +267,7 @@ const MODULES: ModuleDef[] = [
       { id: 'reports-trial', method: 'GET', url: '/api/reports/trial-balance', description: 'Balanza de Comprobación', queryParams: '{\n  "companyId": "REPLACE_ID",\n  "year": 2025,\n  "month": 1\n}' },
       { id: 'reports-balance', method: 'GET', url: '/api/reports/balance-sheet', description: 'Balance General', queryParams: '{\n  "companyId": "REPLACE_ID",\n  "year": 2025,\n  "month": 1\n}' },
       { id: 'reports-income', method: 'GET', url: '/api/reports/income-statement', description: 'Estado de Resultados', queryParams: '{\n  "companyId": "REPLACE_ID",\n  "year": 2025,\n  "month": 1\n}' },
+      { id: 'reports-export-pro', method: 'POST', url: '/api/reports/export', description: 'Exportar Reporte Ejecutivo PDF Pro', body: '{\n  "companyId": "REPLACE_ID",\n  "reportType": "BALANCE_SHEET",\n  "format": "pdf",\n  "includeCharts": true\n}' },
     ],
   },
   {

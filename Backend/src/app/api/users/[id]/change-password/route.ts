@@ -19,12 +19,14 @@ export async function POST(request: Request, context: RouteContext) {
     const user = await db.user.findUnique({ where: { id } });
     if (!user) return notFound('Usuario no encontrado');
 
-    const oldHash = Buffer.from(oldPassword).toString('base64');
-    if (user.passwordHash !== oldHash) {
+    const bcrypt = await import('bcryptjs');
+    const isMatch = await bcrypt.compare(oldPassword, user.passwordHash);
+    
+    if (!isMatch) {
       return error('La contraseña actual es incorrecta');
     }
 
-    const newHash = Buffer.from(newPassword).toString('base64');
+    const newHash = await bcrypt.hash(newPassword, 10);
     await db.user.update({ where: { id }, data: { passwordHash: newHash } });
 
     return success({ message: 'Contraseña actualizada correctamente' });

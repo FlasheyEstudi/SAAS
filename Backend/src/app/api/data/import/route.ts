@@ -48,6 +48,8 @@ export async function POST(request: Request) {
       },
       User: async (items) => {
         let count = 0;
+        const bcrypt = await import('bcryptjs');
+        const defaultHash = await bcrypt.hash('123456', 10);
         for (const item of items) {
           try {
             await db.user.create({
@@ -55,7 +57,7 @@ export async function POST(request: Request) {
                 companyId: item.companyId,
                 name: item.name,
                 email: item.email,
-                passwordHash: item.passwordHash || Buffer.from('123456').toString('base64'),
+                passwordHash: item.passwordHash || defaultHash,
                 role: item.role || 'USER',
               },
             });

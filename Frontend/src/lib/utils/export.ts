@@ -10,6 +10,21 @@ import autoTable from 'jspdf-autotable';
 import { formatDate } from '@/lib/utils/format';
 
 // ============================================================
+// PDF Export with Professional Templates
+// ============================================================
+
+export interface PDFExportOptions {
+  filename: string;
+  title: string;
+  company: string;
+  period?: string;
+  headers: string[];
+  data: any[][];
+  orientation?: 'p' | 'l';
+  additionalInfo?: string;
+}
+
+// ============================================================
 // Excel Export with Professional Templates
 // ============================================================
 
@@ -43,70 +58,73 @@ export async function exportToExcelTemplate(options: ExcelExportOptions): Promis
 
   try {
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'GANESHA';
+    workbook.creator = 'GANESHA PRO';
     workbook.created = generatedDate;
 
     const worksheet = workbook.addWorksheet(sheetName, {
-      views: [{ state: 'frozen', ySplit: 4 }], // Freeze title + header
-      properties: { tabColor: { argb: 'FF6B5B95' } },
+      views: [{ state: 'frozen', ySplit: 5 }], 
+      properties: { tabColor: { argb: 'FF4A3F7F' } },
     });
 
-    // Branding Colors
-    const PRIMARY_COLOR = 'FF4A3F7F';
-    const SECONDARY_COLOR = 'FF6B5B95';
-    const LIGHT_BG = 'FFF9F9FB';
-    const BORDER_COLOR = 'FFE0D8F0';
+    // Premium Color Palette
+    const PRIMARY_COLOR = 'FF4A3F7F';   // Deep Purple
+    const SECONDARY_COLOR = 'FF6B5B95'; // Soft Purple
+    const ACCENT_COLOR = 'FFED64A6';    // Pink Accent
+    const LIGHT_BG = 'FFF9FAFB';
+    const BORDER_COLOR = 'FFE5E7EB';
 
-    // Title Section
+    // 1. HEADER AREA
     worksheet.mergeCells(`A1:${String.fromCharCode(64 + headers.length)}1`);
-    const titleCell = worksheet.getCell('A1');
+    const brandCell = worksheet.getCell('A1');
+    brandCell.value = 'GANESHA ENTERPRISE';
+    brandCell.style = {
+      font: { name: 'Arial Black', size: 10, color: { argb: PRIMARY_COLOR } },
+      alignment: { horizontal: 'left', vertical: 'middle' },
+    };
+
+    // 2. MAIN TITLE
+    worksheet.mergeCells(`A2:${String.fromCharCode(64 + headers.length)}2`);
+    const titleCell = worksheet.getCell('A2');
     titleCell.value = title.toUpperCase();
     titleCell.style = {
-      font: { name: 'Georgia', size: 22, bold: true, color: { argb: PRIMARY_COLOR } },
+      font: { name: 'Georgia', size: 24, bold: true, color: { argb: 'FF1F2937' } },
       alignment: { horizontal: 'center', vertical: 'middle' },
     };
-    worksheet.getRow(1).height = 40;
+    worksheet.getRow(2).height = 45;
 
-    // Subtitle Section
-    const subText = [company, period, subtitle].filter(Boolean).join(' | ');
-    worksheet.mergeCells(`A2:${String.fromCharCode(64 + headers.length)}2`);
-    const subCell = worksheet.getCell('A2');
-    subCell.value = subText;
+    // 3. COMPANY & PERIOD
+    worksheet.mergeCells(`A3:${String.fromCharCode(64 + headers.length)}3`);
+    const subCell = worksheet.getCell('A3');
+    subCell.value = `${company} | ${period}`;
     subCell.style = {
-      font: { name: 'Arial', size: 11, italic: true, color: { argb: 'FF80739E' } },
+      font: { name: 'Arial', size: 12, italic: true, color: { argb: 'FF4B5563' } },
       alignment: { horizontal: 'center', vertical: 'middle' },
     };
-    worksheet.getRow(2).height = 20;
+    worksheet.getRow(3).height = 25;
 
-    // Extra spacing row
+    // Extra spacing
     worksheet.addRow([]);
-    worksheet.getRow(3).height = 10;
+    worksheet.getRow(4).height = 10;
 
-    // Header styling
+    // 4. HEADERS
     const headerRow = worksheet.addRow(headers);
-    headerRow.height = 30;
+    headerRow.height = 35;
     headerRow.eachCell((cell) => {
       cell.style = {
         font: { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } },
-        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: SECONDARY_COLOR } },
+        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: PRIMARY_COLOR } },
         alignment: { horizontal: 'center', vertical: 'middle' },
         border: {
-          top: { style: 'thin', color: { argb: PRIMARY_COLOR } },
-          bottom: { style: 'medium', color: { argb: PRIMARY_COLOR } },
+          top: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'medium', color: { argb: ACCENT_COLOR } },
         }
       };
     });
 
-    // Auto-filter
-    worksheet.autoFilter = {
-      from: { row: 4, column: 1 },
-      to: { row: 4, column: headers.length }
-    };
-
-    // Data rows
+    // 5. DATA ROWS
     data.forEach((rowData, index) => {
       const row = worksheet.addRow(rowData);
-      row.height = 22;
+      row.height = 24;
       const isAlt = (index + 1) % 2 === 0;
 
       row.eachCell((cell) => {
@@ -114,113 +132,111 @@ export async function exportToExcelTemplate(options: ExcelExportOptions): Promis
         const isNum = typeof value === 'number';
 
         cell.style = {
-          font: { name: 'Arial', size: 10, color: { argb: 'FF333333' } },
+          font: { name: 'Arial', size: 10, color: { argb: 'FF374151' } },
           fill: isAlt ? { type: 'pattern', pattern: 'solid', fgColor: { argb: LIGHT_BG } } : undefined,
           alignment: { horizontal: isNum ? 'right' : 'left', vertical: 'middle' },
           border: { bottom: { style: 'thin', color: { argb: BORDER_COLOR } } },
-          numFmt: isNum ? '#,##0.00' : undefined // Basic numeric format
         };
 
-        // Specific NIO formatting for numbers
         if (isNum) {
           cell.numFmt = '"C$" #,##0.00;[Red]"C$" -#,##0.00';
         }
       });
     });
 
-    // Auto-fit columns
+    // Auto-fit columns with more padding
     worksheet.columns?.forEach((column) => {
-      let maxLen = 12;
+      let maxLen = 14;
       column.eachCell?.({ includeEmpty: true }, (cell) => {
         const len = cell.value ? String(cell.value).length : 0;
         if (len > maxLen) maxLen = len;
       });
-      column.width = Math.min(maxLen + 4, 60);
+      column.width = Math.min(maxLen + 6, 80);
     });
 
-    // Generate
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     saveAs(blob, `${filename}.xlsx`);
   } catch (error) {
     console.error('Excel Export Error:', error);
-    throw error;
   }
-}
-
-/**
- * Professional PDF Export Logic
- */
-interface PDFExportOptions {
-  filename: string;
-  title: string;
-  company: string;
-  period?: string;
-  headers: string[];
-  data: any[][];
-  orientation?: 'p' | 'l';
-  additionalInfo?: string;
 }
 
 export async function exportToPDFTemplate(options: PDFExportOptions): Promise<void> {
   const { filename, title, company, period, headers, data, orientation = 'p' } = options;
   const doc = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
 
-  const PRIMARY_COLOR = [107, 91, 149]; // #6B5B95
-  const TEXT_COLOR = [74, 63, 127];    // #4A3F7F
+  const PRIMARY_COLOR = [74, 63, 127];   // #4A3F7F
+  const SECONDARY_COLOR = [107, 91, 149]; // #6B5B95
+  const ACCENT_COLOR = [237, 100, 166];   // #ED64A6
 
-  // Header Context
   const pageWidth = doc.internal.pageSize.getWidth();
 
-  // Draw Logo Box (Placeholder)
+  // 1. SOPHISTICATED HEADER BOX
   doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-  doc.roundedRect(14, 15, 12, 12, 2, 2, 'F');
+  doc.rect(0, 0, pageWidth, 40, 'F');
+  
+  // Accent line
+  doc.setFillColor(ACCENT_COLOR[0], ACCENT_COLOR[1], ACCENT_COLOR[2]);
+  doc.rect(0, 39, pageWidth, 1, 'F');
+
+  // 2. LOGO ICON (Modern Style)
+  doc.setDrawColor(255, 255, 255);
+  doc.setLineWidth(0.8);
+  doc.circle(22, 20, 8, 'D');
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('G', 17, 24);
+  doc.text('G', 19.5, 22);
 
-  // Company and Report Info
-  doc.setTextColor(TEXT_COLOR[0], TEXT_COLOR[1], TEXT_COLOR[2]);
-  doc.setFontSize(18);
+  // 3. COMPANY & TITLE (White on Dark Header)
+  doc.setFontSize(16);
   doc.setFont('times', 'bold');
-  doc.text(company.toUpperCase(), 30, 20);
+  doc.text(company.toUpperCase(), 35, 18);
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(title, 30, 26);
-  if (period) doc.text(period, 30, 31);
+  doc.text('SISTEMA CONTABLE GANESHA PRO', 35, 24);
+  
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text(title, pageWidth - 14, 20, { align: 'right' });
+  if (period) {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(period, pageWidth - 14, 26, { align: 'right' });
+  }
 
-  // Horizontal Line
-  doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-  doc.setLineWidth(0.5);
-  doc.line(14, 35, pageWidth - 14, 35);
-
-  // Table Generation
+  // 4. TABLE GENERATION
   autoTable(doc, {
-    startY: 40,
+    startY: 48,
     head: [headers],
     body: data,
-    theme: 'striped',
+    theme: 'grid',
     headStyles: { 
-      fillColor: PRIMARY_COLOR as any, 
+      fillColor: SECONDARY_COLOR as any, 
       textColor: [255, 255, 255], 
       fontSize: 10, 
       fontStyle: 'bold',
-      halign: 'center'
+      halign: 'center',
+      lineWidth: 0.1,
+      lineColor: [255, 255, 255]
     },
     bodyStyles: { 
-      fontSize: 9, 
-      textColor: [51, 51, 51],
-      cellPadding: 3
+      fontSize: 8.5, 
+      textColor: [31, 41, 55],
+      cellPadding: 3,
+      lineColor: [229, 231, 235],
+      lineWidth: 0.1
     },
-    alternateRowStyles: { fillColor: [249, 249, 251] },
+    alternateRowStyles: { fillColor: [249, 250, 251] },
     columnStyles: {
-      // Right align numbers (assumes last columns are numbers)
       ...headers.reduce((acc, _, i) => {
-        // If data looks like a number/currency, right align
         const sample = data[0]?.[i];
-        if (typeof sample === 'number' || (typeof sample === 'string' && /^[C\$]?\s?[\d,.]+$/.test(sample))) {
+        const isContentObj = sample && typeof sample === 'object' && 'content' in sample;
+        const val = isContentObj ? sample.content : sample;
+        
+        if (typeof val === 'number' || (typeof val === 'string' && /^[C\$]?\s?[\d,.]+$/.test(val))) {
           // @ts-ignore
           acc[i] = { halign: 'right' };
         }
@@ -228,19 +244,20 @@ export async function exportToPDFTemplate(options: PDFExportOptions): Promise<vo
       }, {})
     },
     margin: { left: 14, right: 14 },
-    didDrawPage: (dataArg) => {
-      // Footer
-      const str = `Página ${dataArg.pageNumber} de ${doc.getNumberOfPages()}`;
+    didDrawPage: (d) => {
+      // FOOTER
+      const str = `Página ${d.pageNumber} de ${doc.getNumberOfPages()}`;
       doc.setFontSize(8);
-      doc.setTextColor(150);
-      const pageSize = doc.internal.pageSize;
-      const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
-      doc.text(str, dataArg.settings.margin.left, pageHeight - 10);
-      doc.text(`Generado por GANESHA - ${new Date().toLocaleString()}`, pageWidth - dataArg.settings.margin.right, pageHeight - 10, { align: 'right' });
+      doc.setTextColor(107, 114, 128);
+      const pageHeight = doc.internal.pageSize.getHeight();
+      doc.text(str, 14, pageHeight - 10);
+      doc.text(`Generado: ${new Date().toLocaleString()}`, pageWidth - 14, pageHeight - 10, { align: 'right' });
     }
   });
 
-  doc.save(`${filename}.pdf`);
+  // Mobile-friendly saving: Use blob + saveAs instead of doc.save()
+  const pdfBlob = doc.output('blob');
+  saveAs(pdfBlob, `${filename}.pdf`);
 }
 
 /**

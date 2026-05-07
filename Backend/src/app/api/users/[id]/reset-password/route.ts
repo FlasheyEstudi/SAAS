@@ -15,8 +15,13 @@ export async function POST(request: Request, context: RouteContext) {
     const user = await db.user.findUnique({ where: { id } });
     if (!user) return notFound('Usuario no encontrado');
 
-    const newHash = Buffer.from(newPassword).toString('base64');
-    await db.user.update({ where: { id }, data: { passwordHash: newHash } });
+    const bcrypt = await import('bcryptjs');
+    const newHash = await bcrypt.hash(newPassword, 10);
+    
+    await db.user.update({
+      where: { id },
+      data: { passwordHash: newHash }
+    });
 
     return success({ message: 'Contraseña reiniciada correctamente' });
   } catch (err) {

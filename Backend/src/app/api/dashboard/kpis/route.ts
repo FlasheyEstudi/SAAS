@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { success, error, serverError } from '@/lib/api-helpers';
+import { runCompanyHealthCheck } from '@/services/health.service';
 
 // ============================================================
 // GET /api/dashboard/kpis - Dashboard KPIs
@@ -58,6 +59,13 @@ export async function GET(request: Request) {
         orderBy: [{ year: 'desc' }, { month: 'desc' }],
       });
     }
+
+    // DISPARAR ESCÁNER DE SALUD ELITE (Proactivo)
+    // Solo si no es consolidado para evitar duplicados en sucursales
+    if (!consolidated) {
+      runCompanyHealthCheck(companyId).catch(err => console.error('Health Check Error:', err));
+    }
+
     if (!currentPeriod) {
       return success({
         totalRevenue: 0,

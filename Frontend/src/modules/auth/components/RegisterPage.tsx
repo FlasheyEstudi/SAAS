@@ -14,6 +14,7 @@ import { apiClient } from '@/lib/api/client';
 import { AUTH } from '@/lib/api/endpoints';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { GaneshaLoader } from '@/components/ui/ganesha-loader';
 
 export function RegisterPage() {
   const navigate = useAppStore((s) => s.navigate);
@@ -75,7 +76,7 @@ export function RegisterPage() {
          <div className="relative z-10">
             <div className="flex items-center gap-4 cursor-pointer group" onClick={() => navigate('landing')}>
                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:scale-110 transition-all shadow-[0_0_30px_rgba(234,88,12,0.15)]">
-                  <img src="/logo_ganesha.png" alt="Logo" className="w-6 h-6" onError={(e) => e.currentTarget.src = "/GaneshaLogo.png"} />
+                  <img src="/GaneshaLogo.png" alt="Logo" className="w-6 h-6" />
                </div>
                <div className="flex flex-col">
                   <span className="text-lg font-black tracking-tighter uppercase leading-none">Ganesha<span className="text-primary">.</span></span>
@@ -108,10 +109,9 @@ export function RegisterPage() {
          <div className="relative group pt-10">
             <div className="absolute inset-0 bg-primary/20 blur-[100px] opacity-10 group-hover:opacity-30 transition-opacity" />
             <img 
-               src="/mascota.png" 
+               src="/personaje.png" 
                alt="Mascota" 
                className="relative z-10 w-full max-w-[220px] mx-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] opacity-80"
-               onError={(e) => e.currentTarget.src = "/personaje.png"}
             />
          </div>
       </motion.div>
@@ -245,32 +245,9 @@ export function RegisterPage() {
       {/* --- CARGADOR CINEMÁTICO --- */}
       <AnimatePresence>
         {loading && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-zinc-950/90 backdrop-blur-3xl flex flex-col items-center justify-center"
-          >
-             <div className="space-y-8 flex flex-col items-center">
-                <div className="relative">
-                   <motion.div 
-                     animate={{ rotate: 360 }}
-                     transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                     className="w-48 h-48 rounded-full border border-primary/20 border-t-primary"
-                   />
-                   <div className="absolute inset-0 flex items-center justify-center">
-                      <motion.img 
-                        animate={{ scale: [1, 1.1, 1] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                        src="/logo_ganesha.png" 
-                        className="w-20 h-20"
-                        onError={(e) => e.currentTarget.src = "/GaneshaLogo.png"}
-                      />
-                   </div>
-                </div>
-                <h2 className="text-xl font-black uppercase tracking-[0.6em] text-primary animate-pulse">Expandiendo Horizonte</h2>
-             </div>
-          </motion.div>
+          <div className="fixed inset-0 z-[200]">
+            <GaneshaLoader message="Expandiendo Horizonte..." />
+          </div>
         )}
       </AnimatePresence>
     </div>

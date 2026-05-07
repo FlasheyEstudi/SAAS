@@ -150,6 +150,26 @@ export function requireCompanyAccess(user: AuthUser, companyId: string) {
   return null;
 }
 
+/**
+ * Valida que el usuario NO tenga rol de VISOR para acciones de escritura.
+ */
+export function ensureNotViewer(user: AuthUser) {
+  if (user.role === 'VIEWER') {
+    return error('Tu rol de Visor no permite realizar esta acción', 403);
+  }
+  return null;
+}
+
+/**
+ * Valida que el usuario sea ADMINISTRADOR para acciones críticas.
+ */
+export function ensureAdmin(user: AuthUser) {
+  if (user.role !== 'ADMIN') {
+    return error('Se requieren privilegios de Administrador para esta acción', 403);
+  }
+  return null;
+}
+
 // ============================================================
 // HELPERS GENÉRICOS PARA RESPUESTAS API
 // Estandarizan el formato de éxito y error en todos los endpoints.

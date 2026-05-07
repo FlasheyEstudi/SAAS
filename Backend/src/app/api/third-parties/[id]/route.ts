@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { success, notFound, error, serverError, validateAuth } from '@/lib/api-helpers';
+import { success, notFound, error, serverError, validateAuth, requireAuth, ensureNotViewer } from '@/lib/api-helpers';
 import { Prisma } from '@prisma/client';
 import { logAudit } from '@/lib/audit-service';
 
@@ -8,8 +8,12 @@ type RouteContext = { params: Promise<{ id: string }> };
 // ============================================================
 // GET /api/third-parties/[id] - Get third party with invoice summary
 // ============================================================
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
     const { id } = await context.params;
 
     const thirdParty = await db.thirdParty.findUnique({
@@ -57,6 +61,13 @@ export async function GET(_request: Request, context: RouteContext) {
 // ============================================================
 export async function PUT(request: Request, context: RouteContext) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
+    const roleError = ensureNotViewer(user!);
+    if (roleError) return roleError;
+
     const { id } = await context.params;
     const body = await request.json();
     const { name, type, taxId, email, phone, address, city, state, country, isActive } = body;
@@ -93,6 +104,18 @@ export async function PUT(request: Request, context: RouteContext) {
       },
     });
 
+    // Audit Log
+    await logAudit({
+      companyId: thirdParty.companyId,
+      userId: user!.id,
+      action: 'UPDATE',
+      entityType: 'ThirdParty',
+      entityId: thirdParty.id,
+      entityLabel: thirdParty.name,
+      oldValues: existing,
+      newValues: thirdParty,
+    });
+
     return success(thirdParty);
   } catch (err: unknown) {
     console.error('Error updating third party:', err);
@@ -108,8 +131,15 @@ export async function PUT(request: Request, context: RouteContext) {
 // ============================================================
 // DELETE /api/third-parties/[id] - Delete only if no invoices reference it
 // ============================================================
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
+    const roleError = ensureNotViewer(user!);
+    if (roleError) return roleError;
+
     const { id } = await context.params;
 
     const thirdParty = await db.thirdParty.findUnique({
@@ -130,6 +160,17 @@ export async function DELETE(_request: Request, context: RouteContext) {
         `No se puede eliminar el tercero. Tiene ${thirdParty._count.invoices} factura(s) asociada(s).`
       );
     }
+
+    // Audit Log
+    await logAudit({
+      companyId: thirdParty.companyId,
+      userId: user!.id,
+      action: 'DELETE',
+      entityType: 'ThirdParty',
+      entityId: thirdParty.id,
+      entityLabel: thirdParty.name,
+      oldValues: thirdParty,
+    });
 
     await db.thirdParty.delete({ where: { id } });
 

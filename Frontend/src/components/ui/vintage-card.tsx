@@ -23,7 +23,7 @@ export const VintageCard = forwardRef<HTMLDivElement, VintageCardProps>(
       <motion.div
         ref={ref}
         className={cn(
-          'rounded-2xl p-5 transition-all duration-300',
+          'rounded-2xl p-3.5 sm:p-6 transition-all duration-300',
           variants[variant],
           hover && 'hover:shadow-2xl hover:-translate-y-1 hover:border-primary/20 dark:hover:border-primary/30 dark:hover:shadow-black/40',
           className

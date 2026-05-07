@@ -3,7 +3,7 @@ import { success, notFound, serverError } from '@/lib/api-helpers';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function POST(_request: Request, context: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
   try {
     const { id } = await context.params;
     const existing = await db.notification.findUnique({ where: { id } });
@@ -13,6 +13,24 @@ export async function POST(_request: Request, context: RouteContext) {
       where: { id },
       data: { isRead: true },
     });
+
+    // --- BLINDAJE FORENSE: REGISTRAR EN AUDITORÍA ---
+    try {
+      await db.auditLog.create({
+        data: {
+          companyId: notification.companyId,
+          userId: existing.userId || '', 
+          action: 'UPDATE',
+          entityType: 'NOTIFICATION',
+          entityId: notification.id,
+          entityLabel: notification.title,
+          metadata: { description: `El usuario atendió el protocolo: ${notification.title}` },
+        },
+      });
+    } catch (auditErr) {
+      console.warn('Error generating forensic audit for notification:', auditErr);
+    }
+
     return success(notification);
   } catch (err) {
     console.error('Error marking notification as read:', err);

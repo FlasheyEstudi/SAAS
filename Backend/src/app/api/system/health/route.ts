@@ -35,13 +35,13 @@ export async function GET(request: Request) {
       db.bankAccount.count({ where }),
       db.bankMovement.count({ where: companyId ? { bankAccount: { companyId } } : {} }),
       db.thirdParty.count({ where }),
-      db.user.count({ where: companyId ? { companies: { some: { id: companyId } } } : {} }),
-      db.auditLog.count({ where: companyId ? { companyId } : {} }),
+      db.user.count({ where: companyId ? { memberships: { some: { companyId } } } : {} }),
+      db.auditLog.count({ where }),
       db.fixedAsset.count({ where }),
       db.budget.count({ where }),
-      db.notification.count({ where: companyId ? { user: { companies: { some: { id: companyId } } } } : {} }),
-      db.fileAttachment.count({ where: companyId ? { OR: [{ invoice: { companyId } }, { journalEntry: { companyId } }] } : {} }),
-      db.exchangeRate.count(),
+      db.notification.count({ where }),
+      db.fileAttachment.count({ where }),
+      db.exchangeRate.count({ where: companyId ? { companyId } : {} }),
     ]);
 
     const totalRecords = companyCount + periodCount + accountCount + costCenterCount +

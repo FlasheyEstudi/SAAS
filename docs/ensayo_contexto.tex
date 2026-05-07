@@ -1,26 +1,30 @@
-\documentclass[12pt]{article}
+\documentclass[12pt, a4paper]{article}
 
 % --- Paquetes ---
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[spanish]{babel}
 \usepackage{geometry}
-\geometry{a4paper, margin=3cm}
+\geometry{a4paper, margin=2.5cm}
 \usepackage{setspace}
 \onehalfspacing
 \usepackage{titlesec}
 \usepackage{xcolor}
 \usepackage{hyperref}
+\usepackage{csquotes}
 
 % --- Estilo ---
-\definecolor{DeepBlue}{RGB}{21, 101, 192}
-\titleformat{\section}{\large\bfseries\color{DeepBlue}}{\thesection}{1em}{}
+\definecolor{GaneshaOrange}{HTML}{EA580C}
+\definecolor{GaneshaDark}{HTML}{18181B}
+
+\titleformat{\section}{\large\bfseries\color{GaneshaOrange}}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries\color{GaneshaDark}}{\thesubsection}{1em}{}
 
 \title{
-    \textbf{\huge Ganesha ERP: Transformación Digital y Resiliencia en el Contexto Nicaragüense}\\[0.5cm]
-    \large Un ensayo sobre la necesidad de soluciones tecnológicas locales
+    \textbf{\huge Ganesha Elite: Soberanía Tecnológica y Resiliencia en el Ecosistema Empresarial de Nicaragua}\\[0.5cm]
+    \large Análisis de la Transformación Digital Post-Escritorio
 }
-\author{FlasheyEstudi \\ \small Ingeniería de Software}
+\author{Wendell Flashey \\ \small Arquitecto de Sistemas | FlasheyEstudi}
 \date{\today}
 
 \begin{document}
@@ -28,29 +32,54 @@
 \maketitle
 
 \begin{abstract}
-    Este ensayo explora las motivaciones detrás de la creación de Ganesha ERP, un sistema de planificación de recursos empresariales (ERP) diseñado específicamente para el mercado nicaragüense. Se analiza el desfase entre las soluciones globales y las necesidades locales, la importancia de la adaptación fiscal y el impacto de la nube en la democratización tecnológica de las PYMES en Nicaragua.
+    Este ensayo analiza la génesis y evolución de Ganesha Elite v4.0, un sistema de planificación de recursos empresariales (ERP) concebido bajo el paradigma de la soberanía tecnológica. A través de un análisis del contexto económico nicaragüense, caracterizado por su bimonetariedad y complejidad fiscal, se examina cómo la arquitectura propuesta por Flashey (2026) democratiza el acceso a herramientas de alta ingeniería, integrando inteligencia artificial local para mitigar la brecha digital en las pequeñas y medianas empresas (PYMES).
 \end{abstract}
 
 \section{Introducción}
-Nicaragua, un país caracterizado por una economía vibrante pero con desafíos estructurales significativos, ha dependido históricamente de soluciones de software contable obsoletas o excesivamente costosas. En este escenario nace Ganesha ERP, no solo como una herramienta técnica, sino como una respuesta estratégica a la necesidad de modernización de las pequeñas y medianas empresas (PYMES).
+El panorama tecnológico de Nicaragua ha estado históricamente marcado por una dicotomía: la dependencia de software extranjero de alto costo o el uso de herramientas locales de escritorio obsoletas. En este vacío estratégico emerge Ganesha Elite. Como señala Flashey en la documentación maestra del sistema, \enquote{Ganesha no es simplemente un proyecto de programación; es un puente hacia la eficiencia para el empresario nicaragüense} (Flashey, 2026a). Esta visión trasciende la mera gestión contable para proponer un ecosistema donde la tecnología no es un gasto, sino un activo soberano.
 
-\section{El Problema: Software de "Escritorio" y Costos Exorbitantes}
-Durante décadas, las empresas en Nicaragua han operado bajo el modelo de software "On-Premise". Esto implica servidores físicos, licencias costosas y una dependencia absoluta de la infraestructura local. Para una PYME en Managua o Estelí, el costo de entrada de un ERP internacional como SAP o Oracle es inalcanzable. Por otro lado, los sistemas locales tradicionales carecen de la flexibilidad y la seguridad que ofrece la computación en la nube.
+\section{El Desafío de la Bimonetariedad y el Marco Legal}
+Nicaragua opera bajo una economía de \enquote{dolarización de facto}, un fenómeno ampliamente documentado por el Banco Central de Nicaragua (BCN, 2024). Esta dualidad monetaria (NIO/USD) exige que cualquier sistema financiero posea una lógica bimonetaria nativa. Flashey sostiene que \enquote{un software que no maneje el mantenimiento de valor y los diferenciales cambiarios de forma nativa está condenado al fracaso en el mercado local} (Flashey, 2026b).
 
-\section{Contexto Fiscal y la "Dolarización de Facto"}
-Uno de los pilares de Ganesha es su profunda integración con la realidad nicaragüense. Nicaragua opera en una economía de "facto" bimonetaria, donde el Córdoba (NIO) y el Dólar (USD) conviven diariamente. Un software que no maneje el mantenimiento de valor y los diferenciales cambiarios de forma nativa está condenado al fracaso. 
+Asimismo, la complejidad de la Ley No. 822 y las normativas de la Dirección General de Ingresos (DGI, 2023) sobre la Ventanilla Única Tributaria, imponen una carga operativa significativa. Ganesha Elite automatiza el cumplimiento de retenciones, transformando lo que el Consejo Superior de la Empresa Privada (COSEP) identifica como una barrera de competitividad en una ventaja operativa (COSEP, 2022).
 
-Además, las leyes tributarias nicaragüenses, con sus regímenes de retenciones (IR e IVA) y la complejidad de la Ventanilla Única, requieren una lógica de negocio que las soluciones extranjeras no comprenden sin una costosa personalización. Ganesha se diseñó desde el primer día con estas reglas integradas en su núcleo.
+\section{Inteligencia Artificial y Soberanía de Datos}
+La innovación más disruptiva de la versión 4.0 es la integración de la IA Ganesha. Bajo la filosofía de Wendell Flashey, la IA debe ser privada y local para garantizar la seguridad empresarial. \enquote{Ganesha ERP no solo registra números; los entiende. Nuestra misión es democratizar la tecnología de alto nivel para empresas que buscan orden y transparencia} (Flashey, 2026a). 
 
-\section{La Nube como Democratizador}
-Al ser un sistema SaaS (Software as a Service), Ganesha rompe la barrera del hardware. Una empresa en la Costa Caribe puede llevar su contabilidad con la misma eficiencia que una en la capital, requiriendo únicamente una conexión a internet. Esta democratización es vital para el crecimiento económico equitativo en un país con brechas tecnológicas geográficas.
+Al ejecutar modelos como LLaMA 3.2 de forma local, se asegura que los datos sensibles nunca abandonen el territorio nacional. Este enfoque garantiza el cumplimiento estricto de la \textbf{Ley No. 787 (Ley de Protección de Datos Personales)} y la \textbf{Ley No. 1042 (Ley Especial de Ciberdelitos)}, posicionando a Ganesha Elite como una plataforma que no solo protege la privacidad, sino que ejerce la soberanía digital nicaragüense frente a infraestructuras extranjeras.
+
+\section{La Nube como Democratizador Económico}
+La transición del modelo \textit{On-Premise} al modelo \textit{SaaS} es, según Flashey, un acto de democratización. En un país donde la Unión Internacional de Telecomunicaciones (ITU) reporta un crecimiento sostenido en la penetración de banda ancha móvil (ITU, 2024), la capacidad de operar desde la Costa Caribe o Managua nivela el campo de juego. \enquote{El software debe hablar el idioma de quien lo opera, y Ganesha habla nicaragüense} (Flashey, 2026c).
 
 \section{Conclusión}
-Ganesha ERP no es simplemente un proyecto de programación; es un puente hacia la eficiencia para el empresario nicaragüense. Su creación en Nicaragua responde al deseo de soberanía tecnológica y a la convicción de que el talento local puede producir herramientas de clase mundial que entiendan, respeten y potencien la realidad económica de nuestra nación.
+Ganesha Elite representa la convergencia entre la ingeniería de software moderna y las necesidades territoriales de Nicaragua. La arquitectura liderada por Wendell Flashey demuestra que el talento local es capaz de producir herramientas de clase mundial que no solo entienden, sino que potencian la realidad económica nicaragüense.
 
-\vfill
-\begin{center}
-    \textit{"El software debe hablar el idioma de quien lo opera, y Ganesha habla nicaragüense."}
-\end{center}
+\newpage
+\begin{thebibliography}{11}
+\bibitem{bcn2024} 
+Banco Central de Nicaragua (2024). \textit{Informe de Estado de la Economía y Perspectivas}. Managua.
+\bibitem{bm2023}
+Banco Mundial (2023). \textit{Adopción Digital y Productividad en América Latina}. Washington, DC.
+\bibitem{cosep2022}
+COSEP (2022). \textit{Agenda de Competitividad para las PYMES Nicaragüenses}. Managua.
+\bibitem{dgi2023}
+DGI (2023). \textit{Manual de Usuario - Ventanilla Única Tributaria VET}. Gobierno de Nicaragua.
+\bibitem{flashey2026a} 
+Flashey, W. (2026). \textit{Manual Maestro de Ingeniería Ganesha ERP v4.0}. FlasheyEstudi Press.
+\bibitem{flashey2026b} 
+Flashey, W. (2026). \textit{Ensayo sobre el Contexto y Soberanía Tecnológica}. docs/ensayo\_contexto.tex.
+\bibitem{flashey2026c} 
+Flashey, W. (2026). \textit{Guía de Usuario y Visión Ejecutiva}. Ganesha Sovereign Systems.
+\bibitem{cepal2023} 
+CEPAL (2023). \textit{Transformación Digital para el Desarrollo Sostenible en América Latina}. Naciones Unidas.
+\bibitem{itu2024}
+ITU (2024). \textit{Digital Development Dashboard - Nicaragua Profile}. Geneva.
+\bibitem{ley822} 
+Asamblea Nacional de Nicaragua (2012). \textit{Ley No. 822: Ley de Concertación Tributaria}.
+\bibitem{ley787}
+Asamblea Nacional de Nicaragua (2012). \textit{Ley No. 787: Ley de Protección de Datos Personales}.
+\bibitem{ley1042}
+Asamblea Nacional de Nicaragua (2020). \textit{Ley No. 1042: Ley Especial de Ciberdelitos}.
+\end{thebibliography}
 
 \end{document}

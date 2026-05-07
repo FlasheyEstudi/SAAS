@@ -36,6 +36,10 @@ import { toast } from 'sonner';
 import { formatDate } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 
+import { apiClient } from '@/lib/api/client';
+import { NOTIFICATIONS } from '@/lib/api/endpoints';
+import { useQuery } from '@tanstack/react-query';
+
 export function Header() {
   const { 
     user,
@@ -48,8 +52,8 @@ export function Header() {
     setCurrentCompany,
     setGlobalSearch,
     globalSearch,
-    notifications = [],
     setSidebarOpen,
+    companyId
   } = useAppStore();
 
   const [showCompanies, setShowCompanies] = useState(false);
@@ -78,7 +82,16 @@ export function Header() {
     { id: 'amethyst', name: 'Amethyst Vision', icon: <Sparkles className="w-4 h-4 text-purple-400" /> },
   ];
 
-  const displayNotifications = notifications;
+  // Fetch real notifications for the header
+  const { data: notificationsData } = useQuery<any>({
+    queryKey: ['notifications', 'header', { companyId }],
+    queryFn: () => apiClient.get(NOTIFICATIONS.list, { companyId, isRead: 'false', limit: 5, sortBy: 'createdAt', sortOrder: 'desc' }),
+    enabled: !!companyId,
+    refetchInterval: 30000, // Sync every 30s
+  });
+
+  const displayNotifications = (notificationsData as any)?.data || [];
+  const unreadCount = displayNotifications.length;
 
   return (
     <header className="h-16 border-b border-white/5 bg-black/40 backdrop-blur-3xl px-3 sm:px-6 flex items-center justify-between sticky top-0 z-40 transition-colors duration-500 gap-2">
@@ -191,41 +204,52 @@ export function Header() {
         <DropdownMenu>
           <DropdownMenuTrigger className="p-2 sm:p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all relative outline-none">
             <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 sm:top-2.5 right-1.5 sm:right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-background" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 sm:top-2.5 right-1.5 sm:right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-background shadow-[0_0_10px_rgba(234,88,12,0.5)]" />
+            )}
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-72 sm:w-80 p-2 bg-card border-border shadow-2xl rounded-2xl" align="end">
-            <DropdownMenuLabel className="px-3 py-3 flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-widest text-foreground">Avisos Recientes</span>
-              <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{displayNotifications.length} Avisos</span>
+          <DropdownMenuContent className="w-[calc(100vw-1.5rem)] sm:w-80 p-2 bg-card border-border shadow-2xl rounded-2xl overflow-hidden" align="end" sideOffset={8}>
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-50 pointer-events-none" />
+            <DropdownMenuLabel className="px-3 py-3 flex items-center justify-between relative z-10">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground">Protocolos de Alerta</span>
+              <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-black uppercase tracking-wider">{unreadCount} Activos</span>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <div className="max-h-80 overflow-y-auto">
+            <DropdownMenuSeparator className="bg-white/5" />
+            <div className="max-h-80 overflow-y-auto relative z-10 custom-scrollbar">
               {displayNotifications.length > 0 ? (
-                displayNotifications.map((notif) => (
-                  <DropdownMenuItem key={notif.id} className="p-3 cursor-pointer rounded-xl hover:bg-muted/30 mb-1 flex gap-3 items-start">
-                    <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                      notif.type === 'SUCCESS' ? 'bg-green-500/10 text-green-500' :
-                      notif.type === 'ERROR' ? 'bg-red-500/10 text-red-500' :
-                      'bg-blue-500/10 text-blue-500'
-                    }`}>
-                      {notif.type === 'SUCCESS' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                displayNotifications.map((notif: any) => (
+                  <DropdownMenuItem key={notif.id} className="p-3 cursor-pointer rounded-xl hover:bg-white/5 mb-1 flex gap-3 items-start border border-transparent hover:border-white/5 transition-all">
+                    <div className={cn(
+                      "mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-lg",
+                      notif.type === 'WARNING' ? "bg-orange-500/10 text-orange-500" : "bg-primary/10 text-primary"
+                    )}>
+                      {notif.type === 'WARNING' ? <AlertCircle className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
                     </div>
-                    <div className="flex-1">
-                        <p className="text-[11px] font-black text-foreground uppercase tracking-wide leading-tight">{notif.title}</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">{notif.message}</p>
-                        <div className="flex items-center gap-1 mt-1.5 opacity-50">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-black text-primary uppercase tracking-widest leading-tight">{notif.type === 'WARNING' ? 'CRÍTICO' : 'IA SUGERENCIA'}</p>
+                        <p className="text-xs font-bold text-foreground mt-0.5 leading-tight truncate">{notif.title}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed opacity-70">{notif.message}</p>
+                        <div className="flex items-center gap-1 mt-2 opacity-40">
                           <Clock className="w-2.5 h-2.5" />
-                          <span className="text-[8px] font-bold uppercase">{notif.createdAt ? formatDate(notif.createdAt, 'HH:mm') : 'Ahora'}</span>
+                          <span className="text-[8px] font-bold uppercase">{notif.createdAt ? formatDate(notif.createdAt, 'HH:mm') : 'Sincronizado'}</span>
                         </div>
                     </div>
                   </DropdownMenuItem>
                 ))
               ) : (
-                <div className="py-8 px-4 text-center">
-                  <p className="text-xs text-muted-foreground">No tienes notificaciones pendientes</p>
+                <div className="py-12 px-4 text-center space-y-3 opacity-20">
+                  <CheckCircle2 className="w-10 h-10 mx-auto" />
+                  <p className="text-[9px] font-black uppercase tracking-[0.3em]">Sistema Íntegro</p>
                 </div>
               )}
             </div>
+            {unreadCount > 0 && (
+               <div className="p-2 border-t border-white/5 bg-white/[0.02] relative z-10">
+                  <button onClick={() => navigate('notifications')} className="w-full py-2 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors">
+                     Centro de Inteligencia
+                  </button>
+               </div>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
 

@@ -599,6 +599,34 @@ export async function getFinancialSnapshot(companyId: string) {
     const arAging = await getAgingReport(companyId, 'SALE');
     const apAging = await getAgingReport(companyId, 'PURCHASE');
 
+    // 3. Saldos Bancarios
+    const bankAccounts = await db.bankAccount.findMany({
+      where: { companyId, isActive: true },
+      select: { bankName: true, accountNumber: true, currentBalance: true, currency: true }
+    });
+    const bankSummary = bankAccounts.map(b => `- ${b.bankName} (${b.accountNumber}): ${roundTwo(b.currentBalance)} ${b.currency}`).join('\n');
+
+    // 4. Top 5 Gastos
+    const topExpenses = await db.journalEntryLine.groupBy({
+      by: ['accountId'],
+      where: {
+        journalEntry: { companyId, status: 'POSTED' },
+        account: { accountType: 'EXPENSE' }
+      },
+      _sum: { debit: true },
+      orderBy: { _sum: { debit: 'desc' } },
+      take: 5
+    });
+    
+    const expenseAccounts = await db.account.findMany({
+      where: { id: { in: topExpenses.map(e => e.accountId) } },
+      select: { id: true, name: true }
+    });
+    const expenseSummary = topExpenses.map(e => {
+      const acc = expenseAccounts.find(a => a.id === e.accountId);
+      return `- ${acc?.name || 'Gasto'}: ${roundTwo(e._sum.debit)}`;
+    }).join('\n');
+
     // 3. Construcción del Snapshot
     
     return `
@@ -614,6 +642,12 @@ ${trendTable}
 CUENTAS PENDIENTES (CARTERA):
 - Por Cobrar (Clientes): ${arAging.totalOutstanding} (Vencido >90d: ${arAging.buckets.overdue_90_plus.total})
 - Por Pagar (Proveedores): ${apAging.totalOutstanding} (Vencido >90d: ${apAging.buckets.overdue_90_plus.total})
+
+SALDOS BANCARIOS:
+${bankSummary || 'No hay cuentas bancarias registradas.'}
+
+TOP 5 GASTOS HISTÓRICOS:
+${expenseSummary || 'No hay gastos registrados.'}
 
 CAPACIDADES DE CONSULTA:
 Tienes acceso a Balanzas de Comprobación, Balances Generales, Estados de Resultados, Flujos de Caja y Libros Auxiliares detallados de cualquier período.

@@ -6,6 +6,7 @@ import {
   serverError,
   validateAuth,
   requireAuth,
+  ensureNotViewer,
 } from '@/lib/api-helpers';
 import { thirdPartySchema } from '@/lib/schemas/inventory';
 import { logAudit } from '@/lib/audit-service';
@@ -91,6 +92,9 @@ export async function POST(request: NextRequest) {
     const user = await validateAuth(request);
     const authError = requireAuth(user);
     if (authError) return authError;
+
+    const roleError = ensureNotViewer(user!);
+    if (roleError) return roleError;
 
     const body = await request.json();
     

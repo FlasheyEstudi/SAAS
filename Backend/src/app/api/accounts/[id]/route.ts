@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { success, notFound, error, serverError, validateAuth } from '@/lib/api-helpers';
+import { success, notFound, error, serverError, validateAuth, requireAuth, ensureNotViewer } from '@/lib/api-helpers';
 import { logAudit } from '@/lib/audit-service';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -7,8 +7,12 @@ type RouteContext = { params: Promise<{ id: string }> };
 // ============================================================
 // GET /api/accounts/[id] - Get account with its children (recursive)
 // ============================================================
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
     const { id } = await context.params;
 
     const account = await db.account.findUnique({
@@ -57,6 +61,12 @@ export async function GET(_request: Request, context: RouteContext) {
 export async function PUT(request: Request, context: RouteContext) {
   try {
     const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
+    const roleError = ensureNotViewer(user!);
+    if (roleError) return roleError;
+
     const { id } = await context.params;
     const body = await request.json();
     const { name, isActive, description } = body;
@@ -176,6 +186,12 @@ export async function PUT(request: Request, context: RouteContext) {
 export async function DELETE(_request: Request, context: RouteContext) {
   try {
     const user = await validateAuth(_request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
+    const roleError = ensureNotViewer(user!);
+    if (roleError) return roleError;
+
     const { id } = await context.params;
 
     const account = await db.account.findUnique({

@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { success, error, serverError, ensurePeriodOpen, validateAuth } from '@/lib/api-helpers';
+import { success, error, serverError, ensurePeriodOpen, validateAuth, requireAuth, ensureNotViewer } from '@/lib/api-helpers';
 import { generateInvoiceJournalEntry } from '@/lib/accounting-service';
 import { logAudit } from '@/lib/audit-service';
 
@@ -8,8 +8,12 @@ type RouteContext = { params: Promise<{ id: string }> };
 // ============================================================
 // GET /api/invoices/[id] - Get invoice with third party info and journal entry
 // ============================================================
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
     const { id } = await context.params;
 
     const invoice = await db.invoice.findUnique({
@@ -107,6 +111,11 @@ export async function PUT(request: Request, context: RouteContext) {
 
     const { lines, totalAmount, subtotal, taxAmount } = body;
     const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
+    const roleError = ensureNotViewer(user!);
+    if (roleError) return roleError;
 
     const result = await db.$transaction(async (tx) => {
       // 1. Delete old lines if lines are provided
@@ -173,6 +182,11 @@ export async function DELETE(_request: Request, context: RouteContext) {
   try {
     const { id } = await context.params;
     const user = await validateAuth(_request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
+    const roleError = ensureNotViewer(user!);
+    if (roleError) return roleError;
 
     const invoice = await db.invoice.findUnique({
       where: { id },

@@ -69,9 +69,7 @@ const menuItems: MenuItem[] = [
   { title: 'Configuración', icon: <Settings className="w-4 h-4" />, view: 'system', category: 'Sistema' },
 
   // Soporte & Docs
-  { title: 'Documentación', icon: <BookMarked className="w-4 h-4" />, view: 'support', category: 'Soporte' },
-  { title: 'API Reference', icon: <Terminal className="w-4 h-4" />, view: 'support', category: 'Soporte' },
-  { title: 'Manual Maestro', icon: <HelpCircle className="w-4 h-4" />, view: 'support', category: 'Soporte' },
+  { title: 'Manual de Élite', icon: <HelpCircle className="w-4 h-4" />, view: 'support', category: 'Soporte' },
 ];
 
 export function Sidebar() {

@@ -1,0 +1,171 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Paquetes Esenciales ---
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{top=2.5cm, bottom=2.5cm, left=2cm, right=2cm}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{tcolorbox}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{multicol}
+
+% --- Definición de Colores (Onyx & Gold Theme) ---
+\definecolor{onyx}{HTML}{1A1A1A}
+\definecolor{gold}{HTML}{F59E0B}
+\definecolor{pastelyellow}{HTML}{FEF3C7}
+\definecolor{softgray}{HTML}{F3F4F6}
+\definecolor{darkgray}{HTML}{374151}
+
+% --- Configuración de Estilos ---
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\textcolor{gold}{\textbf{GANESHA}} | Documentación Técnica}
+\rhead{Integrantes del Proyecto}
+\cfoot{\thepage}
+
+\titleformat{\section}{\color{onyx}\normalfont\Large\bfseries}{\thesection}{1em}{}[{\titlerule[0.8pt]}]
+\titleformat{\subsection}{\color{darkgray}\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=gold,
+    urlcolor=blue
+}
+
+% --- Estilo de Cajas ---
+\newtcolorbox{infobox}[1]{
+    colback=pastelyellow!30,
+    colframe=gold,
+    fonttitle=\bfseries,
+    title=#1,
+    arc=4pt,
+    outer arc=4pt
+}
+
+\newtcolorbox{codebox}[1]{
+    colback=softgray,
+    colframe=darkgray,
+    fonttitle=\bfseries,
+    title=#1,
+    arc=2pt
+}
+
+% --- Título del Documento ---
+\title{
+    \vspace{-2cm}
+    \begin{center}
+        \textcolor{gold}{\Huge \textbf{GANESHA}}\\[0.5em]
+        \textcolor{onyx}{\Large \textit{Sistema ERP de Inteligencia Financiera Local}}\\[1cm]
+        \textbf{Documento de Arquitectura y Operaciones}\\[0.5em]
+        \small{Versión 2.5.0-Enterprise}
+    \end{center}
+}
+\author{Equipo de Desarrollo GANESHA}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+GANESHA es una plataforma ERP (Enterprise Resource Planning) de próxima generación diseñada específicamente para PYMES en el mercado nicaragüense. Su arquitectura prioriza la soberanía de datos mediante un enfoque \textit{Local-First}, integrando Inteligencia Artificial descentralizada para la toma de decisiones contables sin comprometer la privacidad del usuario.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% --- SECCIÓN 1: MISIÓN Y VISIÓN ---
+\section{Visión del Proyecto}
+GANESHA no es solo un software contable; es un asesor financiero activo. El objetivo principal es democratizar el acceso a herramientas de alta tecnología (IA y ERP robusto) eliminando la dependencia de servicios en la nube costosos e intrusivos.
+
+\begin{infobox}{Pilar Fundamental: Soberanía de Datos}
+Basado en la \textbf{Ley 46 de Nicaragua}, GANESHA asegura que el 100\% de la información contable permanezca en la infraestructura local del cliente, utilizando motores de base de datos embebidos y procesamiento de IA local.
+\end{infobox}
+
+% --- SECCIÓN 2: ARQUITECTURA TECNOLÓGICA ---
+\section{Arquitectura Tecnológica (Tech Stack)}
+El sistema utiliza un stack moderno optimizado para rendimiento y portabilidad:
+
+\begin{itemize}[label=\textcolor{gold}{\textbullet}]
+    \item \textbf{Front-end}: Next.js 15 (React 19) con App Router.
+    \item \textbf{Diseño}: Tailwind CSS 4 con sistema de temas dinámicos (Onyx, Vintage, Pastel).
+    \item \textbf{Back-end}: API Routes de Next.js (Edge-ready) con validación estricta vía Zod.
+    \item \textbf{Base de Datos}: SQLite gestionado a través de Prisma ORM para máxima velocidad en entornos locales.
+    \item \textbf{IA Local}: Integración con Ollama (Llama 3) para procesamiento de lenguaje natural contable.
+\end{itemize}
+
+% --- SECCIÓN 3: MÓDULOS DEL SISTEMA ---
+\section{Módulos Funcionales (100\% Cobertura)}
+
+\subsection{Núcleo Contable}
+\begin{itemize}
+    \item \textbf{Catálogo de Cuentas}: Estructura jerárquica de cuentas (Activos, Pasivos, Capital, Ingresos, Egresos).
+    \item \textbf{Libro Diario (Pólizas)}: Registro de transacciones con validación de \textbf{Partida Doble} en tiempo real.
+    \item \textbf{Centros de Costo}: Segmentación departamental de gastos e ingresos.
+    \item \textbf{Periodos Fiscales}: Gestión de cierres mensuales y anuales con bloqueo de ediciones.
+\end{itemize}
+
+\subsection{Tesorería y Operaciones}
+\begin{itemize}
+    \item \textbf{Facturación}: Gestión de facturas de compra y venta con seguimiento de estados.
+    \item \textbf{Bancos y Cuentas}: Conciliación bancaria y flujo de caja.
+    \item \textbf{Terceros}: Directorio unificado de Clientes, Proveedores y Empleados.
+    \item \textbf{Activos Fijos}: Registro y control de depreciación de bienes.
+\end{itemize}
+
+\subsection{Inteligencia y Reportes}
+\begin{itemize}
+    \item \textbf{Asesor IA}: Chat interactivo que analiza el balance y ofrece consejos financieros.
+    \item \textbf{Reportes Financieros}: Balance General, Estado de Resultados y Balanza de Comprobación (Exportables a PDF/Excel).
+    \item \textbf{Dashboard de KPIs}: Visualización gráfica de salud financiera y liquidez.
+\end{itemize}
+
+% --- SECCIÓN 4: SEGURIDAD Y ROLES ---
+\section{Seguridad y Control de Acceso (RBAC)}
+El sistema implementa un control de acceso basado en roles (RBAC) para garantizar que cada usuario vea solo lo necesario:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|p{10cm}|}
+\hline
+\rowcolor{gold!20} \textbf{Rol} & \textbf{Permisos y Alcance} \\ \hline
+\textbf{ADMIN} & Acceso total, gestión de empleados, configuración de empresa y auditoría. \\ \hline
+\textbf{ACCOUNTANT} & Gestión completa de pólizas, reportes e impuestos. No crea usuarios. \\ \hline
+\textbf{MANAGER} & Visualización de KPIs y reportes para toma de decisiones. Sin permisos de edición. \\ \hline
+\textbf{VIEWER} & Acceso de \textbf{Solo Lectura}. No puede crear, editar ni eliminar ningún dato. \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{infobox}{Seguridad de Contraseñas}
+Las credenciales se protegen mediante el algoritmo \textbf{Bcrypt} con un factor de costo de 10, asegurando resistencia contra ataques de fuerza bruta.
+\end{infobox}
+
+% --- SECCIÓN 5: AUDITORÍA Y TRAZABILIDAD ---
+\section{Bitácora de Auditoría}
+GANESHA registra cada acción crítica (Creación de pólizas, edición de usuarios, exportación de datos). Cada registro incluye:
+\begin{enumerate}
+    \item \textbf{Usuario}: Quién realizó la acción.
+    \item \textbf{Acción}: Qué se hizo (CREATE, UPDATE, DELETE).
+    \item \textbf{Entidad}: Sobre qué objeto (Póliza \#101, Factura \#FC-001).
+    \item \textbf{Timestamp}: Fecha y hora exacta con precisión de milisegundos.
+\end{enumerate}
+
+% --- SECCIÓN 6: CONCLUSIÓN ---
+\section{Conclusión para Integrantes}
+GANESHA representa la vanguardia tecnológica en software empresarial local. Su diseño modular permite una escalabilidad infinita y su enfoque en la privacidad lo posiciona como la opción más segura para empresas que valoran su soberanía financiera.
+
+\begin{center}
+\vspace{1cm}
+\textcolor{gold}{\rule{5cm}{1pt}}\\
+\textbf{GANESHA - Intelligence}\\[0.2em]
+"El futuro de la contabilidad es local, inteligente y soberano."
+\end{center}
+
+\end{document}

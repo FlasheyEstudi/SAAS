@@ -85,9 +85,15 @@ export function useAI() {
   const [status, setStatus] = useState<'online' | 'offline' | 'busy'>('offline');
 
   const sendMessage = useCallback(async (content: string) => {
-    if (!content.trim() || !companyId || status !== 'online') {
+    let currentStatus = status;
+    if (currentStatus !== 'online') {
+      const res = await checkStatus();
+      currentStatus = res?.status || (res?.ollamaAvailable ? 'online' : 'offline');
+    }
+
+    if (!content.trim() || !companyId || currentStatus !== 'online') {
       if (!companyId) toast.error('Selecciona una empresa');
-      if (status !== 'online') toast.error('IA Offline');
+      if (currentStatus !== 'online') toast.error('La IA de Ganesha sigue desconectada. Verifica el servidor.');
       return null;
     }
 
@@ -185,6 +191,14 @@ export function useAI() {
       return null;
     }
   }, []);
+
+  useEffect(() => {
+    checkStatus();
+    const interval = setInterval(() => {
+      if (status !== 'online') checkStatus();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [checkStatus, status]);
 
   const clearConversation = useCallback(() => {
     setMessages([]);

@@ -1,13 +1,18 @@
 import { db } from '@/lib/db';
-import { success, notFound, error, serverError } from '@/lib/api-helpers';
+import { success, notFound, error, serverError, validateAuth, requireAuth, ensureNotViewer } from '@/lib/api-helpers';
+import { logAudit } from '@/lib/audit-service';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 // ============================================================
 // GET /api/periods/[id] - Get single period with journal entry count
 // ============================================================
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
     const { id } = await context.params;
 
     const period = await db.accountingPeriod.findUnique({
@@ -40,6 +45,13 @@ export async function GET(_request: Request, context: RouteContext) {
 // ============================================================
 export async function PUT(request: Request, context: RouteContext) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
+    const roleError = ensureNotViewer(user!);
+    if (roleError) return roleError;
+
     const { id } = await context.params;
     const body = await request.json();
     const { status } = body;
@@ -107,6 +119,18 @@ export async function PUT(request: Request, context: RouteContext) {
         },
       },
     });
+    
+    // Audit Log
+    await logAudit({
+      companyId: updatedPeriod.companyId,
+      userId: user!.id,
+      action: 'UPDATE',
+      entityType: 'Period',
+      entityId: updatedPeriod.id,
+      entityLabel: `${updatedPeriod.year}-${updatedPeriod.month}`,
+      oldValues: period,
+      newValues: updatedPeriod,
+    });
 
     return success(updatedPeriod);
   } catch (err) {
@@ -118,8 +142,15 @@ export async function PUT(request: Request, context: RouteContext) {
 // ============================================================
 // DELETE /api/periods/[id] - Delete only OPEN periods with no journal entries
 // ============================================================
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
+    const roleError = ensureNotViewer(user!);
+    if (roleError) return roleError;
+
     const { id } = await context.params;
 
     const period = await db.accountingPeriod.findUnique({
@@ -144,6 +175,17 @@ export async function DELETE(_request: Request, context: RouteContext) {
         `No se puede eliminar el período. Tiene ${period._count.journalEntries} póliza(s) asociada(s).`
       );
     }
+
+    // Audit Log
+    await logAudit({
+      companyId: period.companyId,
+      userId: user!.id,
+      action: 'DELETE',
+      entityType: 'Period',
+      entityId: period.id,
+      entityLabel: `${period.year}-${period.month}`,
+      oldValues: period,
+    });
 
     await db.accountingPeriod.delete({ where: { id } });
 

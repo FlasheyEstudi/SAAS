@@ -2,8 +2,9 @@
 
 > **Base de datos:** SQLite (Prisma ORM) — `db/custom.db`  
 > **Entidades:** 18 modelos  
-> **Endpoints:** 100 rutas API  
-> **Servidor:** Next.js 16 App Router en puerto **3000**  
+> **Endpoints:** 105 rutas API  
+> **Versión:** v4.0 Maestro Edition
+> **Servidor:** Next.js 15 App Router en puerto **3000**  
 > **Proxy:** Caddy reverse proxy en puerto **81**  
 > **Stack:** TypeScript 5, Tailwind CSS 4, shadcn/ui  
 
@@ -332,6 +333,7 @@ curl http://localhost:3000/api/ai/status
 **GET /api/reports/trial-balance** → Saldos deudores/acreedores por cuenta (solo POSTED).  
 **GET /api/reports/balance-sheet** → Total assets, liabilities, equity.  
 **GET /api/reports/income-statement** → Total income, expenses, net income, gross margin %.
+**POST /api/reports/export** → Exportar Reporte Ejecutivo PDF Pro (incluye gráficas vectoriales).
 
 ---
 
@@ -542,6 +544,12 @@ curl http://localhost:3000/api/ai/status
 ```
 → Retorna `{ response, toolCalls?, usedFallback, ollamaAvailable }`  
 → Si Ollama no corre, devuelve respuestas fallback con guía de APIs.
+
+**POST /api/ai/analyze**
+```json
+{ "companyId": "ID", "focus": "CASH_FLOW" }
+```
+→ Realiza un análisis profundo de una área específica usando el cerebro Ganesha.
 
 **GET /api/ai/status** → `{ ollamaAvailable, model, url, loadedModels }`
 

@@ -1,6 +1,7 @@
-import { db } from '@/lib/db';
-import { success, created, error, parsePagination, serverError } from '@/lib/api-helpers';
+import { success, created, error, serverError, validateAuth, requireAuth, ensureNotViewer, parsePagination } from '@/lib/api-helpers';
 import { Prisma } from '@prisma/client';
+import { logAudit } from '@/lib/audit-service';
+import { db } from '@/lib/db';
 
 // ============================================================
 // GET /api/bank-accounts - List bank accounts for a company
@@ -9,6 +10,10 @@ import { Prisma } from '@prisma/client';
 // ============================================================
 export async function GET(request: Request) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
     const { page, limit, sortBy, sortOrder } = parsePagination(searchParams);
 
@@ -91,6 +96,13 @@ export async function GET(request: Request) {
 // ============================================================
 export async function POST(request: Request) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
+    const roleError = ensureNotViewer(user!);
+    if (roleError) return roleError;
+
     const body = await request.json();
     const { companyId, bankName, accountNumber, accountType, currency, initialBalance } = body;
 
@@ -138,6 +150,17 @@ export async function POST(request: Request) {
       },
     });
 
+    // Audit Log
+    await logAudit({
+      companyId: bankAccount.companyId,
+      userId: user!.id,
+      action: 'CREATE',
+      entityType: 'BankAccount',
+      entityId: bankAccount.id,
+      entityLabel: `${bankAccount.bankName} - ${bankAccount.accountNumber}`,
+      newValues: bankAccount,
+    });
+
     return created(bankAccount);
   } catch (err: unknown) {
     console.error('Error creating bank account:', err);
@@ -147,3 +170,4 @@ export async function POST(request: Request) {
     return serverError('Error al crear la cuenta bancaria');
   }
 }
+

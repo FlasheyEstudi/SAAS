@@ -21,7 +21,15 @@ export async function POST(
     if (!period) return error('Periodo no encontrado', 404);
     if (period.status !== 'OPEN') return error('El periodo ya está cerrado o bloqueado');
 
-    // 2. Obtener cuentas de Ingresos y Gastos con saldo
+    // 2. VERIFICACIÓN DE INTEGRIDAD: No pueden existir pólizas en DRAFT (Audit M10)
+    const draftEntries = await db.journalEntry.count({
+      where: { periodId: id, status: 'DRAFT' }
+    });
+    if (draftEntries > 0) {
+      return error(`No se puede cerrar el período. Existen ${draftEntries} pólizas en estado "Borrador" que deben ser publicadas o eliminadas.`);
+    }
+
+    // 3. Obtener cuentas de Ingresos y Gastos con saldo
     const accounts = await db.account.findMany({
       where: { 
         companyId: period.companyId,
@@ -30,14 +38,14 @@ export async function POST(
       }
     });
 
-    // 3. Calcular saldos actuales para cada cuenta
+    // 4. Calcular saldos actuales para cada cuenta
     const journalLines = await db.journalEntryLine.groupBy({
       by: ['accountId'],
       where: {
         journalEntry: {
           companyId: period.companyId,
           status: 'POSTED',
-          periodId: period.id // Solo el periodo actual para cierre mensual, o acumulado para anual (aquí lo haremos mensual)
+          periodId: period.id
         }
       },
       _sum: { debit: true, credit: true }
@@ -56,7 +64,6 @@ export async function POST(
 
       if (account.accountType === 'INCOME') {
         totalIncome += Math.abs(balance);
-        // Para cerrar ingreso (acreedor), debitamos
         linesToCreate.push({
           accountId: account.id,
           debit: Math.abs(balance),
@@ -65,7 +72,6 @@ export async function POST(
         });
       } else {
         totalExpense += Math.abs(balance);
-        // Para cerrar gasto (deudor), acreditamos
         linesToCreate.push({
           accountId: account.id,
           debit: 0,
@@ -76,22 +82,23 @@ export async function POST(
     }
 
     if (linesToCreate.length === 0) {
-      // Si no hay nada que cerrar, solo cerramos el periodo
       await db.accountingPeriod.update({ where: { id }, data: { status: 'CLOSED' } });
       return success({ message: 'Periodo cerrado (sin movimientos)' });
     }
 
-    // 4. Calcular resultado neto y cuenta de destino (Capital)
+    // 5. Calcular resultado neto y cuenta de destino (Capital)
+    const metadata = (period.company.metadata as any) || {};
+    const resultsAccountCode = metadata.accountMapping?.resultadosAcumulados || '3.2';
+
     const netResult = totalIncome - totalExpense;
     const equityAccount = await db.account.findFirst({
-      where: { companyId: period.companyId, code: '3.2' } // Resultados Acumulados
+      where: { companyId: period.companyId, code: resultsAccountCode }
     });
 
-    if (!equityAccount) return error('No se encontró la cuenta de Resultados Acumulados (3.2)');
+    if (!equityAccount) return error(`No se encontró la cuenta de Resultados Acumulados (${resultsAccountCode})`);
 
     // El cuadre del asiento
     if (netResult > 0) {
-      // Utilidad: Acreditamos capital
       linesToCreate.push({
         accountId: equityAccount.id,
         debit: 0,
@@ -99,7 +106,6 @@ export async function POST(
         description: `Utilidad del periodo ${period.month}/${period.year}`
       });
     } else {
-      // Pérdida: Debitamos capital
       linesToCreate.push({
         accountId: equityAccount.id,
         debit: Math.abs(netResult),

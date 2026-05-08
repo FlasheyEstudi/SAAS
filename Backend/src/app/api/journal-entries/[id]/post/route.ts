@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { success, error, notFound, serverError, validateDoubleEntry, validateLeafAccounts, validatePeriodOpen } from '@/lib/api-helpers';
+import { success, error, notFound, serverError, validateDoubleEntry, validateLeafAccounts, validatePeriodOpen, validateAuth } from '@/lib/api-helpers';
+import { logAuditTx } from '@/lib/audit-service';
 
 // ============================================================
 // POST /api/journal-entries/[id]/post — Publicar póliza
@@ -46,8 +47,8 @@ export async function POST(
       accountId: line.accountId,
       costCenterId: line.costCenterId,
       description: line.description,
-      debit: line.debit,
-      credit: line.credit,
+      debit: Number(line.debit),
+      credit: Number(line.credit),
     }));
 
     const doubleEntry = validateDoubleEntry(lineItems);
@@ -66,7 +67,6 @@ export async function POST(
 
     // Publicar en transacción
     const updated = await db.$transaction(async (tx) => {
-      // Actualizar la cabecera
       const postedEntry = await tx.journalEntry.update({
         where: { id },
         data: {
@@ -87,6 +87,18 @@ export async function POST(
           period: { select: { id: true, year: true, month: true, status: true } },
           company: { select: { id: true, name: true } },
         },
+      });
+
+      // Registro de auditoría del posteo (Audit M8)
+      const user = await validateAuth(request);
+      await logAuditTx(tx, {
+        companyId: postedEntry.companyId,
+        userId: user?.id || null,
+        action: 'POST',
+        entityType: 'JournalEntry',
+        entityId: id,
+        entityLabel: `Publicación Póliza ${postedEntry.entryNumber}`,
+        newValues: postedEntry,
       });
 
       return postedEntry;

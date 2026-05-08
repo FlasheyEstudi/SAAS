@@ -20,9 +20,13 @@ export async function GET(request: Request) {
     if (accountId) where.accountId = accountId;
     if (costCenterId) where.costCenterId = costCenterId;
 
-    // 1. Sincronización bajo demanda (Fase 4 - Auditoría M5)
+    // 1. Sincronización bajo demanda (Fase 2 - Auditoría M5)
     if (shouldSync && companyId) {
-      const budgetsToSync = await db.budget.findMany({ where });
+      const budgetsToSync = await db.budget.findMany({ 
+        where,
+        include: { account: { select: { accountType: true } } }
+      });
+      
       for (const b of budgetsToSync) {
         // Calcular ejecución real desde el Ledger
         const dateFrom = new Date(b.year, b.month ? b.month - 1 : 0, 1);
@@ -40,13 +44,23 @@ export async function GET(request: Request) {
           _sum: { debit: true, credit: true }
         });
 
-        const actualAmount = Number(lines._sum.debit || 0) - Number(lines._sum.credit || 0);
-        const variance = Number(b.budgetedAmount) - Math.abs(actualAmount);
+        const debit = Number(lines._sum.debit || 0);
+        const credit = Number(lines._sum.credit || 0);
+        
+        // Naturaleza de la cuenta (Audit M5)
+        // Gastos: Debe - Haber
+        // Ingresos: Haber - Debe
+        const isExpense = b.account.accountType === 'EXPENSE';
+        const actualAmount = isExpense ? (debit - credit) : (credit - debit);
+        
+        // Varianza: Presupuestado - Real (para gastos, >0 es ahorro)
+        // Para ingresos: Real - Presupuestado (>0 es sobre-cumplimiento)
+        const variance = isExpense ? (Number(b.budgetedAmount) - actualAmount) : (actualAmount - Number(b.budgetedAmount));
 
         await db.budget.update({
           where: { id: b.id },
           data: { 
-            actualAmount: Math.abs(actualAmount),
+            actualAmount: actualAmount,
             variance: variance
           }
         });

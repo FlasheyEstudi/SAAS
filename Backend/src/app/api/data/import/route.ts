@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { success, error, serverError, created } from '@/lib/api-helpers';
+import { success, error, serverError, created, validateAuth, requireAuth, ensureAdmin } from '@/lib/api-helpers';
 
 const VALID_ENTITIES = [
   'Company', 'AccountingPeriod', 'Account', 'CostCenter',
@@ -10,6 +10,13 @@ const VALID_ENTITIES = [
 
 export async function POST(request: Request) {
   try {
+    const user = await validateAuth(request);
+    const authError = requireAuth(user);
+    if (authError) return authError;
+
+    const adminError = ensureAdmin(user!);
+    if (adminError) return adminError;
+
     const body = await request.json();
     const { entityType, data } = body;
 

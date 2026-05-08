@@ -258,6 +258,31 @@ export async function getBalanceSheet(companyId: string, periodId: string, conso
     }
   }
 
+  // 4. Calcular Utilidad/Pérdida del Ejercicio de forma dinámica (Audit M3)
+  const plAggregates = await db.journalEntryLine.groupBy({
+    by: ['account.accountType'],
+    where: {
+      journalEntry: {
+        companyId: { in: targetCompanyIds },
+        entryDate: { lte: new Date(period.year, period.month, 0, 23, 59, 59) },
+        status: 'POSTED'
+      },
+      account: { accountType: { in: ['INCOME', 'EXPENSE'] } }
+    },
+    _sum: { debit: true, credit: true }
+  }) as any[];
+
+  let totalIncome = 0;
+  let totalExpenses = 0;
+  for (const agg of plAggregates) {
+    const debit = Number(agg._sum.debit || 0);
+    const credit = Number(agg._sum.credit || 0);
+    if (agg.accountType === 'INCOME') totalIncome += (credit - debit);
+    if (agg.accountType === 'EXPENSE') totalExpenses += (debit - credit);
+  }
+
+  const netIncome = roundTwo(totalIncome - totalExpenses);
+
   const assets: BalanceSheetRow[] = [];
   const liabilities: BalanceSheetRow[] = [];
   const equity: BalanceSheetRow[] = [];
@@ -296,6 +321,21 @@ export async function getBalanceSheet(companyId: string, periodId: string, conso
     }
   }
 
+  // Inyectar Utilidad del Ejercicio en Patrimonio
+  if (netIncome !== 0) {
+    equity.push({
+      accountId: 'virtual-net-income',
+      accountCode: '3.9.99',
+      accountName: 'Utilidad/Pérdida del Ejercicio (Calculado)',
+      totalDebit: netIncome < 0 ? Math.abs(netIncome) : 0,
+      totalCredit: netIncome > 0 ? netIncome : 0,
+      balance: netIncome,
+      level: 1,
+      isGroup: false,
+    });
+    totalEquity += netIncome;
+  }
+
   const asOfDate = new Date(period.year, period.month, 0).toISOString().split('T')[0];
 
   return {
@@ -303,10 +343,11 @@ export async function getBalanceSheet(companyId: string, periodId: string, conso
     totalAssets: roundTwo(totalAssets),
     totalLiabilities: roundTwo(totalLiabilities),
     totalEquity: roundTwo(totalEquity),
+    netIncome,
     netEquity: roundTwo(totalAssets - totalLiabilities),
     assets,
     liabilities,
-    equity,
+    equity: equity.sort((a, b) => a.accountCode.localeCompare(b.accountCode)),
   };
 }
 

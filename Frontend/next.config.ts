@@ -33,13 +33,13 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/backend-api/:path*',
-        destination: 'http://127.0.0.1:3001/api/:path*',
+        destination: 'http://localhost:3001/api/:path*',
       },
     ];
   },
-  // Permitir acceso desde cualquier origen en red local
+  // Permitir acceso desde cualquier origen en red local (Audit M12)
   // @ts-ignore
-  allowedDevOrigins: ['*', '172.16.27.128', '172.16.26.200', 'localhost:3000', '127.0.0.1:3000', '0.0.0.0:3000'],
+  allowedDevOrigins: ['*', '192.168.0.110', 'localhost:3000', '127.0.0.1:3000', '0.0.0.0:3000'],
 };
 
 export default nextConfig;

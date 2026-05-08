@@ -106,54 +106,73 @@ export async function POST(request: Request, context: RouteContext) {
       });
 
       // 2.3 Crear Asiento Contable (Póliza de Pago)
-      // Buscamos cuentas necesarias
+      // 2.3.1 Obtener mapeo dinámico (Audit M4)
+      const company = await tx.company.findUnique({ where: { id: invoice.companyId } });
+      const metadata = (company?.metadata as any) || {};
+      const mapping = metadata.accountMapping || {
+        clientes: '1.1.02.01',
+        proveedores: '2.1.01.01',
+        cajaBancos: bankAccount.currency === 'USD' ? '1.1.01.02' : '1.1.01.01'
+      };
+
+      const isSale = invoice.invoiceType === 'SALE';
+      const partyAccountCode = isSale ? mapping.clientes : mapping.proveedores;
+      const bankAccountCode = mapping.cajaBancos;
+
       const accounts = await tx.account.findMany({
         where: { 
           companyId: invoice.companyId, 
-          code: { in: [isSale ? '1.1.02.01' : '2.1.01.01', bankAccount.currency === 'USD' ? '1.1.01.02' : '1.1.01.01'] } 
+          code: { in: [partyAccountCode, bankAccountCode] } 
         }
       });
 
-      const accParty = accounts.find(a => a.code === (isSale ? '1.1.02.01' : '2.1.01.01'));
-      const accBank = accounts.find(a => a.code === (bankAccount.currency === 'USD' ? '1.1.01.02' : '1.1.01.01'));
+      const accParty = accounts.find(a => a.code === partyAccountCode);
+      const accBank = accounts.find(a => a.code === bankAccountCode);
+
+      if (!accParty || !accBank) {
+        throw new Error(`Configuración contable incompleta. Faltan cuentas: ${!accParty ? partyAccountCode : ''} ${!accBank ? bankAccountCode : ''}`);
+      }
 
       let journalEntryIdResult = journalEntryId;
 
-      if (accParty && accBank) {
-        const period = await tx.accountingPeriod.findFirst({
-          where: { companyId: invoice.companyId, status: 'OPEN', year: new Date().getFullYear(), month: new Date().getMonth() + 1 }
-        });
-
-        if (period) {
-          const je = await tx.journalEntry.create({
-            data: {
-              companyId: invoice.companyId,
-              periodId: period.id,
-              entryNumber: `PAG-${invoice.number}-${Date.now().toString().slice(-4)}`,
-              description: `Pago a factura ${invoice.number} - ${description || ''}`,
-              entryDate: new Date(),
-              entryType: isSale ? 'INGRESO' : 'EGRESO',
-              status: 'POSTED',
-              totalDebit: paymentAmount,
-              totalCredit: paymentAmount,
-              lines: {
-                create: [
-                  { 
-                    accountId: isSale ? accBank.id : accParty.id, 
-                    debit: paymentAmount, credit: 0, 
-                    description: `Liquidación Factura ${invoice.number}` 
-                  },
-                  { 
-                    accountId: isSale ? accParty.id : accBank.id, 
-                    debit: 0, credit: paymentAmount, 
-                    description: `Liquidación Factura ${invoice.number}` 
-                  }
-                ]
-              }
-            }
-          });
-          journalEntryIdResult = je.id;
+      const period = await tx.accountingPeriod.findFirst({
+        where: { 
+          companyId: invoice.companyId, 
+          status: 'OPEN', 
+          year: new Date().getFullYear(), 
+          month: new Date().getMonth() + 1 
         }
+      });
+
+      if (period) {
+        const je = await tx.journalEntry.create({
+          data: {
+            companyId: invoice.companyId,
+            periodId: period.id,
+            entryNumber: `PAG-${invoice.number}-${Date.now().toString().slice(-4)}`,
+            description: `Pago a factura ${invoice.number} - ${description || ''}`,
+            entryDate: new Date(),
+            entryType: isSale ? 'INGRESO' : 'EGRESO',
+            status: 'POSTED',
+            totalDebit: paymentAmount,
+            totalCredit: paymentAmount,
+            lines: {
+              create: [
+                { 
+                  accountId: isSale ? accBank.id : accParty.id, 
+                  debit: paymentAmount, credit: 0, 
+                  description: `Liquidación Factura ${invoice.number}` 
+                },
+                { 
+                  accountId: isSale ? accParty.id : accBank.id, 
+                  debit: 0, credit: paymentAmount, 
+                  description: `Liquidación Factura ${invoice.number}` 
+                }
+              ]
+            }
+          }
+        });
+        journalEntryIdResult = je.id;
       }
 
       // 2.4 Actualizar factura

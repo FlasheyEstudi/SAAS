@@ -137,6 +137,19 @@ export async function POST(request: NextRequest) {
     const periodValidation = await validatePeriodOpen(periodId);
     if (!periodValidation.valid) return error(periodValidation.error!);
 
+    // VALIDACIÓN CRÍTICA: Fecha vs Período (Audit M1)
+    const dateObj = new Date(entryDate);
+    const dateYear = dateObj.getUTCFullYear();
+    const dateMonth = dateObj.getUTCMonth() + 1;
+    const { year: periodYear, month: periodMonth } = periodValidation.period!;
+
+    if (dateYear !== periodYear || dateMonth !== periodMonth) {
+      return error(
+        `La fecha de la póliza (${dateYear}-${String(dateMonth).padStart(2, '0')}) ` +
+        `no coincide con el período contable seleccionado (${periodYear}-${String(periodMonth).padStart(2, '0')}).`
+      );
+    }
+
     const leafValidation = await validateLeafAccounts(lines as any);
     if (!leafValidation.valid) return error(leafValidation.errors.join(' | '));
 

@@ -86,6 +86,21 @@ export async function PUT(
       return error(periodValidation.error || 'El periodo contable no está abierto para modificaciones');
     }
 
+    // VALIDACIÓN CRÍTICA: Fecha vs Período (Audit M1)
+    if (entryDate) {
+      const dateObj = new Date(entryDate);
+      const dateYear = dateObj.getUTCFullYear();
+      const dateMonth = dateObj.getUTCMonth() + 1;
+      const { year: pYear, month: pMonth } = periodValidation.period!;
+
+      if (dateYear !== pYear || dateMonth !== pMonth) {
+        return error(
+          `La nueva fecha (${dateYear}-${String(dateMonth).padStart(2, '0')}) ` +
+          `no coincide con el período de la póliza (${pYear}-${String(pMonth).padStart(2, '0')}).`
+        );
+      }
+    }
+
     // Calcular nuevos totales si hay líneas
     let totalDebit = undefined;
     let totalCredit = undefined;

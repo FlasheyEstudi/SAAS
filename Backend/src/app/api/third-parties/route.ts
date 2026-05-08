@@ -105,6 +105,16 @@ export async function POST(request: NextRequest) {
     }
     const data = result.data;
 
+    // 1.1 Verificar RUC duplicado en la misma empresa (Audit M9)
+    if (data.taxId) {
+      const existing = await db.thirdParty.findFirst({
+        where: { companyId: data.companyId, taxId: data.taxId.trim() },
+      });
+      if (existing) {
+        return error(`Ya existe un tercero registrado con el RUC/TaxID "${data.taxId}"`);
+      }
+    }
+
     // 2. Crear tercero
     const thirdParty = await db.thirdParty.create({
       data: {

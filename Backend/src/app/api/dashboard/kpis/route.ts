@@ -96,7 +96,9 @@ export async function GET(request: Request) {
     });
 
     // ---- Compute totals for current period ----
-    const currentLines = await db.journalEntryLine.findMany({
+    // ---- Compute totals for current period (Audit M11 - Optimized Aggregation) ----
+    const currentLinesAgg = await db.journalEntryLine.groupBy({
+      by: ['accountId'],
       where: {
         journalEntry: {
           period: { year: currentPeriod.year, month: currentPeriod.month },
@@ -104,10 +106,14 @@ export async function GET(request: Request) {
           companyId: { in: targetCompanyIds },
         },
       },
-      include: {
-        account: { select: { accountType: true } },
-        costCenter: { select: { id: true, name: true } },
-      },
+      _sum: { debit: true, credit: true },
+    });
+
+    // Obtener los tipos de cuenta para estas líneas
+    const currentAccountIds = currentLinesAgg.map(l => l.accountId);
+    const currentAccounts = await db.account.findMany({
+      where: { id: { in: currentAccountIds } },
+      select: { id: true, accountType: true }
     });
 
     let currentIncome = 0;
@@ -115,19 +121,18 @@ export async function GET(request: Request) {
     let currentAssets = 0;
     let currentLiabilities = 0;
 
-    for (const line of currentLines) {
-      const debit = Number(line.debit) || 0;
-      const credit = Number(line.credit) || 0;
+    for (const agg of currentLinesAgg) {
+      const acc = currentAccounts.find(a => a.id === agg.accountId);
+      if (!acc) continue;
+
+      const debit = Number(agg._sum.debit) || 0;
+      const credit = Number(agg._sum.credit) || 0;
+      const type = acc.accountType;
       
-      if (line.account.accountType === 'INCOME') {
-        currentIncome += credit - debit;
-      } else if (line.account.accountType === 'EXPENSE') {
-        currentExpenses += debit - credit;
-      } else if (line.account.accountType === 'ASSET') {
-        currentAssets += debit - credit;
-      } else if (line.account.accountType === 'LIABILITY') {
-        currentLiabilities += credit - debit;
-      }
+      if (type === 'INCOME') currentIncome += credit - debit;
+      else if (type === 'EXPENSE') currentExpenses += debit - credit;
+      else if (type === 'ASSET') currentAssets += debit - credit;
+      else if (type === 'LIABILITY') currentLiabilities += credit - debit;
     }
 
     currentIncome = roundTwo(currentIncome);
@@ -135,14 +140,14 @@ export async function GET(request: Request) {
     const currentNetIncome = roundTwo(currentIncome - currentExpenses);
     const currentWorkingCapital = roundTwo(currentAssets - currentLiabilities);
 
-    // ---- Compute totals for previous period ----
+    // ---- Compute totals for previous period (Aggregation) ----
     let prevIncome = 0;
     let prevExpenses = 0;
-    let prevNetIncome = 0;
     let prevWorkingCapital = 0;
 
     if (prevPeriod) {
-      const prevLines = await db.journalEntryLine.findMany({
+      const prevLinesAgg = await db.journalEntryLine.groupBy({
+        by: ['accountId'],
         where: {
           journalEntry: {
             period: { year: prevYear, month: prevMonth },
@@ -150,126 +155,118 @@ export async function GET(request: Request) {
             companyId: { in: targetCompanyIds },
           },
         },
-        include: {
-          account: { select: { accountType: true } },
-        },
+        _sum: { debit: true, credit: true },
+      });
+
+      const prevAccountIds = prevLinesAgg.map(l => l.accountId);
+      const prevAccounts = await db.account.findMany({
+        where: { id: { in: prevAccountIds } },
+        select: { id: true, accountType: true }
       });
 
       let prevAssets = 0;
       let prevLiabilities = 0;
 
-      for (const line of prevLines) {
-        const debit = Number(line.debit) || 0;
-        const credit = Number(line.credit) || 0;
+      for (const agg of prevLinesAgg) {
+        const acc = prevAccounts.find(a => a.id === agg.accountId);
+        if (!acc) continue;
 
-        if (line.account.accountType === 'INCOME') {
-          prevIncome += credit - debit;
-        } else if (line.account.accountType === 'EXPENSE') {
-          prevExpenses += debit - credit;
-        } else if (line.account.accountType === 'ASSET') {
-          prevAssets += debit - credit;
-        } else if (line.account.accountType === 'LIABILITY') {
-          prevLiabilities += credit - debit;
-        }
+        const debit = Number(agg._sum.debit) || 0;
+        const credit = Number(agg._sum.credit) || 0;
+        const type = acc.accountType;
+
+        if (type === 'INCOME') prevIncome += credit - debit;
+        else if (type === 'EXPENSE') prevExpenses += debit - credit;
+        else if (type === 'ASSET') prevAssets += debit - credit;
+        else if (type === 'LIABILITY') prevLiabilities += credit - debit;
       }
 
       prevIncome = roundTwo(prevIncome);
       prevExpenses = roundTwo(prevExpenses);
-      prevNetIncome = roundTwo(prevIncome - prevExpenses);
       prevWorkingCapital = roundTwo(prevAssets - prevLiabilities);
     }
+    const prevNetIncome = roundTwo(prevIncome - prevExpenses);
 
-    // ---- Income vs Expense Chart (last 6 months) ----
+    // ---- Income vs Expense Chart (last 6 months) - Optimized Query ----
     const chartData: Array<{ month: string; income: number; expenses: number }> = [];
-
-    // Get the 6 periods before (and including) current
-    const recentPeriods = await db.accountingPeriod.findMany({
-      where: { companyId }, // Usamos los períodos de la principal como referencia temporal
-      orderBy: [{ year: 'asc' }, { month: 'asc' }],
-    });
-
-    // Filter to get at most 6 periods up to and including current
     const targetDate = new Date(currentPeriod.year, currentPeriod.month - 1);
-    const sixMonthsAgo = new Date(targetDate);
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(targetDate);
+      d.setMonth(d.getMonth() - i);
+      const y = d.getFullYear();
+      const m = d.getMonth() + 1;
 
-    const chartPeriods = recentPeriods.filter((p) => {
-      const pDate = new Date(p.year, p.month - 1);
-      return pDate >= sixMonthsAgo && pDate <= targetDate;
-    });
-
-    // Get all lines for chart periods in a single query
-    const chartPeriodIds = chartPeriods.map((p) => p.id);
-    const chartLines = chartPeriodIds.length > 0
-      ? await db.journalEntryLine.findMany({
-          where: {
-            journalEntry: {
-              period: { 
-                OR: chartPeriods.map(p => ({ year: p.year, month: p.month }))
-              },
-              status: 'POSTED',
-              companyId: { in: targetCompanyIds },
-            },
+      const monthLinesAgg = await db.journalEntryLine.groupBy({
+        by: ['accountId'],
+        where: {
+          journalEntry: {
+            period: { year: y, month: m },
+            status: 'POSTED',
+            companyId: { in: targetCompanyIds },
           },
-          include: {
-            account: { select: { accountType: true } },
-            journalEntry: { select: { period: true } },
-          },
-        })
-      : [];
+        },
+        _sum: { debit: true, credit: true },
+      });
 
-    // Group by period
-    const periodLineMap = new Map<string, typeof chartLines>();
-    for (const line of chartLines) {
-      const p = line.journalEntry.period;
-      const key = `${p.year}-${p.month}`;
-      if (!periodLineMap.has(key)) periodLineMap.set(key, []);
-      periodLineMap.get(key)!.push(line);
-    }
+      const monthAccIds = monthLinesAgg.map(l => l.accountId);
+      const monthAccounts = await db.account.findMany({
+        where: { id: { in: monthAccIds } },
+        select: { id: true, accountType: true }
+      });
 
-    for (const period of chartPeriods) {
-      const pLines = periodLineMap.get(`${period.year}-${period.month}`) || [];
       let pIncome = 0;
       let pExpenses = 0;
+      for (const agg of monthLinesAgg) {
+        const acc = monthAccounts.find(a => a.id === agg.accountId);
+        if (!acc) continue;
 
-      for (const line of pLines) {
-        const debit = Number(line.debit) || 0;
-        const credit = Number(line.credit) || 0;
-
-        if (line.account.accountType === 'INCOME') {
-          pIncome += credit - debit;
-        } else if (line.account.accountType === 'EXPENSE') {
-          pExpenses += debit - credit;
-        }
+        if (acc.accountType === 'INCOME') pIncome += (Number(agg._sum.credit) - Number(agg._sum.debit));
+        if (acc.accountType === 'EXPENSE') pExpenses += (Number(agg._sum.debit) - Number(agg._sum.credit));
       }
 
       chartData.push({
-        month: `${MONTH_NAMES[period.month - 1]} ${period.year}`,
+        month: `${MONTH_NAMES[m - 1]} ${y}`,
         income: roundTwo(pIncome),
         expenses: roundTwo(pExpenses),
       });
     }
 
-    // ---- Expense by Cost Center ----
+    // ---- Expense by Cost Center (Audit M11 - Aggregation) ----
     const expenseByCostCenter: Array<{ costCenter: string; amount: number; percentage: number }> = [];
 
-    // Group expense lines by cost center
-    const expenseLines = currentLines.filter((l) => l.account.accountType === 'EXPENSE' && l.costCenterId);
-    const costCenterMap = new Map<string, number>();
+    const costCenterAgg = await db.journalEntryLine.groupBy({
+      by: ['costCenterId'],
+      where: {
+        journalEntry: {
+          period: { year: currentPeriod.year, month: currentPeriod.month },
+          status: 'POSTED',
+          companyId: { in: targetCompanyIds },
+        },
+        account: { accountType: 'EXPENSE' },
+        costCenterId: { not: null }
+      },
+      _sum: { debit: true, credit: true },
+    });
 
-    for (const line of expenseLines) {
-      const ccName = line.costCenter?.name || 'Sin centro de costo';
-      const debit = Number(line.debit) || 0;
-      const credit = Number(line.credit) || 0;
-      costCenterMap.set(ccName, (costCenterMap.get(ccName) || 0) + (debit - credit));
-    }
-
-    for (const [ccName, amount] of costCenterMap) {
-      expenseByCostCenter.push({
-        costCenter: ccName,
-        amount: roundTwo(amount),
-        percentage: currentExpenses > 0 ? roundTwo((amount / currentExpenses) * 100) : 0,
+    if (costCenterAgg.length > 0) {
+      const ccIds = costCenterAgg.map(agg => agg.costCenterId as string);
+      const ccNames = await db.costCenter.findMany({
+        where: { id: { in: ccIds } },
+        select: { id: true, name: true }
       });
+
+      for (const agg of costCenterAgg) {
+        const cc = ccNames.find(c => c.id === agg.costCenterId);
+        const amount = roundTwo(Number(agg._sum.debit || 0) - Number(agg._sum.credit || 0));
+        if (amount === 0) continue;
+
+        expenseByCostCenter.push({
+          costCenter: cc?.name || 'Desconocido',
+          amount,
+          percentage: currentExpenses > 0 ? roundTwo((amount / currentExpenses) * 100) : 0,
+        });
+      }
     }
 
     // Sort by amount descending

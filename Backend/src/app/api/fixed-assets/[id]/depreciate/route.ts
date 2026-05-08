@@ -49,10 +49,58 @@ export async function POST(request: Request, context: RouteContext) {
     const newBookValue = Math.round((Number(asset.purchaseAmount) - newAccumulated) * 100) / 100;
 
     const depreciation = await db.$transaction(async (tx) => {
+      // 1. Obtener mapeo de cuentas de la empresa (Audit M2)
+      const company = await tx.company.findUnique({ where: { id: asset.companyId } });
+      const metadata = (company?.metadata as any) || {};
+      const mapping = metadata.accountMapping || {
+        depreciacionGasto: '5.1.04.01',
+        depreciacionAcumulada: '1.2.01.01.R'
+      };
+
+      const accounts = await tx.account.findMany({
+        where: { companyId: asset.companyId, code: { in: [mapping.depreciacionGasto, mapping.depreciacionAcumulada] } }
+      });
+
+      const accGasto = accounts.find(a => a.code === mapping.depreciacionGasto);
+      const accAcum = accounts.find(a => a.code === mapping.depreciacionAcumulada);
+
+      // 2. Buscar periodo contable
+      const period = await tx.accountingPeriod.findFirst({
+        where: { companyId: asset.companyId, year: year!, month: month!, status: 'OPEN' }
+      });
+
+      let journalEntryId = null;
+
+      // 3. Crear póliza si las cuentas y el periodo existen
+      if (accGasto && accAcum && period && depreciationAmount > 0) {
+        const je = await tx.journalEntry.create({
+          data: {
+            companyId: asset.companyId,
+            periodId: period.id,
+            entryNumber: `DEP-${asset.code}-${year}${String(month).padStart(2, '0')}`,
+            description: `Depreciación mensual activo: ${asset.name} (${month}/${year})`,
+            entryDate: new Date(year!, month!, 0), // Último día del mes
+            entryType: 'DIARIO',
+            status: 'POSTED',
+            totalDebit: depreciationAmount,
+            totalCredit: depreciationAmount,
+            lines: {
+              create: [
+                { accountId: accGasto.id, debit: depreciationAmount, credit: 0, description: `Gasto Depreciación - ${asset.name}` },
+                { accountId: accAcum.id, debit: 0, credit: depreciationAmount, description: `Depreciación Acumulada - ${asset.name}` }
+              ]
+            }
+          }
+        });
+        journalEntryId = je.id;
+      }
+
       const dep = await tx.depreciationEntry.create({
         data: {
           companyId: asset.companyId,
           fixedAssetId: id,
+          periodId: period?.id || null,
+          journalEntryId,
           year: year!,
           month: month!,
           depreciationAmount,

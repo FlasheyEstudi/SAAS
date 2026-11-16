@@ -1,5 +1,5 @@
 import { success, error, serverError, validateAuth, requireAuth, requireCompanyAccess } from '@/lib/api-helpers';
-import { chatWithOllama, isOllamaAvailable, chatWithOllamaStream } from '@/lib/ollama';
+import { chatWithOllama, isOllamaAvailable, chatWithOllamaStream, detectarPeriodoSolicitado } from '@/lib/ollama';
 import { db } from '@/lib/db';
 import { getFinancialSnapshot } from '@/services/financial-reports.service';
 
@@ -35,7 +35,9 @@ export async function POST(request: Request) {
     if (!isSimpleGreeting) {
       // 2. Obtener el snapshot financiero solo si es necesario y con tiempo límite estricto
       try {
-        const snapshotPromise = getFinancialSnapshot(companyId);
+        // ¿Pidió otro mes? Se resuelve aquí (determinista) y no con el modelo.
+        const periodoSolicitado = detectarPeriodoSolicitado(message);
+        const snapshotPromise = getFinancialSnapshot(companyId, periodoSolicitado);
         const timeoutPromise = new Promise<string>((resolve) => 
           setTimeout(() => resolve('Resumen no disponible por carga de sistema.'), 2000)
         );

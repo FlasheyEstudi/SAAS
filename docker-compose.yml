@@ -1,16 +1,39 @@
 version: '3.8'
 
+# ────────────────────────────────────────────────────────────────────────────────
+# Ganesha ERP — SIEMPRE EN RED PRIVADA
+#
+# Los puertos se publican SOLO en 127.0.0.1 (loopback): nada de esto es alcanzable desde
+# internet. LogiFast vive en la misma máquina y habla con `http://localhost:3001`.
+#
+# Si algún día LogiFast está en otro servidor, NO abras esto a internet: usa una red privada
+# (WireGuard/Tailscale/VPN) o un túnel SSH y cambia el bind por la IP de esa red privada:
+#   - "10.8.0.2:3001:3001"
+#
+# Variables (en un `.env` junto a este archivo, nunca dentro del repo):
+#   NEXTAUTH_SECRET      firma de los tokens de sesión de Ganesha (obligatorio en producción)
+#   LOGIFAST_SSO_SECRET  secreto compartido con LogiFast para el acceso SSO (mín. 16 caracteres)
+#   FRONTEND_URL         URL del frontend de Ganesha vista por el navegador (por defecto :3000)
+# ────────────────────────────────────────────────────────────────────────────────
 services:
   ganesha-backend:
     build:
       context: ./Backend
       dockerfile: Dockerfile
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:./dev.db
-      - JWT_SECRET=${JWT_SECRET:-ganesha_master_key_2026}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-ganesha_super_secret_123}
+      - LOGIFAST_SSO_SECRET=${LOGIFAST_SSO_SECRET:-}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      # IA local (Ollama) para el CFO Virtual
+      - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:7b}
+      - AI_ENABLED=${AI_ENABLED:-true}
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # permite llegar al Ollama del host
     volumes:
       - ganesha-db:/app/prisma
     restart: always
@@ -20,10 +43,12 @@ services:
       context: ./Frontend
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_API_URL=http://ganesha-backend:3001
+    depends_on:
+      - ganesha-backend
     restart: always
 
 volumes:

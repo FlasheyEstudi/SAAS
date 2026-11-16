@@ -59,7 +59,28 @@ export async function resolvePeriod(
     });
   }
 
-  // Fallback: Get most recent period for this company
+  /* Fallback: el mes EN CURSO, no el último período creado. Antes tomaba el más reciente a
+     secas, así que con el mes siguiente ya abierto los reportes (y el CFO Virtual) mostraban un
+     mes futuro vacío en vez del que se está operando. Si el mes en curso no existe, se usa el
+     período más reciente que no esté en el futuro. */
+  const ahora = new Date();
+  const mesActual = await db.accountingPeriod.findFirst({
+    where: { companyId, year: ahora.getFullYear(), month: ahora.getMonth() + 1 },
+  });
+  if (mesActual) return mesActual;
+
+  const anterior = await db.accountingPeriod.findFirst({
+    where: {
+      companyId,
+      OR: [
+        { year: { lt: ahora.getFullYear() } },
+        { year: ahora.getFullYear(), month: { lte: ahora.getMonth() + 1 } },
+      ],
+    },
+    orderBy: [{ year: 'desc' }, { month: 'desc' }],
+  });
+  if (anterior) return anterior;
+
   return await db.accountingPeriod.findFirst({
     where: { companyId },
     orderBy: [
@@ -69,7 +90,12 @@ export async function resolvePeriod(
   });
 }
 
-export async function getTrialBalance(companyId: string, periodId: string, consolidated = false) {
+export async function getTrialBalance(
+  companyId: string,
+  periodId: string,
+  consolidated = false,
+  costCenterId?: string | null,
+) {
   const period = await db.accountingPeriod.findUnique({ where: { id: periodId } });
   if (!period) throw new Error('Período no encontrado');
 
@@ -92,6 +118,8 @@ export async function getTrialBalance(companyId: string, periodId: string, conso
         by: ['accountId'],
         where: {
           accountId: { in: leafAccountIds },
+          // `costCenterId` acota el reporte a una tienda/centro de costo concreto.
+          ...(costCenterId ? { costCenterId } : {}),
           journalEntry: { 
             period: { year: period.year, month: period.month },
             status: 'POSTED' 
@@ -181,7 +209,12 @@ export async function getTrialBalance(companyId: string, periodId: string, conso
   };
 }
 
-export async function getBalanceSheet(companyId: string, periodId: string, consolidated = false) {
+export async function getBalanceSheet(
+  companyId: string,
+  periodId: string,
+  consolidated = false,
+  costCenterId?: string | null,
+) {
   const period = await db.accountingPeriod.findUnique({ where: { id: periodId } });
   if (!period) throw new Error('Período no encontrado');
 
@@ -209,6 +242,7 @@ export async function getBalanceSheet(companyId: string, periodId: string, conso
         by: ['accountId'],
         where: {
           accountId: { in: leafAccountIds },
+          ...(costCenterId ? { costCenterId } : {}),
           journalEntry: { 
             entryDate: { lte: new Date(period.year, period.month, 0, 23, 59, 59) }, // Acumulativo hasta el fin del mes
             status: 'POSTED' 
@@ -259,8 +293,11 @@ export async function getBalanceSheet(companyId: string, periodId: string, conso
   }
 
   // 4. Calcular Utilidad/Pérdida del Ejercicio de forma dinámica (Audit M3)
+  /* Se agrupa por `accountId` y el tipo se resuelve después: Prisma **no** acepta rutas de
+     relación en `groupBy.by` ('account.accountType'), y el Balance General devolvía 500 en
+     cuanto había movimientos. */
   const plAggregates = await db.journalEntryLine.groupBy({
-    by: ['account.accountType'],
+    by: ['accountId'],
     where: {
       journalEntry: {
         companyId: { in: targetCompanyIds },
@@ -270,15 +307,22 @@ export async function getBalanceSheet(companyId: string, periodId: string, conso
       account: { accountType: { in: ['INCOME', 'EXPENSE'] } }
     },
     _sum: { debit: true, credit: true }
-  }) as any[];
+  });
+
+  const plTypes = await db.account.findMany({
+    where: { id: { in: plAggregates.map((a) => a.accountId) } },
+    select: { id: true, accountType: true },
+  });
+  const plTypePorCuenta = new Map(plTypes.map((a) => [a.id, a.accountType]));
 
   let totalIncome = 0;
   let totalExpenses = 0;
   for (const agg of plAggregates) {
     const debit = Number(agg._sum.debit || 0);
     const credit = Number(agg._sum.credit || 0);
-    if (agg.accountType === 'INCOME') totalIncome += (credit - debit);
-    if (agg.accountType === 'EXPENSE') totalExpenses += (debit - credit);
+    const tipo = plTypePorCuenta.get(agg.accountId);
+    if (tipo === 'INCOME') totalIncome += (credit - debit);
+    if (tipo === 'EXPENSE') totalExpenses += (debit - credit);
   }
 
   const netIncome = roundTwo(totalIncome - totalExpenses);
@@ -351,7 +395,12 @@ export async function getBalanceSheet(companyId: string, periodId: string, conso
   };
 }
 
-export async function getIncomeStatement(companyId: string, periodId: string, consolidated = false) {
+export async function getIncomeStatement(
+  companyId: string,
+  periodId: string,
+  consolidated = false,
+  costCenterId?: string | null,
+) {
   const period = await db.accountingPeriod.findUnique({ where: { id: periodId } });
   if (!period) throw new Error('Período no encontrado');
 
@@ -378,6 +427,7 @@ export async function getIncomeStatement(companyId: string, periodId: string, co
         by: ['accountId'],
         where: {
           accountId: { in: leafAccountIds },
+          ...(costCenterId ? { costCenterId } : {}),
           journalEntry: { 
             period: { year: period.year, month: period.month },
             status: 'POSTED' 
@@ -567,10 +617,23 @@ export async function getCashFlow(companyId: string, periodId?: string, year?: n
   };
 }
 
-export async function getFinancialSnapshot(companyId: string) {
+export async function getFinancialSnapshot(
+  companyId: string,
+  periodoSolicitado?: { year?: number; month?: number } | null,
+) {
   try {
-    const period = await resolvePeriod(companyId);
-    if (!period) return 'No hay períodos contables configurados.';
+    /* Si el usuario preguntó por otro mes («¿y en septiembre?»), el snapshot se arma con ese
+       período: así el CFO responde con los números correctos sin depender de que el modelo
+       se acuerde de pedir la herramienta. */
+    const period = await resolvePeriod(
+      companyId,
+      null,
+      periodoSolicitado?.year ?? null,
+      periodoSolicitado?.month ?? null,
+    );
+    if (!period) {
+      return 'No hay período contable para el mes consultado. Revisa que el mes esté creado en Ganesha.';
+    }
 
     const company = await db.company.findUnique({ where: { id: companyId }, select: { name: true, currency: true } });
 
@@ -583,52 +646,50 @@ export async function getFinancialSnapshot(companyId: string) {
     });
 
     const periodIds = last3Periods.map(p => p.id);
-    
-    // Consulta optimizada: Una sola pasada para todos los periodos
-    const aggregates = await db.journalEntryLine.groupBy({
-      by: ['journalEntryId', 'accountId'],
-      where: {
-        journalEntry: { 
-          periodId: { in: periodIds },
-          status: 'POSTED'
-        },
-        account: { accountType: { in: ['INCOME', 'EXPENSE'] } }
-      },
-      _sum: { debit: true, credit: true }
-    });
 
-    // Mapear resultados a periodos (Simplificado para velocidad)
+    /* Antes se agrupaba por (asiento, cuenta): con miles de asientos eso son miles de filas
+       viajando a Node, más dos consultas extra para traducir asiento→período y cuenta→tipo.
+       Ahora se agrega **por período y cuenta en la base** (3 consultas chicas, ≤ nº de cuentas
+       filas) y el tipo se resuelve con un solo mapa. Mismo resultado, mucho menos I/O. */
     const trendMap: Record<string, { ingresos: number, gastos: number }> = {};
     last3Periods.forEach(p => {
       trendMap[p.id] = { ingresos: 0, gastos: 0 };
     });
 
-    // Nota: Para máxima velocidad, procesamos el resultado del groupBy
-    const entries = await db.journalEntry.findMany({
-      where: { id: { in: aggregates.map(a => a.journalEntryId) } },
-      select: { id: true, periodId: true }
-    });
-    
-    const entryToPeriod: Record<string, string> = {};
-    entries.forEach(e => entryToPeriod[e.id] = e.periodId);
+    const resumenPorPeriodo = await Promise.all(
+      last3Periods.map(async (p) => {
+        const filas = await db.journalEntryLine.groupBy({
+          by: ['accountId'],
+          where: {
+            journalEntry: { periodId: p.id, status: 'POSTED' },
+            account: { accountType: { in: ['INCOME', 'EXPENSE'] } },
+          },
+          _sum: { debit: true, credit: true },
+        });
+        return { periodo: p, filas };
+      }),
+    );
 
-    const accounts = await db.account.findMany({
-      where: { id: { in: aggregates.map(a => a.accountId) } },
-      select: { id: true, accountType: true }
+    const cuentasDeTendencia = await db.account.findMany({
+      where: {
+        id: { in: resumenPorPeriodo.flatMap((r) => r.filas.map((f) => f.accountId)) },
+      },
+      select: { id: true, accountType: true },
     });
     const accountTypes: Record<string, string> = {};
-    accounts.forEach(a => accountTypes[a.id] = a.accountType);
+    cuentasDeTendencia.forEach(a => accountTypes[a.id] = a.accountType);
 
-    for (const agg of aggregates) {
-      const pId = entryToPeriod[agg.journalEntryId];
-      const type = accountTypes[agg.accountId];
-      if (!pId || !type) continue;
+    for (const { periodo, filas } of resumenPorPeriodo) {
+      for (const agg of filas) {
+        const type = accountTypes[agg.accountId];
+        if (!type) continue;
 
-      const debit = Number(agg._sum.debit || 0);
-      const credit = Number(agg._sum.credit || 0);
+        const debit = Number(agg._sum.debit || 0);
+        const credit = Number(agg._sum.credit || 0);
 
-      if (type === 'INCOME') trendMap[pId].ingresos += (credit - debit);
-      else trendMap[pId].gastos += (debit - credit);
+        if (type === 'INCOME') trendMap[periodo.id].ingresos += (credit - debit);
+        else trendMap[periodo.id].gastos += (debit - credit);
+      }
     }
 
     const trendTable = last3Periods.reverse().map(p => {
@@ -668,12 +729,106 @@ export async function getFinancialSnapshot(companyId: string) {
       return `- ${acc?.name || 'Gasto'}: ${roundTwo(e._sum.debit)}`;
     }).join('\n');
 
-    // 3. Construcción del Snapshot
+    /* 3. Resultado por centro de costo (= cada tienda que sincroniza LogiFast), mes en curso y
+       mes anterior. Se agrega en la base por (centro, cuenta): son pocas filas y permite que el
+       CFO responda «¿cómo va esta tienda?» y «¿creció respecto al mes pasado?» sin pedir nada más.
+       Se incluye el `id` del centro para que el modelo pueda usarlo en `get_ledger_data`. */
+    const periodosComparar = await db.accountingPeriod.findMany({
+      where: { companyId },
+      orderBy: [{ year: 'desc' }, { month: 'desc' }],
+      take: 6,
+      select: { id: true, year: true, month: true },
+    });
+    const otrosPeriodos = periodosComparar
+      .filter((p) => p.id !== period.id)
+      .sort((a, b) => (b.year * 12 + b.month) - (a.year * 12 + a.month))
+      .slice(0, 1);
+    const periodosCentro = [period, ...otrosPeriodos];
+
+    const agregadosPorCentro = await Promise.all(
+      periodosCentro.map(async (p) => ({
+        periodo: p,
+        filas: await db.journalEntryLine.groupBy({
+          by: ['costCenterId', 'accountId'],
+          where: {
+            costCenterId: { not: null },
+            journalEntry: { periodId: p.id, status: 'POSTED' },
+            account: { accountType: { in: ['INCOME', 'EXPENSE'] } },
+          },
+          _sum: { debit: true, credit: true },
+        }),
+      })),
+    );
+
+    let centrosResumen = '';
+    const centrosConMovimiento = agregadosPorCentro.flatMap((a) =>
+      a.filas.map((f) => f.costCenterId!).filter(Boolean),
+    );
+
+    if (centrosConMovimiento.length > 0) {
+      const centros = await db.costCenter.findMany({
+        where: { id: { in: [...new Set(centrosConMovimiento)] } },
+        select: { id: true, code: true, name: true },
+      });
+
+      // tipo de cuenta de todas las cuentas implicadas (una sola consulta)
+      const cuentasImplicadas = new Set(agregadosPorCentro.flatMap((a) => a.filas.map((f) => f.accountId)));
+      const tiposCuenta = await db.account.findMany({
+        where: { id: { in: [...cuentasImplicadas] } },
+        select: { id: true, accountType: true },
+      });
+      const tipoPorCuenta = new Map(tiposCuenta.map((c) => [c.id, c.accountType]));
+
+      type Acum = { ingresos: number; gastos: number };
+      const porPeriodo = new Map<string, Map<string, Acum>>(); // centroId -> periodoId -> acumulado
+
+      for (const { periodo, filas } of agregadosPorCentro) {
+        const mapa = new Map<string, Acum>();
+        for (const fila of filas) {
+          const centroId = fila.costCenterId;
+          if (!centroId) continue;
+          const actual = mapa.get(centroId) || { ingresos: 0, gastos: 0 };
+          const debit = Number(fila._sum.debit || 0);
+          const credit = Number(fila._sum.credit || 0);
+          if (tipoPorCuenta.get(fila.accountId) === 'INCOME') actual.ingresos += credit - debit;
+          else actual.gastos += debit - credit;
+          mapa.set(centroId, actual);
+        }
+        porPeriodo.set(periodo.id, mapa);
+      }
+
+      const etiqueta = (p: { year: number; month: number }) => `${String(p.month).padStart(2, '0')}/${p.year}`;
+      const delPeriodoActual = porPeriodo.get(period.id) || new Map<string, Acum>();
+
+      centrosResumen = [...delPeriodoActual.entries()]
+        .map(([centroId, v]) => {
+          const centro = centros.find((c) => c.id === centroId);
+          const anterior = otrosPeriodos[0] ? porPeriodo.get(otrosPeriodos[0].id)?.get(centroId) : null;
+          const neto = roundTwo(v.ingresos - v.gastos);
+          const comparativa = anterior
+            ? ` | ${etiqueta(otrosPeriodos[0])}: neto ${roundTwo(anterior.ingresos - anterior.gastos)}`
+            : '';
+          const nombre = centro?.name || centroId;
+          const id = centroId;
+          return {
+            neto,
+            texto: `- ${nombre} (id: ${id} · código: ${centro?.code || '—'}): ${etiqueta(period)} → ingresos ${roundTwo(v.ingresos)} · gastos ${roundTwo(v.gastos)} · neto ${neto}${comparativa}`,
+          };
+        })
+        .sort((a, b) => b.neto - a.neto)
+        .map((f) => f.texto)
+        .join('\n');
+    }
+
+    // 4. Construcción del Snapshot
     
     return `
 === ESTADO FINANCIERO ACTUAL: ${company?.name} ===
 Moneda: ${company?.currency}
 Período Activo: ${period.month}/${period.year} (${period.status})
+
+RESULTADO DEL PERÍODO POR CENTRO DE COSTO (TIENDAS):
+${centrosResumen || 'Aún no hay movimientos con centro de costo (llegan desde LogiFast al entregar pedidos).'}
 
 TENDENCIA RECIENTE:
 | Mes | Ingresos | Gastos |

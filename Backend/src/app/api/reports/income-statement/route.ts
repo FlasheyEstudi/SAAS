@@ -8,6 +8,7 @@ export async function GET(request: Request) {
     const periodId = searchParams.get('periodId');
     const yearParam = searchParams.get('year');
     const monthParam = searchParams.get('month');
+    const costCenterId = searchParams.get('costCenterId');
 
     if (!companyId) return error('El parámetro companyId es obligatorio');
 
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
     const period = await resolvePeriod(companyId, periodId, year, month);
     if (!period) return error('Período contable no encontrado');
 
-    const result = await getIncomeStatement(companyId, period.id);
+    const result = await getIncomeStatement(companyId, period.id, false, costCenterId);
     return success(result);
   } catch (err) {
     console.error('Error generating income statement:', err);
